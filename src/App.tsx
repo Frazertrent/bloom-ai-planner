@@ -17,6 +17,7 @@ import ClientDetail from "./pages/ClientDetail";
 import Marketing from "./pages/Marketing";
 import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
+import Team from "./pages/Team";
 
 const queryClient = new QueryClient();
 
@@ -79,10 +80,7 @@ const App = () => (
           } />
           <Route path="/team" element={
             <AuthenticatedLayout>
-              <div className="text-center py-12">
-                <h1 className="text-2xl font-bold mb-4">Team</h1>
-                <p className="text-muted-foreground">Team management coming soon...</p>
-              </div>
+              <Team />
             </AuthenticatedLayout>
           } />
           <Route path="/settings" element={
