@@ -18,6 +18,7 @@ import Marketing from "./pages/Marketing";
 import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 import Team from "./pages/Team";
+import PhotoGallery from "./pages/PhotoGallery";
 
 const queryClient = new QueryClient();
 
@@ -81,6 +82,11 @@ const App = () => (
           <Route path="/team" element={
             <AuthenticatedLayout>
               <Team />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/gallery" element={
+            <AuthenticatedLayout>
+              <PhotoGallery />
             </AuthenticatedLayout>
           } />
           <Route path="/settings" element={
