@@ -19,6 +19,7 @@ import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 import Team from "./pages/Team";
 import PhotoGallery from "./pages/PhotoGallery";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -91,10 +92,7 @@ const App = () => (
           } />
           <Route path="/settings" element={
             <AuthenticatedLayout>
-              <div className="text-center py-12">
-                <h1 className="text-2xl font-bold mb-4">Settings</h1>
-                <p className="text-muted-foreground">Settings page coming soon...</p>
-              </div>
+              <Settings />
             </AuthenticatedLayout>
           } />
           
