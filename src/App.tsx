@@ -15,6 +15,7 @@ import Events from "./pages/Events";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import Marketing from "./pages/Marketing";
+import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -73,10 +74,7 @@ const App = () => (
           } />
           <Route path="/analytics" element={
             <AuthenticatedLayout>
-              <div className="text-center py-12">
-                <h1 className="text-2xl font-bold mb-4">Analytics</h1>
-                <p className="text-muted-foreground">Analytics dashboard coming soon...</p>
-              </div>
+              <Analytics />
             </AuthenticatedLayout>
           } />
           <Route path="/team" element={
