@@ -12,6 +12,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Events from "./pages/Events";
+import Clients from "./pages/Clients";
+import ClientDetail from "./pages/ClientDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,42 +57,12 @@ const App = () => (
           } />
           <Route path="/clients" element={
             <AuthenticatedLayout>
-              <div className="text-center py-12">
-                <h1 className="text-2xl font-bold mb-4">Clients</h1>
-                <p className="text-muted-foreground">Client management coming soon...</p>
-              </div>
+              <Clients />
             </AuthenticatedLayout>
           } />
-          <Route path="/orders" element={
+          <Route path="/clients/:clientId" element={
             <AuthenticatedLayout>
-              <div className="text-center py-12">
-                <h1 className="text-2xl font-bold mb-4">Orders</h1>
-                <p className="text-muted-foreground">Order management coming soon...</p>
-              </div>
-            </AuthenticatedLayout>
-          } />
-          <Route path="/layouts" element={
-            <AuthenticatedLayout>
-              <div className="text-center py-12">
-                <h1 className="text-2xl font-bold mb-4">Layouts</h1>
-                <p className="text-muted-foreground">Layout designer coming soon...</p>
-              </div>
-            </AuthenticatedLayout>
-          } />
-          <Route path="/schedule" element={
-            <AuthenticatedLayout>
-              <div className="text-center py-12">
-                <h1 className="text-2xl font-bold mb-4">Schedule</h1>
-                <p className="text-muted-foreground">Schedule management coming soon...</p>
-              </div>
-            </AuthenticatedLayout>
-          } />
-          <Route path="/budget" element={
-            <AuthenticatedLayout>
-              <div className="text-center py-12">
-                <h1 className="text-2xl font-bold mb-4">Budget</h1>
-                <p className="text-muted-foreground">Budget calculator coming soon...</p>
-              </div>
+              <ClientDetail />
             </AuthenticatedLayout>
           } />
           <Route path="/marketing" element={

@@ -37,13 +37,6 @@ const mainNavItems = [
   { title: "Clients", url: "/clients", icon: Users },
 ];
 
-const managementItems = [
-  { title: "Orders", url: "/orders", icon: ShoppingCart },
-  { title: "Layouts", url: "/layouts", icon: Map },
-  { title: "Schedule", url: "/schedule", icon: Clock },
-  { title: "Budget", url: "/budget", icon: DollarSign },
-];
-
 const businessItems = [
   { title: "Marketing", url: "/marketing", icon: Megaphone },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
@@ -129,24 +122,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Event Management */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Event Management</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {managementItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className={getNavCls}>
-                      <item.icon className="w-4 h-4" />
-                      {state !== "collapsed" && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
 
         {/* Business Suite */}
         <SidebarGroup>
