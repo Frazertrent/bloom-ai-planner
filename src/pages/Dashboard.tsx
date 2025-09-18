@@ -271,4 +271,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default Dashboard;console.log('OUR AUTH DASHBOARD IS LOADING')

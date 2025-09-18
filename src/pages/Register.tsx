@@ -6,7 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Leaf, Mail, Lock, User, Building, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -21,7 +23,10 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
+  const { signUp } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -32,32 +37,68 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match");
+      setError("Passwords don't match");
       return;
     }
     if (!acceptTerms) {
-      alert("Please accept the terms and conditions");
+      setError("Please accept the terms and conditions");
       return;
     }
     
     setIsLoading(true);
     
-    // Simulate registration
-    setTimeout(() => {
+    try {
+      const { error } = await signUp(formData.email, formData.password);
+      if (error) {
+        setError(error.message);
+      } else {
+        setSuccess(true);
+        // Don't navigate immediately - let user confirm email first
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
       setIsLoading(false);
-      navigate('/dashboard');
-    }, 1000);
+    }
   };
 
-  const handleGoogleSignUp = () => {
+  const handleGoogleSignUp = async () => {
     setIsLoading(true);
-    // Simulate Google OAuth
-    setTimeout(() => {
-      setIsLoading(false);
-      navigate('/dashboard');
-    }, 1000);
+    setError('Google sign-up will be available soon');
+    setIsLoading(false);
   };
+
+  if (success) {
+    return (
+      <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Card className="shadow-elegant border-0 bg-card/95 backdrop-blur-md">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl font-bold text-green-600">Check Your Email</CardTitle>
+              <CardDescription>
+                We've sent you a confirmation link at {formData.email}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Please check your email and click the confirmation link to activate your account.
+              </p>
+              <Button 
+                onClick={() => navigate('/login')}
+                variant="outline"
+                className="w-full"
+              >
+                Return to Sign In
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
@@ -79,6 +120,12 @@ const Register = () => {
           
           <CardContent className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First name</Label>
@@ -154,6 +201,7 @@ const Register = () => {
                     value={formData.password}
                     onChange={handleChange}
                     className="pl-10 pr-10"
+                    minLength={6}
                     required
                   />
                   <button
