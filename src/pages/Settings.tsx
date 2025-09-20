@@ -51,6 +51,28 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState("business");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const { toast } = useToast();
+  const handleIntegrationAction = (integration: string, action: string) => {
+    switch (action) {
+      case 'configure':
+        toast({
+          title: `Configure ${integration}`,
+          description: `Opening ${integration} configuration settings...`,
+        });
+        break;
+      case 'connect':
+        toast({
+          title: `Connecting to ${integration}`,
+          description: `Initiating OAuth flow for ${integration}...`,
+        });
+        break;
+      case 'settings':
+        toast({
+          title: `${integration} Settings`,
+          description: `Opening ${integration} integration settings...`,
+        });
+        break;
+    }
+  };
   const { user } = useAuth();
   const { profile, organization, loading, error, updateProfile, updateOrganization } = useProfile();
   const [paymentData, setPaymentData] = useState({
@@ -112,6 +134,35 @@ export default function Settings() {
         leadTime: (businessSettings.leadTime as number) || 3,
         autoReorder: (businessSettings.autoReorder as boolean) !== undefined ? businessSettings.autoReorder as boolean : false,
         preferredSuppliers: (businessSettings.preferredSuppliers as string[]) || ["Wholesale Flowers Inc.", "Garden Fresh Supply", "Premium Blooms Co."]
+      });
+
+      setIntegrationsData({
+        googleCalendar: { 
+          connected: (businessSettings.googleCalendarConnected as boolean) || true, 
+          status: (businessSettings.googleCalendarStatus as string) || 'active' 
+        },
+        microsoftOutlook: { 
+          connected: (businessSettings.microsoftOutlookConnected as boolean) || false, 
+          status: (businessSettings.microsoftOutlookStatus as string) || 'disconnected' 
+        },
+        quickBooks: { 
+          connected: (businessSettings.quickBooksConnected as boolean) || true, 
+          status: (businessSettings.quickBooksStatus as string) || 'syncing',
+          lastSync: (businessSettings.quickBooksLastSync as string) || '2 hours ago'
+        },
+        xero: { 
+          connected: (businessSettings.xeroConnected as boolean) || false, 
+          status: (businessSettings.xeroStatus as string) || 'available' 
+        },
+        instagram: { 
+          connected: (businessSettings.instagramConnected as boolean) || true, 
+          status: (businessSettings.instagramStatus as string) || 'active',
+          autoPosting: (businessSettings.instagramAutoPosting as boolean) || true
+        },
+        facebook: { 
+          connected: (businessSettings.facebookConnected as boolean) || false, 
+          status: (businessSettings.facebookStatus as string) || 'disconnected' 
+        }
       });
     }
   }, [organization]);
@@ -277,12 +328,63 @@ export default function Settings() {
     
     setTimeout(() => setSaveStatus("idle"), 2000);
   };
+  const [integrationsData, setIntegrationsData] = useState({
+  googleCalendar: { connected: true, status: 'active' },
+  microsoftOutlook: { connected: false, status: 'disconnected' },
+  quickBooks: { connected: true, status: 'syncing', lastSync: '2 hours ago' },
+  xero: { connected: false, status: 'available' },
+  instagram: { connected: true, status: 'active', autoPosting: true },
+  facebook: { connected: false, status: 'disconnected' }
+});
+const handleIntegrationAction = (integration: string, action: string) => {
+  switch (action) {
+    case 'configure':
+      toast({
+        title: `Configure ${integration}`,
+        description: `Opening ${integration} configuration settings...`,
+      });
+      // TODO: Open configuration modal or redirect to settings
+      break;
+    case 'connect':
+      toast({
+        title: `Connecting to ${integration}`,
+        description: `Initiating OAuth flow for ${integration}...`,
+      });
+      // TODO: Start OAuth flow
+      break;
+    case 'disconnect':
+      setIntegrationsData(prev => ({
+        ...prev,
+        [integration]: { ...prev[integration], connected: false, status: 'disconnected' }
+      }));
+      toast({
+        title: `${integration} disconnected`,
+        description: `Successfully disconnected from ${integration}.`,
+      });
+      break;
+    case 'settings':
+      toast({
+        title: `${integration} Settings`,
+        description: `Opening ${integration} integration settings...`,
+      });
+      // TODO: Open settings modal
+      break;
+  }
+};
   const [staffingData, setStaffingData] = useState({
     leadDesignerRate: 28,
     assistantRate: 18,
     setupCrewRate: 16,
     driverRate: 15
   });
+  const [integrationsData, setIntegrationsData] = useState({
+  googleCalendar: { connected: true, status: 'active' },
+  microsoftOutlook: { connected: false, status: 'disconnected' },
+  quickBooks: { connected: true, status: 'syncing', lastSync: '2 hours ago' },
+  xero: { connected: false, status: 'available' },
+  instagram: { connected: true, status: 'active', autoPosting: true },
+  facebook: { connected: false, status: 'disconnected' }
+});
   const [operationsData, setOperationsData] = useState({
     consultationDuration: "90",
     proposalTurnaround: "48",
