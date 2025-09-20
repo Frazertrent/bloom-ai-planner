@@ -113,8 +113,33 @@ export default function Settings() {
         autoReorder: (businessSettings.autoReorder as boolean) !== undefined ? businessSettings.autoReorder as boolean : false,
         preferredSuppliers: (businessSettings.preferredSuppliers as string[]) || ["Wholesale Flowers Inc.", "Garden Fresh Supply", "Premium Blooms Co."]
       });
-
-      
+      setSecurityData({
+        multiFactorAuth: (businessSettings.multiFactorAuth as boolean) !== undefined ? businessSettings.multiFactorAuth as boolean : true,
+        sessionTimeout: (businessSettings.sessionTimeout as string) || "120",
+        passwordPolicy: (businessSettings.passwordPolicy as string) || "strong",
+        backupFrequency: (businessSettings.backupFrequency as string) || "daily",
+        dataRetention: (businessSettings.dataRetention as string) || "7",
+        gdprCompliance: (businessSettings.gdprCompliance as boolean) !== undefined ? businessSettings.gdprCompliance as boolean : true,
+        dataExport: (businessSettings.dataExport as boolean) !== undefined ? businessSettings.dataExport as boolean : true,
+        failedLoginAlerts: (businessSettings.failedLoginAlerts as boolean) !== undefined ? businessSettings.failedLoginAlerts as boolean : true,
+        newDeviceNotifications: (businessSettings.newDeviceNotifications as boolean) !== undefined ? businessSettings.newDeviceNotifications as boolean : true,
+        unusualActivityDetection: (businessSettings.unusualActivityDetection as boolean) !== undefined ? businessSettings.unusualActivityDetection as boolean : true,
+        apiAccessMonitoring: (businessSettings.apiAccessMonitoring as boolean) !== undefined ? businessSettings.apiAccessMonitoring as boolean : false
+      });
+      setNotificationsData({
+        newInquiries: (businessSettings.newInquiries as boolean) !== undefined ? businessSettings.newInquiries as boolean : true,
+        paymentConfirmations: (businessSettings.paymentConfirmations as boolean) !== undefined ? businessSettings.paymentConfirmations as boolean : true,
+        eventReminders: (businessSettings.eventReminders as boolean) !== undefined ? businessSettings.eventReminders as boolean : true,
+        teamScheduleChanges: (businessSettings.teamScheduleChanges as boolean) !== undefined ? businessSettings.teamScheduleChanges as boolean : true,
+        welcomeEmailTemplate: (businessSettings.welcomeEmailTemplate as string) || "professional",
+        followUpSchedule: (businessSettings.followUpSchedule as string) || "24-48",
+        smsNotifications: (businessSettings.smsNotifications as boolean) !== undefined ? businessSettings.smsNotifications as boolean : true,
+        reviewRequests: (businessSettings.reviewRequests as boolean) !== undefined ? businessSettings.reviewRequests as boolean : true,
+        autoPostEventPhotos: (businessSettings.autoPostEventPhotos as boolean) !== undefined ? businessSettings.autoPostEventPhotos as boolean : true,
+        seasonalCampaigns: (businessSettings.seasonalCampaigns as boolean) !== undefined ? businessSettings.seasonalCampaigns as boolean : true,
+        monthlyNewsletter: (businessSettings.monthlyNewsletter as boolean) !== undefined ? businessSettings.monthlyNewsletter as boolean : true,
+        venueRelationshipUpdates: (businessSettings.venueRelationshipUpdates as boolean) !== undefined ? businessSettings.venueRelationshipUpdates as boolean : false
+      });
     }
   }, [organization]);
   useEffect(() => {
@@ -255,6 +280,29 @@ export default function Settings() {
           assistantRate: staffingData.assistantRate,
           setupCrewRate: staffingData.setupCrewRate,
           driverRate: staffingData.driverRate,
+          multiFactorAuth: securityData.multiFactorAuth,
+          sessionTimeout: securityData.sessionTimeout,
+          passwordPolicy: securityData.passwordPolicy,
+          backupFrequency: securityData.backupFrequency,
+          dataRetention: securityData.dataRetention,
+          gdprCompliance: securityData.gdprCompliance,
+          dataExport: securityData.dataExport,
+          failedLoginAlerts: securityData.failedLoginAlerts,
+          newDeviceNotifications: securityData.newDeviceNotifications,
+          unusualActivityDetection: securityData.unusualActivityDetection,
+          apiAccessMonitoring: securityData.apiAccessMonitoring,
+          newInquiries: notificationsData.newInquiries,
+          paymentConfirmations: notificationsData.paymentConfirmations,
+          eventReminders: notificationsData.eventReminders,
+          teamScheduleChanges: notificationsData.teamScheduleChanges,
+          welcomeEmailTemplate: notificationsData.welcomeEmailTemplate,
+          followUpSchedule: notificationsData.followUpSchedule,
+          smsNotifications: notificationsData.smsNotifications,
+          reviewRequests: notificationsData.reviewRequests,
+          autoPostEventPhotos: notificationsData.autoPostEventPhotos,
+          seasonalCampaigns: notificationsData.seasonalCampaigns,
+          monthlyNewsletter: notificationsData.monthlyNewsletter,
+          venueRelationshipUpdates: notificationsData.venueRelationshipUpdates,
         }
       });
       
@@ -296,6 +344,33 @@ export default function Settings() {
     leadTime: 3,
     autoReorder: false,
     preferredSuppliers: ["Wholesale Flowers Inc.", "Garden Fresh Supply", "Premium Blooms Co."]
+  });
+  const [securityData, setSecurityData] = useState({
+    multiFactorAuth: true,
+    sessionTimeout: "120",
+    passwordPolicy: "strong",
+    backupFrequency: "daily",
+    dataRetention: "7",
+    gdprCompliance: true,
+    dataExport: true,
+    failedLoginAlerts: true,
+    newDeviceNotifications: true,
+    unusualActivityDetection: true,
+    apiAccessMonitoring: false
+  });
+  const [notificationsData, setNotificationsData] = useState({
+    newInquiries: true,
+    paymentConfirmations: true,
+    eventReminders: true,
+    teamScheduleChanges: true,
+    welcomeEmailTemplate: "professional",
+    followUpSchedule: "24-48",
+    smsNotifications: true,
+    reviewRequests: true,
+    autoPostEventPhotos: true,
+    seasonalCampaigns: true,
+    monthlyNewsletter: true,
+    venueRelationshipUpdates: false
   });
   const SaveButton = () => (
     <Button 
@@ -998,40 +1073,50 @@ export default function Settings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Multi-Factor Authentication</Label>
-                    <p className="text-sm text-muted-foreground">Require 2FA for all team members</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
-                  <Select defaultValue="120">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="30">30 minutes</SelectItem>
-                      <SelectItem value="60">1 hour</SelectItem>
-                      <SelectItem value="120">2 hours</SelectItem>
-                      <SelectItem value="480">8 hours</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="passwordPolicy">Password Policy</Label>
-                  <Select defaultValue="strong">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="basic">Basic (8+ characters)</SelectItem>
-                      <SelectItem value="strong">Strong (12+ chars, mixed case, numbers)</SelectItem>
-                      <SelectItem value="enterprise">Enterprise (15+ chars, special characters)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>Multi-Factor Authentication</Label>
+    <p className="text-sm text-muted-foreground">Require 2FA for all team members</p>
+  </div>
+  <Switch 
+    checked={securityData.multiFactorAuth} 
+    onCheckedChange={(checked) => setSecurityData({...securityData, multiFactorAuth: checked})}
+  />
+</div>
+<div className="space-y-2">
+  <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
+  <Select 
+    value={securityData.sessionTimeout} 
+    onValueChange={(value) => setSecurityData({...securityData, sessionTimeout: value})}
+  >
+    <SelectTrigger>
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="30">30 minutes</SelectItem>
+      <SelectItem value="60">1 hour</SelectItem>
+      <SelectItem value="120">2 hours</SelectItem>
+      <SelectItem value="240">4 hours</SelectItem>
+      <SelectItem value="480">8 hours</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
+<div className="space-y-2">
+  <Label htmlFor="passwordPolicy">Password Policy</Label>
+  <Select 
+    value={securityData.passwordPolicy} 
+    onValueChange={(value) => setSecurityData({...securityData, passwordPolicy: value})}
+  >
+    <SelectTrigger>
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="basic">Basic (8+ chars)</SelectItem>
+      <SelectItem value="strong">Strong (12+ chars, mixed case, numbers)</SelectItem>
+      <SelectItem value="enterprise">Enterprise (16+ chars, symbols)</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
               </CardContent>
             </Card>
 
@@ -1047,47 +1132,60 @@ export default function Settings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="backupFrequency">Backup Frequency</Label>
-                  <Select defaultValue="daily">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="hourly">Every Hour</SelectItem>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="retentionPeriod">Data Retention (years)</Label>
-                  <Select defaultValue="7">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="3">3 years</SelectItem>
-                      <SelectItem value="5">5 years</SelectItem>
-                      <SelectItem value="7">7 years</SelectItem>
-                      <SelectItem value="indefinite">Indefinite</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>GDPR Compliance</Label>
-                    <p className="text-sm text-muted-foreground">Enable EU privacy regulations</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Data Export</Label>
-                    <p className="text-sm text-muted-foreground">Allow clients to export their data</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
+              <div className="space-y-2">
+  <Label htmlFor="backupFrequency">Backup Frequency</Label>
+  <Select 
+    value={securityData.backupFrequency} 
+    onValueChange={(value) => setSecurityData({...securityData, backupFrequency: value})}
+  >
+    <SelectTrigger>
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="hourly">Every hour</SelectItem>
+      <SelectItem value="daily">Daily</SelectItem>
+      <SelectItem value="weekly">Weekly</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
+<div className="space-y-2">
+  <Label htmlFor="dataRetention">Data Retention (years)</Label>
+  <Select 
+    value={securityData.dataRetention} 
+    onValueChange={(value) => setSecurityData({...securityData, dataRetention: value})}
+  >
+    <SelectTrigger>
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="1">1 year</SelectItem>
+      <SelectItem value="3">3 years</SelectItem>
+      <SelectItem value="5">5 years</SelectItem>
+      <SelectItem value="7">7 years</SelectItem>
+      <SelectItem value="10">10 years</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
+<div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>GDPR Compliance</Label>
+    <p className="text-sm text-muted-foreground">Enable EU privacy regulations</p>
+  </div>
+  <Switch 
+    checked={securityData.gdprCompliance} 
+    onCheckedChange={(checked) => setSecurityData({...securityData, gdprCompliance: checked})}
+  />
+</div>
+<div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>Data Export</Label>
+    <p className="text-sm text-muted-foreground">Allow clients to export their data</p>
+  </div>
+  <Switch 
+    checked={securityData.dataExport} 
+    onCheckedChange={(checked) => setSecurityData({...securityData, dataExport: checked})}
+  />
+</div>
               </CardContent>
             </Card>
 
@@ -1104,34 +1202,46 @@ export default function Settings() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>Failed Login Alerts</Label>
+    <p className="text-sm text-muted-foreground">Alert after 3 failed attempts</p>
+  </div>
+  <Switch 
+    checked={securityData.failedLoginAlerts} 
+    onCheckedChange={(checked) => setSecurityData({...securityData, failedLoginAlerts: checked})}
+  />
+</div>
+<div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>Unusual Activity Detection</Label>
+    <p className="text-sm text-muted-foreground">Monitor for suspicious behavior</p>
+  </div>
+  <Switch 
+    checked={securityData.unusualActivityDetection} 
+    onCheckedChange={(checked) => setSecurityData({...securityData, unusualActivityDetection: checked})}
+  />
+</div>
                   <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Failed Login Alerts</Label>
-                      <p className="text-sm text-muted-foreground">Alert after 3 failed attempts</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Unusual Activity Detection</Label>
-                      <p className="text-sm text-muted-foreground">Monitor for suspicious behavior</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>New Device Notifications</Label>
-                      <p className="text-sm text-muted-foreground">Alert on new device logins</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>API Access Monitoring</Label>
-                      <p className="text-sm text-muted-foreground">Track third-party integrations</p>
-                    </div>
-                    <Switch />
-                  </div>
+  <div className="space-y-0.5">
+    <Label>New Device Notifications</Label>
+    <p className="text-sm text-muted-foreground">Alert on new device logins</p>
+  </div>
+  <Switch 
+    checked={securityData.newDeviceNotifications} 
+    onCheckedChange={(checked) => setSecurityData({...securityData, newDeviceNotifications: checked})}
+  />
+</div>
+<div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>API Access Monitoring</Label>
+    <p className="text-sm text-muted-foreground">Track third-party integrations</p>
+  </div>
+  <Switch 
+    checked={securityData.apiAccessMonitoring} 
+    onCheckedChange={(checked) => setSecurityData({...securityData, apiAccessMonitoring: checked})}
+  />
+</div>
                 </div>
               </CardContent>
             </Card>
@@ -1154,34 +1264,46 @@ export default function Settings() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>New Inquiries</Label>
-                      <p className="text-sm text-muted-foreground">Email + SMS immediately</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Payment Confirmations</Label>
-                      <p className="text-sm text-muted-foreground">Email receipt + dashboard alert</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Event Reminders</Label>
-                      <p className="text-sm text-muted-foreground">1 week, 3 days, day-of notifications</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Team Schedule Changes</Label>
-                      <p className="text-sm text-muted-foreground">Notify affected team members</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
+                <div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>New Inquiries</Label>
+    <p className="text-sm text-muted-foreground">Email + SMS immediately</p>
+  </div>
+  <Switch 
+    checked={notificationsData.newInquiries} 
+    onCheckedChange={(checked) => setNotificationsData({...notificationsData, newInquiries: checked})}
+  />
+</div>
+<div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>Payment Confirmations</Label>
+    <p className="text-sm text-muted-foreground">Email receipt + dashboard alert</p>
+  </div>
+  <Switch 
+    checked={notificationsData.paymentConfirmations} 
+    onCheckedChange={(checked) => setNotificationsData({...notificationsData, paymentConfirmations: checked})}
+  />
+</div>
+<div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>Event Reminders</Label>
+    <p className="text-sm text-muted-foreground">1 week, 3 days, day-of notifications</p>
+  </div>
+  <Switch 
+    checked={notificationsData.eventReminders} 
+    onCheckedChange={(checked) => setNotificationsData({...notificationsData, eventReminders: checked})}
+  />
+</div>
+<div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>Team Schedule Changes</Label>
+    <p className="text-sm text-muted-foreground">Notify affected team members</p>
+  </div>
+  <Switch 
+    checked={notificationsData.teamScheduleChanges} 
+    onCheckedChange={(checked) => setNotificationsData({...notificationsData, teamScheduleChanges: checked})}
+  />
+</div>
                 </div>
               </CardContent>
             </Card>
@@ -1198,46 +1320,58 @@ export default function Settings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="welcomeEmail">Welcome Email Template</Label>
-                  <Select defaultValue="professional">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="professional">Professional & Detailed</SelectItem>
-                      <SelectItem value="friendly">Friendly & Casual</SelectItem>
-                      <SelectItem value="luxury">Luxury & Elegant</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="followupTiming">Follow-up Schedule</Label>
-                  <Select defaultValue="standard">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="immediate">Immediate responses</SelectItem>
-                      <SelectItem value="standard">24-48 hour follow-ups</SelectItem>
-                      <SelectItem value="relaxed">3-5 day follow-ups</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>SMS Notifications</Label>
-                    <p className="text-sm text-muted-foreground">Send SMS for urgent updates</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Review Requests</Label>
-                    <p className="text-sm text-muted-foreground">Auto-request reviews post-event</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
+              <div className="space-y-2">
+  <Label htmlFor="welcomeTemplate">Welcome Email Template</Label>
+  <Select 
+    value={notificationsData.welcomeEmailTemplate} 
+    onValueChange={(value) => setNotificationsData({...notificationsData, welcomeEmailTemplate: value})}
+  >
+    <SelectTrigger>
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="professional">Professional & Detailed</SelectItem>
+      <SelectItem value="friendly">Friendly & Casual</SelectItem>
+      <SelectItem value="minimal">Minimal & Clean</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
+<div className="space-y-2">
+  <Label htmlFor="followUpSchedule">Follow-up Schedule</Label>
+  <Select 
+    value={notificationsData.followUpSchedule} 
+    onValueChange={(value) => setNotificationsData({...notificationsData, followUpSchedule: value})}
+  >
+    <SelectTrigger>
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="immediate">Immediate follow-up</SelectItem>
+      <SelectItem value="24-48">24-48 hour follow-ups</SelectItem>
+      <SelectItem value="weekly">Weekly check-ins</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
+<div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>SMS Notifications</Label>
+    <p className="text-sm text-muted-foreground">Send SMS for urgent updates</p>
+  </div>
+  <Switch 
+    checked={notificationsData.smsNotifications} 
+    onCheckedChange={(checked) => setNotificationsData({...notificationsData, smsNotifications: checked})}
+  />
+</div>
+<div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>Review Requests</Label>
+    <p className="text-sm text-muted-foreground">Auto-request reviews post-event</p>
+  </div>
+  <Switch 
+    checked={notificationsData.reviewRequests} 
+    onCheckedChange={(checked) => setNotificationsData({...notificationsData, reviewRequests: checked})}
+  />
+</div>
               </CardContent>
             </Card>
 
@@ -1257,36 +1391,48 @@ export default function Settings() {
                   <div className="space-y-4">
                     <h4 className="font-medium">Social Media Posting</h4>
                     <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Auto-post Event Photos</Label>
-                        <p className="text-sm text-muted-foreground">Share completed events</p>
-                      </div>
-                      <Switch defaultChecked />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Seasonal Campaigns</Label>
-                        <p className="text-sm text-muted-foreground">Automated holiday promotions</p>
-                      </div>
-                      <Switch defaultChecked />
-                    </div>
+  <div className="space-y-0.5">
+    <Label>Auto-post Event Photos</Label>
+    <p className="text-sm text-muted-foreground">Share completed events</p>
+  </div>
+  <Switch 
+    checked={notificationsData.autoPostEventPhotos} 
+    onCheckedChange={(checked) => setNotificationsData({...notificationsData, autoPostEventPhotos: checked})}
+  />
+</div>
+<div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>Seasonal Campaigns</Label>
+    <p className="text-sm text-muted-foreground">Automated holiday promotions</p>
+  </div>
+  <Switch 
+    checked={notificationsData.seasonalCampaigns} 
+    onCheckedChange={(checked) => setNotificationsData({...notificationsData, seasonalCampaigns: checked})}
+  />
+</div>
                   </div>
                   <div className="space-y-4">
                     <h4 className="font-medium">Email Marketing</h4>
                     <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Monthly Newsletter</Label>
-                        <p className="text-sm text-muted-foreground">Send to client mailing list</p>
-                      </div>
-                      <Switch defaultChecked />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Venue Relationship Updates</Label>
-                        <p className="text-sm text-muted-foreground">Share with partner venues</p>
-                      </div>
-                      <Switch />
-                    </div>
+  <div className="space-y-0.5">
+    <Label>Monthly Newsletter</Label>
+    <p className="text-sm text-muted-foreground">Send to client mailing list</p>
+  </div>
+  <Switch 
+    checked={notificationsData.monthlyNewsletter} 
+    onCheckedChange={(checked) => setNotificationsData({...notificationsData, monthlyNewsletter: checked})}
+  />
+</div>
+<div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>Venue Relationship Updates</Label>
+    <p className="text-sm text-muted-foreground">Share with partner venues</p>
+  </div>
+  <Switch 
+    checked={notificationsData.venueRelationshipUpdates} 
+    onCheckedChange={(checked) => setNotificationsData({...notificationsData, venueRelationshipUpdates: checked})}
+  />
+</div>
                   </div>
                 </div>
               </CardContent>
