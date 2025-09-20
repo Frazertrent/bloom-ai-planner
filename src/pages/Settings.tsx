@@ -51,28 +51,6 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState("business");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const { toast } = useToast();
-  const handleIntegrationAction = (integration: string, action: string) => {
-    switch (action) {
-      case 'configure':
-        toast({
-          title: `Configure ${integration}`,
-          description: `Opening ${integration} configuration settings...`,
-        });
-        break;
-      case 'connect':
-        toast({
-          title: `Connecting to ${integration}`,
-          description: `Initiating OAuth flow for ${integration}...`,
-        });
-        break;
-      case 'settings':
-        toast({
-          title: `${integration} Settings`,
-          description: `Opening ${integration} integration settings...`,
-        });
-        break;
-    }
-  };
   const { user } = useAuth();
   const { profile, organization, loading, error, updateProfile, updateOrganization } = useProfile();
   const [paymentData, setPaymentData] = useState({
@@ -136,34 +114,7 @@ export default function Settings() {
         preferredSuppliers: (businessSettings.preferredSuppliers as string[]) || ["Wholesale Flowers Inc.", "Garden Fresh Supply", "Premium Blooms Co."]
       });
 
-      setIntegrationsData({
-        googleCalendar: { 
-          connected: (businessSettings.googleCalendarConnected as boolean) || true, 
-          status: (businessSettings.googleCalendarStatus as string) || 'active' 
-        },
-        microsoftOutlook: { 
-          connected: (businessSettings.microsoftOutlookConnected as boolean) || false, 
-          status: (businessSettings.microsoftOutlookStatus as string) || 'disconnected' 
-        },
-        quickBooks: { 
-          connected: (businessSettings.quickBooksConnected as boolean) || true, 
-          status: (businessSettings.quickBooksStatus as string) || 'syncing',
-          lastSync: (businessSettings.quickBooksLastSync as string) || '2 hours ago'
-        },
-        xero: { 
-          connected: (businessSettings.xeroConnected as boolean) || false, 
-          status: (businessSettings.xeroStatus as string) || 'available' 
-        },
-        instagram: { 
-          connected: (businessSettings.instagramConnected as boolean) || true, 
-          status: (businessSettings.instagramStatus as string) || 'active',
-          autoPosting: (businessSettings.instagramAutoPosting as boolean) || true
-        },
-        facebook: { 
-          connected: (businessSettings.facebookConnected as boolean) || false, 
-          status: (businessSettings.facebookStatus as string) || 'disconnected' 
-        }
-      });
+      
     }
   }, [organization]);
   useEffect(() => {
@@ -328,63 +279,14 @@ export default function Settings() {
     
     setTimeout(() => setSaveStatus("idle"), 2000);
   };
-  const [integrationsData, setIntegrationsData] = useState({
-  googleCalendar: { connected: true, status: 'active' },
-  microsoftOutlook: { connected: false, status: 'disconnected' },
-  quickBooks: { connected: true, status: 'syncing', lastSync: '2 hours ago' },
-  xero: { connected: false, status: 'available' },
-  instagram: { connected: true, status: 'active', autoPosting: true },
-  facebook: { connected: false, status: 'disconnected' }
-});
-const handleIntegrationAction = (integration: string, action: string) => {
-  switch (action) {
-    case 'configure':
-      toast({
-        title: `Configure ${integration}`,
-        description: `Opening ${integration} configuration settings...`,
-      });
-      // TODO: Open configuration modal or redirect to settings
-      break;
-    case 'connect':
-      toast({
-        title: `Connecting to ${integration}`,
-        description: `Initiating OAuth flow for ${integration}...`,
-      });
-      // TODO: Start OAuth flow
-      break;
-    case 'disconnect':
-      setIntegrationsData(prev => ({
-        ...prev,
-        [integration]: { ...prev[integration], connected: false, status: 'disconnected' }
-      }));
-      toast({
-        title: `${integration} disconnected`,
-        description: `Successfully disconnected from ${integration}.`,
-      });
-      break;
-    case 'settings':
-      toast({
-        title: `${integration} Settings`,
-        description: `Opening ${integration} integration settings...`,
-      });
-      // TODO: Open settings modal
-      break;
-  }
-};
+// Removed duplicate declaration of integrationsData and setIntegrationsData
+// Removed duplicate declaration of handleIntegrationAction
   const [staffingData, setStaffingData] = useState({
     leadDesignerRate: 28,
     assistantRate: 18,
     setupCrewRate: 16,
     driverRate: 15
   });
-  const [integrationsData, setIntegrationsData] = useState({
-  googleCalendar: { connected: true, status: 'active' },
-  microsoftOutlook: { connected: false, status: 'disconnected' },
-  quickBooks: { connected: true, status: 'syncing', lastSync: '2 hours ago' },
-  xero: { connected: false, status: 'available' },
-  instagram: { connected: true, status: 'active', autoPosting: true },
-  facebook: { connected: false, status: 'disconnected' }
-});
   const [operationsData, setOperationsData] = useState({
     consultationDuration: "90",
     proposalTurnaround: "48",
@@ -445,10 +347,7 @@ const handleIntegrationAction = (integration: string, action: string) => {
             <Settings2 className="w-3 h-3" />
             <span className="hidden sm:inline">Operations</span>
           </TabsTrigger>
-          <TabsTrigger value="integrations" className="flex items-center gap-1 text-xs">
-            <Zap className="w-3 h-3" />
-            <span className="hidden sm:inline">Integrations</span>
-          </TabsTrigger>
+          
           <TabsTrigger value="security" className="flex items-center gap-1 text-xs">
             <Shield className="w-3 h-3" />
             <span className="hidden sm:inline">Security</span>
@@ -1077,151 +976,6 @@ const handleIntegrationAction = (integration: string, action: string) => {
 />
                       <span className="text-muted-foreground mt-2 ml-2">/hr</span>
                     </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Integration Management */}
-        <TabsContent value="integrations" className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Calendar Integrations */}
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-primary" />
-                  Calendar Integrations
-                </CardTitle>
-                <CardDescription>
-                  Connect your calendars for seamless scheduling
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                      <Calendar className="w-4 h-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Google Calendar</p>
-                      <p className="text-sm text-muted-foreground">Connected</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="bg-success/10 text-success">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Active
-                    </Badge>
-                    <Button variant="outline" size="sm">Configure</Button>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                      <Calendar className="w-4 h-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Microsoft Outlook</p>
-                      <p className="text-sm text-muted-foreground">Not connected</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    <Link className="w-4 h-4 mr-2" />
-                    Connect
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Accounting Software */}
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calculator className="w-5 h-5 text-primary" />
-                  Accounting Software
-                </CardTitle>
-                <CardDescription>
-                  Integrate with your accounting platform
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
-                      <Calculator className="w-4 h-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-medium">QuickBooks Online</p>
-                      <p className="text-sm text-muted-foreground">Last sync: 2 hours ago</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="bg-success/10 text-success">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Syncing
-                    </Badge>
-                    <Button variant="outline" size="sm">Settings</Button>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                      <Calculator className="w-4 h-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Xero</p>
-                      <p className="text-sm text-muted-foreground">Available for connection</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    <Link className="w-4 h-4 mr-2" />
-                    Connect
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Social Media & Marketing */}
-            <Card className="shadow-card lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Instagram className="w-5 h-5 text-primary" />
-                  Social Media & Marketing
-                </CardTitle>
-                <CardDescription>
-                  Connect your social media accounts for marketing automation
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                        <Instagram className="w-4 h-4 text-white" />
-                      </div>
-                      <div>
-                        <p className="font-medium">Instagram Business</p>
-                        <p className="text-sm text-muted-foreground">Auto-posting enabled</p>
-                      </div>
-                    </div>
-                    <Badge variant="secondary" className="bg-success/10 text-success">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Active
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                        <Facebook className="w-4 h-4 text-white" />
-                      </div>
-                      <div>
-                        <p className="font-medium">Facebook Business</p>
-                        <p className="text-sm text-muted-foreground">Not connected</p>
-                      </div>
-                    </div>
-                    <Button variant="outline" size="sm">Connect</Button>
                   </div>
                 </div>
               </CardContent>
