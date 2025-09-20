@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -44,22 +44,189 @@ import {
   RefreshCw
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState("business");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const { toast } = useToast();
-
-  const handleSave = () => {
-    setSaveStatus("saving");
-    setTimeout(() => {
-      setSaveStatus("saved");
-      toast({
-        title: "Settings Saved",
-        description: "Your configuration has been updated successfully.",
+  const { user } = useAuth();
+  const { profile, organization, loading, error, updateProfile, updateOrganization } = useProfile();
+  const [paymentData, setPaymentData] = useState({
+    depositPercent: "50",
+    paymentSchedule: "50-50",
+    lateFee: 25,
+    gracePeriod: 7
+  });
+  const [businessData, setBusinessData] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    website: "",
+    tagline: "",     
+    description: "",
+    serviceRadius: 50,        
+    deliveryFee: 25,         
+    mileageRate: 0.75,
+    address: {
+      street: "",
+      city: "",
+      state: "",
+      zip: ""
+    }
+  });
+  const [pricingData, setPricingData] = useState({
+    hourlyRate: 75,
+    flowerMarkup: 35,
+    hardGoodsMarkup: 25,
+    rushFee: 150,
+    setupFee: 100,
+    depositPercent: 50,
+    lateFee: 25,
+    gracePeriod: 7,
+    salesTax: 8.25
+  });
+  useEffect(() => {
+    if (organization) {
+      const businessSettings = organization.business_settings && 
+                               typeof organization.business_settings === 'object' && 
+                               organization.business_settings !== null ? 
+                               organization.business_settings as { paymentDepositPercent?: string; paymentSchedule?: string; paymentLateFee?: number; paymentGracePeriod?: number } : {};
+      
+                               setPaymentData({
+                                depositPercent: businessSettings.paymentDepositPercent || "50",  
+                                paymentSchedule: businessSettings.paymentSchedule || "50-50",
+                                lateFee: businessSettings.paymentLateFee || 25,                   
+                                gracePeriod: businessSettings.paymentGracePeriod || 7            
+                              });
+    }
+  }, [organization]);
+  useEffect(() => {
+    if (organization) {
+      const businessSettings = organization.business_settings && 
+                               typeof organization.business_settings === 'object' && 
+                               organization.business_settings !== null ? 
+                               organization.business_settings as { hourlyRate?: number; flowerMarkup?: number; hardGoodsMarkup?: number; rushFee?: number; setupFee?: number; depositPercent?: number; lateFee?: number; gracePeriod?: number; salesTax?: number } : {};
+      
+      setPricingData({
+        hourlyRate: businessSettings.hourlyRate || 75,
+        flowerMarkup: businessSettings.flowerMarkup || 35,
+        hardGoodsMarkup: businessSettings.hardGoodsMarkup || 25,
+        rushFee: businessSettings.rushFee || 150,
+        setupFee: businessSettings.setupFee || 100,
+        depositPercent: businessSettings.depositPercent || 50,
+        lateFee: businessSettings.lateFee || 25,
+        gracePeriod: businessSettings.gracePeriod || 7,
+        salesTax: businessSettings.salesTax || 8.25
       });
-      setTimeout(() => setSaveStatus("idle"), 2000);
-    }, 1000);
+    }
+  }, [organization]);
+  useEffect(() => {
+    if (organization) {
+      const businessSettings = organization.business_settings && 
+                               typeof organization.business_settings === 'object' && 
+                               organization.business_settings !== null ? 
+                               organization.business_settings as { hourlyRate?: number; flowerMarkup?: number; hardGoodsMarkup?: number; rushFee?: number; setupFee?: number } : {};
+      
+      setPricingData({
+        hourlyRate: businessSettings.hourlyRate || 75,
+        flowerMarkup: businessSettings.flowerMarkup || 35,
+        hardGoodsMarkup: businessSettings.hardGoodsMarkup || 25,
+        rushFee: businessSettings.rushFee || 150,
+        setupFee: businessSettings.setupFee || 100,
+        depositPercent: 50,        
+        lateFee: 25,              
+        gracePeriod: 7,           
+        salesTax: 8.25
+      });
+    }
+  }, [organization]);
+  useEffect(() => {
+    if (organization) {
+      // Safely handle address
+      const address = organization.address && 
+                     typeof organization.address === 'object' && 
+                     organization.address !== null ? 
+                     organization.address as { street?: string; city?: string; state?: string; zip?: string } : {};
+  
+      // Safely handle business_settings
+      const businessSettings = organization.business_settings && 
+                               typeof organization.business_settings === 'object' && 
+                               organization.business_settings !== null ? 
+                               organization.business_settings as { tagline?: string; description?: string; serviceRadius?: number; deliveryFee?: number; mileageRate?: number } : {};
+  
+      setBusinessData({
+        name: organization.name || "",
+        phone: organization.phone || "",
+        email: organization.email || "",
+        website: organization.website || "",
+        tagline: businessSettings.tagline || "",
+        description: businessSettings.description || "",
+        serviceRadius: businessSettings.serviceRadius || 50,        
+        deliveryFee: businessSettings.deliveryFee || 25,           
+        mileageRate: businessSettings.mileageRate || 0.75,
+        address: {
+          street: address.street || "",
+          city: address.city || "",
+          state: address.state || "",
+          zip: address.zip || ""
+        }
+      });
+    }
+  }, [organization]);
+  const handleSave = async () => {
+    setSaveStatus("saving");
+    
+    try {
+      const result = await updateOrganization({
+        name: businessData.name,
+        phone: businessData.phone,
+        email: businessData.email,
+        website: businessData.website,
+        address: businessData.address,
+        business_settings: {
+          tagline: businessData.tagline,
+          description: businessData.description,
+          serviceRadius: businessData.serviceRadius,
+          deliveryFee: businessData.deliveryFee,
+          mileageRate: businessData.mileageRate,
+          hourlyRate: pricingData.hourlyRate,
+          flowerMarkup: pricingData.flowerMarkup,
+          hardGoodsMarkup: pricingData.hardGoodsMarkup,
+          rushFee: pricingData.rushFee,
+          setupFee: pricingData.setupFee,
+          depositPercent: pricingData.depositPercent,
+          lateFee: pricingData.lateFee,
+          gracePeriod: pricingData.gracePeriod,
+          salesTax: pricingData.salesTax,
+          paymentDepositPercent: paymentData.depositPercent,
+          paymentSchedule: paymentData.paymentSchedule,
+          paymentLateFee: paymentData.lateFee,
+          paymentGracePeriod: paymentData.gracePeriod
+        }
+      });
+      
+      if (result.success) {
+        setSaveStatus("saved");
+        toast({
+          title: "Settings Saved",
+          description: "Your business information has been updated successfully.",
+        });
+      } else {
+        throw new Error("Failed to save settings");
+      }
+    } catch (err) {
+      toast({
+        title: "Save Failed", 
+        description: err.message,
+        variant: "destructive"
+      });
+      setSaveStatus("idle");
+      return;
+    }
+    
+    setTimeout(() => setSaveStatus("idle"), 2000);
   };
 
   const SaveButton = () => (
@@ -79,7 +246,14 @@ export default function Settings() {
 
   return (
     <div className="flex-1 space-y-6 p-6 max-w-7xl mx-auto">
-      {/* Header */}
+    
+    <div className="bg-blue-50 border border-blue-200 rounded p-4 text-sm">
+      <h3 className="font-bold">Debug Info (remove after testing):</h3>
+      <p>User: {user ? '✅ Logged in' : '❌ Not logged in'} ({user?.email})</p>
+      <p>Profile: {loading ? '⏳ Loading...' : profile ? '✅ Found' : '❌ Not found'}</p>
+      <p>Organization: {organization ? `✅ ${organization.name}` : '❌ Not found'}</p>
+      {error && <p className="text-red-600">Error: {error}</p>}
+    </div>
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div>
@@ -125,7 +299,7 @@ export default function Settings() {
             <CreditCard className="w-3 h-3" />
             <span className="hidden sm:inline">Billing</span>
           </TabsTrigger>
-        </TabsList>
+        </TabsList>  
 
         {/* Business Profile & Branding */}
         <TabsContent value="business" className="space-y-6">
@@ -144,29 +318,66 @@ export default function Settings() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="businessName">Business Name</Label>
-                  <Input id="businessName" defaultValue="Bloom & Flourish Florals" />
+                  <Input 
+                    id="businessName" 
+                    value={businessData.name}
+                    onChange={(e) => setBusinessData(prev => ({ ...prev, name: e.target.value }))}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="legalEntity">Legal Entity</Label>
-                  <Input id="legalEntity" defaultValue="Bloom & Flourish Florals LLC" />
+                  <Input 
+                    id="legalEntity" 
+                    value={businessData.name ? `${businessData.name} LLC` : ""}
+                    onChange={(e) => {
+                      // This field is auto-generated from business name
+                    }}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="address">Business Address</Label>
-                  <Textarea id="address" rows={3} defaultValue="123 Garden Street&#10;Flower District&#10;Bloomington, FL 32801" />
+                  <Textarea 
+                    id="address" 
+                    rows={3} 
+                    value={`${businessData.address.street}\n${businessData.address.city}, ${businessData.address.state} ${businessData.address.zip}`}
+                    onChange={(e) => {
+                      const lines = e.target.value.split('\n');
+                      const addressLine = lines[1] || '';
+                      const [city, stateZip] = addressLine.split(', ');
+                      const [state, zip] = (stateZip || '').split(' ');
+                      setBusinessData(prev => ({ 
+                        ...prev, 
+                        address: { 
+                          street: lines[0] || '', 
+                          city: city || '', 
+                          state: state || '', 
+                          zip: zip || '' 
+                        }
+                      }));
+                    }}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone</Label>
                     <div className="flex">
                       <Phone className="w-4 h-4 mt-3 mr-2 text-muted-foreground" />
-                      <Input id="phone" defaultValue="(555) 123-4567" />
+                      <Input 
+                        id="phone" 
+                        value={businessData.phone}
+                        onChange={(e) => setBusinessData(prev => ({ ...prev, phone: e.target.value }))}
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <div className="flex">
                       <Mail className="w-4 h-4 mt-3 mr-2 text-muted-foreground" />
-                      <Input id="email" defaultValue="hello@bloomflourish.com" />
+                      <Input 
+                        id="email" 
+                        value={businessData.email}
+                        onChange={(e) => setBusinessData(prev => ({ ...prev, email: e.target.value }))}
+                      />
                     </div>
                   </div>
                 </div>
@@ -174,7 +385,11 @@ export default function Settings() {
                   <Label htmlFor="website">Website</Label>
                   <div className="flex">
                     <Globe className="w-4 h-4 mt-3 mr-2 text-muted-foreground" />
-                    <Input id="website" defaultValue="www.bloomflourish.com" />
+                    <Input 
+                      id="website" 
+                      value={businessData.website}
+                      onChange={(e) => setBusinessData(prev => ({ ...prev, website: e.target.value }))}
+                    />
                   </div>
                 </div>
               </CardContent>
@@ -223,13 +438,22 @@ export default function Settings() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="tagline">Business Tagline</Label>
-                  <Input id="tagline" defaultValue="Creating Beautiful Moments, One Bloom at a Time" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Business Description</Label>
-                  <Textarea id="description" rows={3} defaultValue="Full-service floral design studio specializing in weddings, corporate events, and special occasions. We bring your vision to life with fresh, locally-sourced flowers and expert design." />
-                </div>
+  <Label htmlFor="tagline">Business Tagline</Label>
+  <Input 
+    id="tagline" 
+    value={businessData.tagline || ""}
+    onChange={(e) => setBusinessData(prev => ({ ...prev, tagline: e.target.value }))}
+  />
+</div>
+<div className="space-y-2">
+  <Label htmlFor="description">Business Description</Label>
+  <Textarea 
+    id="description" 
+    rows={3} 
+    value={businessData.description || ""}
+    onChange={(e) => setBusinessData(prev => ({ ...prev, description: e.target.value }))}
+  />
+</div>
               </CardContent>
             </Card>
 
@@ -246,19 +470,32 @@ export default function Settings() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="serviceRadius">Service Radius (miles)</Label>
-                    <Input id="serviceRadius" type="number" defaultValue="50" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="deliveryFee">Base Delivery Fee</Label>
-                    <Input id="deliveryFee" defaultValue="$25" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="mileageRate">Per Mile Rate</Label>
-                    <Input id="mileageRate" defaultValue="$0.75" />
-                  </div>
-                </div>
+  <div className="space-y-2">
+    <Label htmlFor="serviceRadius">Service Radius (miles)</Label>
+    <Input 
+      id="serviceRadius" 
+      type="number" 
+      value={businessData.serviceRadius}
+      onChange={(e) => setBusinessData(prev => ({ ...prev, serviceRadius: parseInt(e.target.value) || 0 }))}
+    />
+  </div>
+  <div className="space-y-2">
+    <Label htmlFor="deliveryFee">Base Delivery Fee</Label>
+    <Input 
+      id="deliveryFee" 
+      value={businessData.deliveryFee}
+      onChange={(e) => setBusinessData(prev => ({ ...prev, deliveryFee: parseFloat(e.target.value.replace('$', '')) || 0 }))}
+    />
+  </div>
+  <div className="space-y-2">
+    <Label htmlFor="mileageRate">Per Mile Rate</Label>
+    <Input 
+      id="mileageRate" 
+      value={businessData.mileageRate}
+      onChange={(e) => setBusinessData(prev => ({ ...prev, mileageRate: parseFloat(e.target.value.replace('$', '')) || 0 }))}
+    />
+  </div>
+</div>
                 <div className="space-y-2">
                   <Label>Premium Service Areas</Label>
                   <div className="flex flex-wrap gap-2">
@@ -292,7 +529,11 @@ export default function Settings() {
                   <Label htmlFor="hourlyRate">Base Hourly Rate</Label>
                   <div className="flex">
                     <DollarSign className="w-4 h-4 mt-3 mr-2 text-muted-foreground" />
-                    <Input id="hourlyRate" defaultValue="75" />
+                    <Input 
+  id="hourlyRate" 
+  value={pricingData.hourlyRate}
+  onChange={(e) => setPricingData(prev => ({ ...prev, hourlyRate: parseFloat(e.target.value) || 0 }))}
+/>
                     <span className="text-muted-foreground mt-2 ml-2">/hour</span>
                   </div>
                 </div>
@@ -300,14 +541,22 @@ export default function Settings() {
                   <div className="space-y-2">
                     <Label htmlFor="flowerMarkup">Flower Markup</Label>
                     <div className="flex">
-                      <Input id="flowerMarkup" defaultValue="35" />
+                    <Input 
+  id="flowerMarkup" 
+  value={pricingData.flowerMarkup}
+  onChange={(e) => setPricingData(prev => ({ ...prev, flowerMarkup: parseFloat(e.target.value) || 0 }))}
+/>
                       <span className="text-muted-foreground mt-2 ml-2">%</span>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="hardGoodsMarkup">Hard Goods Markup</Label>
                     <div className="flex">
-                      <Input id="hardGoodsMarkup" defaultValue="25" />
+                    <Input 
+  id="hardGoodsMarkup" 
+  value={pricingData.hardGoodsMarkup}
+  onChange={(e) => setPricingData(prev => ({ ...prev, hardGoodsMarkup: parseFloat(e.target.value) || 0 }))}
+/>
                       <span className="text-muted-foreground mt-2 ml-2">%</span>
                     </div>
                   </div>
@@ -317,14 +566,22 @@ export default function Settings() {
                     <Label htmlFor="rushFee">Rush Order Fee</Label>
                     <div className="flex">
                       <DollarSign className="w-4 h-4 mt-3 mr-2 text-muted-foreground" />
-                      <Input id="rushFee" defaultValue="150" />
+                      <Input 
+  id="rushFee" 
+  value={pricingData.rushFee}
+  onChange={(e) => setPricingData(prev => ({ ...prev, rushFee: parseFloat(e.target.value) || 0 }))}
+/>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="setupFee">Setup Fee</Label>
                     <div className="flex">
                       <DollarSign className="w-4 h-4 mt-3 mr-2 text-muted-foreground" />
-                      <Input id="setupFee" defaultValue="100" />
+                      <Input 
+  id="setupFee" 
+  value={pricingData.setupFee}
+  onChange={(e) => setPricingData(prev => ({ ...prev, setupFee: parseFloat(e.target.value) || 0 }))}
+/>
                     </div>
                   </div>
                 </div>
@@ -345,7 +602,10 @@ export default function Settings() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="depositPercent">Deposit Percentage</Label>
-                  <Select defaultValue="50">
+                  <Select 
+  value={paymentData.depositPercent} 
+  onValueChange={(value) => setPaymentData(prev => ({ ...prev, depositPercent: value }))}
+>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -358,7 +618,10 @@ export default function Settings() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="paymentSchedule">Payment Schedule</Label>
-                  <Select defaultValue="50-50">
+                  <Select 
+  value={paymentData.paymentSchedule} 
+  onValueChange={(value) => setPaymentData(prev => ({ ...prev, paymentSchedule: value }))}
+>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -373,12 +636,21 @@ export default function Settings() {
                   <Label htmlFor="lateFee">Late Payment Fee</Label>
                   <div className="flex">
                     <DollarSign className="w-4 h-4 mt-3 mr-2 text-muted-foreground" />
-                    <Input id="lateFee" defaultValue="25" />
+                    <Input 
+  id="lateFee" 
+  value={paymentData.lateFee}
+  onChange={(e) => setPaymentData(prev => ({ ...prev, lateFee: parseFloat(e.target.value) || 0 }))}
+/>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="gracePeriod">Grace Period (days)</Label>
-                  <Input id="gracePeriod" type="number" defaultValue="7" />
+                  <Input 
+  id="gracePeriod" 
+  type="number" 
+  value={paymentData.gracePeriod}
+  onChange={(e) => setPaymentData(prev => ({ ...prev, gracePeriod: parseInt(e.target.value) || 0 }))}
+/>
                 </div>
               </CardContent>
             </Card>
@@ -399,7 +671,11 @@ export default function Settings() {
                   <div className="space-y-2">
                     <Label htmlFor="salesTax">Sales Tax Rate</Label>
                     <div className="flex">
-                      <Input id="salesTax" defaultValue="8.25" />
+                    <Input 
+  id="salesTax" 
+  value={pricingData.salesTax}
+  onChange={(e) => setPricingData(prev => ({ ...prev, salesTax: parseFloat(e.target.value) || 0 }))}
+/>
                       <span className="text-muted-foreground mt-2 ml-2">%</span>
                     </div>
                   </div>

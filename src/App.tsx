@@ -3,9 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
-
+import { AuthenticatedLayout } from "@/components/AuthenticatedLayout";
 // Pages
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -22,20 +20,6 @@ import PhotoGallery from "./pages/PhotoGallery";
 import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
-
-// Layout component for authenticated pages
-const AuthenticatedLayout = ({ children }: { children: React.ReactNode }) => (
-  <SidebarProvider>
-    <div className="min-h-screen flex w-full">
-      <AppSidebar />
-      <main className="flex-1 overflow-hidden">
-        <div className="h-full p-6 overflow-y-auto">
-          {children}
-        </div>
-      </main>
-    </div>
-  </SidebarProvider>
-);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
