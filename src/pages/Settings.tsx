@@ -59,6 +59,7 @@ export default function Settings() {
     lateFee: 25,
     gracePeriod: 7
   });
+  // Duplicate declaration removed
   const [taxData, setTaxData] = useState({
     laborTaxTreatment: "exempt",
     deliveryTaxTreatment: "taxable"
@@ -92,22 +93,25 @@ export default function Settings() {
     salesTax: 8.25
   });
   useEffect(() => {
-    if (organization) {
-      const businessSettings = organization.business_settings && 
-                               typeof organization.business_settings === 'object' && 
-                               organization.business_settings !== null ? 
-                               organization.business_settings as { consultationDuration?: string; proposalTurnaround?: string; autoFollowUp?: boolean; qualityControlChecklists?: boolean; orderSchedule?: string; leadTime?: number; autoReorder?: boolean;
-                                preferredSuppliers?: string[] } : {};
+    if (organization && organization.business_settings) {
+      const businessSettings = organization.business_settings as Record<string, unknown> || {};
+      
+      setStaffingData({
+        leadDesignerRate: (businessSettings.leadDesignerRate as number) || 28,
+        assistantRate: (businessSettings.assistantRate as number) || 18,
+        setupCrewRate: (businessSettings.setupCrewRate as number) || 16,
+        driverRate: (businessSettings.driverRate as number) || 15
+      });
       
       setOperationsData({
-        consultationDuration: businessSettings.consultationDuration || "90",
-        proposalTurnaround: businessSettings.proposalTurnaround || "48",
-        autoFollowUp: businessSettings.autoFollowUp !== undefined ? businessSettings.autoFollowUp : true,
-        qualityControlChecklists: businessSettings.qualityControlChecklists !== undefined ? businessSettings.qualityControlChecklists : true,
-        orderSchedule: businessSettings.orderSchedule || "tuesday-friday",
-        leadTime: businessSettings.leadTime || 3,
-        autoReorder: businessSettings.autoReorder !== undefined ? businessSettings.autoReorder : false,
-        preferredSuppliers: businessSettings.preferredSuppliers || ["Wholesale Flowers Inc.", "Garden Fresh Supply", "Premium Blooms Co."]
+        consultationDuration: (businessSettings.consultationDuration as string) || "90",
+        proposalTurnaround: (businessSettings.proposalTurnaround as string) || "48",
+        autoFollowUp: (businessSettings.autoFollowUp as boolean) !== undefined ? businessSettings.autoFollowUp as boolean : true,
+        qualityControlChecklists: (businessSettings.qualityControlChecklists as boolean) !== undefined ? businessSettings.qualityControlChecklists as boolean : true,
+        orderSchedule: (businessSettings.orderSchedule as string) || "tuesday-friday",
+        leadTime: (businessSettings.leadTime as number) || 3,
+        autoReorder: (businessSettings.autoReorder as boolean) !== undefined ? businessSettings.autoReorder as boolean : false,
+        preferredSuppliers: (businessSettings.preferredSuppliers as string[]) || ["Wholesale Flowers Inc.", "Garden Fresh Supply", "Premium Blooms Co."]
       });
     }
   }, [organization]);
@@ -244,7 +248,11 @@ export default function Settings() {
           orderSchedule: operationsData.orderSchedule,
           leadTime: operationsData.leadTime,
           autoReorder: operationsData.autoReorder,
-          preferredSuppliers: operationsData.preferredSuppliers
+          preferredSuppliers: operationsData.preferredSuppliers,
+          leadDesignerRate: staffingData.leadDesignerRate,
+          assistantRate: staffingData.assistantRate,
+          setupCrewRate: staffingData.setupCrewRate,
+          driverRate: staffingData.driverRate,
         }
       });
       
@@ -269,6 +277,12 @@ export default function Settings() {
     
     setTimeout(() => setSaveStatus("idle"), 2000);
   };
+  const [staffingData, setStaffingData] = useState({
+    leadDesignerRate: 28,
+    assistantRate: 18,
+    setupCrewRate: 16,
+    driverRate: 15
+  });
   const [operationsData, setOperationsData] = useState({
     consultationDuration: "90",
     proposalTurnaround: "48",
@@ -918,7 +932,11 @@ export default function Settings() {
                     <Label htmlFor="designerRate">Lead Designer Rate</Label>
                     <div className="flex">
                       <DollarSign className="w-4 h-4 mt-3 mr-2 text-muted-foreground" />
-                      <Input id="designerRate" defaultValue="28" />
+                      <Input 
+  id="designerRate" 
+  value={staffingData.leadDesignerRate} 
+  onChange={(e) => setStaffingData({...staffingData, leadDesignerRate: parseFloat(e.target.value) || 0})}
+/>
                       <span className="text-muted-foreground mt-2 ml-2">/hr</span>
                     </div>
                   </div>
@@ -926,7 +944,11 @@ export default function Settings() {
                     <Label htmlFor="assistantRate">Assistant Rate</Label>
                     <div className="flex">
                       <DollarSign className="w-4 h-4 mt-3 mr-2 text-muted-foreground" />
-                      <Input id="assistantRate" defaultValue="18" />
+                      <Input 
+  id="assistantRate" 
+  value={staffingData.assistantRate} 
+  onChange={(e) => setStaffingData({...staffingData, assistantRate: parseFloat(e.target.value) || 0})}
+/>
                       <span className="text-muted-foreground mt-2 ml-2">/hr</span>
                     </div>
                   </div>
@@ -934,7 +956,11 @@ export default function Settings() {
                     <Label htmlFor="setupRate">Setup Crew Rate</Label>
                     <div className="flex">
                       <DollarSign className="w-4 h-4 mt-3 mr-2 text-muted-foreground" />
-                      <Input id="setupRate" defaultValue="16" />
+                      <Input 
+  id="setupRate" 
+  value={staffingData.setupCrewRate} 
+  onChange={(e) => setStaffingData({...staffingData, setupCrewRate: parseFloat(e.target.value) || 0})}
+/>
                       <span className="text-muted-foreground mt-2 ml-2">/hr</span>
                     </div>
                   </div>
@@ -942,7 +968,11 @@ export default function Settings() {
                     <Label htmlFor="driverRate">Driver Rate</Label>
                     <div className="flex">
                       <DollarSign className="w-4 h-4 mt-3 mr-2 text-muted-foreground" />
-                      <Input id="driverRate" defaultValue="15" />
+                      <Input 
+  id="driverRate" 
+  value={staffingData.driverRate} 
+  onChange={(e) => setStaffingData({...staffingData, driverRate: parseFloat(e.target.value) || 0})}
+/>
                       <span className="text-muted-foreground mt-2 ml-2">/hr</span>
                     </div>
                   </div>
