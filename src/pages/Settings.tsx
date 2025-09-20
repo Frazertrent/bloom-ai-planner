@@ -59,6 +59,10 @@ export default function Settings() {
     lateFee: 25,
     gracePeriod: 7
   });
+  const [taxData, setTaxData] = useState({
+    laborTaxTreatment: "exempt",
+    deliveryTaxTreatment: "taxable"
+  });
   const [businessData, setBusinessData] = useState({
     name: "",
     phone: "",
@@ -92,14 +96,45 @@ export default function Settings() {
       const businessSettings = organization.business_settings && 
                                typeof organization.business_settings === 'object' && 
                                organization.business_settings !== null ? 
-                               organization.business_settings as { paymentDepositPercent?: string; paymentSchedule?: string; paymentLateFee?: number; paymentGracePeriod?: number } : {};
+                               organization.business_settings as { consultationDuration?: string; proposalTurnaround?: string; autoFollowUp?: boolean; qualityControlChecklists?: boolean; orderSchedule?: string; leadTime?: number; autoReorder?: boolean;
+                                preferredSuppliers?: string[] } : {};
       
-                               setPaymentData({
-                                depositPercent: businessSettings.paymentDepositPercent || "50",  
-                                paymentSchedule: businessSettings.paymentSchedule || "50-50",
-                                lateFee: businessSettings.paymentLateFee || 25,                   
-                                gracePeriod: businessSettings.paymentGracePeriod || 7            
-                              });
+      setOperationsData({
+        consultationDuration: businessSettings.consultationDuration || "90",
+        proposalTurnaround: businessSettings.proposalTurnaround || "48",
+        autoFollowUp: businessSettings.autoFollowUp !== undefined ? businessSettings.autoFollowUp : true,
+        qualityControlChecklists: businessSettings.qualityControlChecklists !== undefined ? businessSettings.qualityControlChecklists : true,
+        orderSchedule: businessSettings.orderSchedule || "tuesday-friday",
+        leadTime: businessSettings.leadTime || 3,
+        autoReorder: businessSettings.autoReorder !== undefined ? businessSettings.autoReorder : false,
+        preferredSuppliers: businessSettings.preferredSuppliers || ["Wholesale Flowers Inc.", "Garden Fresh Supply", "Premium Blooms Co."]
+      });
+    }
+  }, [organization]);
+  useEffect(() => {
+    if (organization) {
+      const businessSettings = organization.business_settings && 
+                               typeof organization.business_settings === 'object' && 
+                               organization.business_settings !== null ? 
+                               organization.business_settings as { laborTaxTreatment?: string; deliveryTaxTreatment?: string; hourlyRate?: number; flowerMarkup?: number; hardGoodsMarkup?: number; rushFee?: number; setupFee?: number; depositPercent?: number; lateFee?: number; gracePeriod?: number; salesTax?: number; tagline?: string; description?: string; serviceRadius?: number; deliveryFee?: number; mileageRate?: number } : {};
+      
+      setTaxData({
+        laborTaxTreatment: businessSettings.laborTaxTreatment || "exempt",
+        deliveryTaxTreatment: businessSettings.deliveryTaxTreatment || "taxable"
+      });
+    }
+  }, [organization]);
+  useEffect(() => {
+    if (organization) {
+      const businessSettings = organization.business_settings && 
+                               typeof organization.business_settings === 'object' && 
+                               organization.business_settings !== null ? 
+                               organization.business_settings as { laborTaxTreatment?: string; deliveryTaxTreatment?: string } : {};
+      
+      setTaxData({
+        laborTaxTreatment: businessSettings.laborTaxTreatment || "exempt",
+        deliveryTaxTreatment: businessSettings.deliveryTaxTreatment || "taxable"
+      });
     }
   }, [organization]);
   useEffect(() => {
@@ -119,26 +154,6 @@ export default function Settings() {
         lateFee: businessSettings.lateFee || 25,
         gracePeriod: businessSettings.gracePeriod || 7,
         salesTax: businessSettings.salesTax || 8.25
-      });
-    }
-  }, [organization]);
-  useEffect(() => {
-    if (organization) {
-      const businessSettings = organization.business_settings && 
-                               typeof organization.business_settings === 'object' && 
-                               organization.business_settings !== null ? 
-                               organization.business_settings as { hourlyRate?: number; flowerMarkup?: number; hardGoodsMarkup?: number; rushFee?: number; setupFee?: number } : {};
-      
-      setPricingData({
-        hourlyRate: businessSettings.hourlyRate || 75,
-        flowerMarkup: businessSettings.flowerMarkup || 35,
-        hardGoodsMarkup: businessSettings.hardGoodsMarkup || 25,
-        rushFee: businessSettings.rushFee || 150,
-        setupFee: businessSettings.setupFee || 100,
-        depositPercent: 50,        
-        lateFee: 25,              
-        gracePeriod: 7,           
-        salesTax: 8.25
       });
     }
   }, [organization]);
@@ -175,6 +190,22 @@ export default function Settings() {
       });
     }
   }, [organization]);
+  const addSupplier = () => {
+    const supplierName = prompt("Enter supplier name:");
+    if (supplierName && supplierName.trim()) {
+      setOperationsData(prev => ({
+        ...prev,
+        preferredSuppliers: [...prev.preferredSuppliers, supplierName.trim()]
+      }));
+    }
+  };
+  
+  const removeSupplier = (supplierToRemove: string) => {
+    setOperationsData(prev => ({
+      ...prev,
+      preferredSuppliers: prev.preferredSuppliers.filter(supplier => supplier !== supplierToRemove)
+    }));
+  };
   const handleSave = async () => {
     setSaveStatus("saving");
     
@@ -203,7 +234,17 @@ export default function Settings() {
           paymentDepositPercent: paymentData.depositPercent,
           paymentSchedule: paymentData.paymentSchedule,
           paymentLateFee: paymentData.lateFee,
-          paymentGracePeriod: paymentData.gracePeriod
+          paymentGracePeriod: paymentData.gracePeriod,
+          laborTaxTreatment: taxData.laborTaxTreatment,
+          deliveryTaxTreatment: taxData.deliveryTaxTreatment,
+          consultationDuration: operationsData.consultationDuration,
+          proposalTurnaround: operationsData.proposalTurnaround,
+          autoFollowUp: operationsData.autoFollowUp,
+          qualityControlChecklists: operationsData.qualityControlChecklists,
+          orderSchedule: operationsData.orderSchedule,
+          leadTime: operationsData.leadTime,
+          autoReorder: operationsData.autoReorder,
+          preferredSuppliers: operationsData.preferredSuppliers
         }
       });
       
@@ -228,7 +269,16 @@ export default function Settings() {
     
     setTimeout(() => setSaveStatus("idle"), 2000);
   };
-
+  const [operationsData, setOperationsData] = useState({
+    consultationDuration: "90",
+    proposalTurnaround: "48",
+    autoFollowUp: true,
+    qualityControlChecklists: true,
+    orderSchedule: "tuesday-friday",
+    leadTime: 3,
+    autoReorder: false,
+    preferredSuppliers: ["Wholesale Flowers Inc.", "Garden Fresh Supply", "Premium Blooms Co."]
+  });
   const SaveButton = () => (
     <Button 
       onClick={handleSave} 
@@ -680,20 +730,26 @@ export default function Settings() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="laborTax">Labor Tax Treatment</Label>
-                    <Select defaultValue="exempt">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="exempt">Tax Exempt</SelectItem>
-                        <SelectItem value="taxable">Taxable</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <Label htmlFor="laborTax">Labor Tax Treatment</Label>
+<Select 
+  value={taxData.laborTaxTreatment}
+  onValueChange={(value) => setTaxData(prev => ({ ...prev, laborTaxTreatment: value }))}
+>
+  <SelectTrigger>
+    <SelectValue />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="exempt">Tax Exempt</SelectItem>
+    <SelectItem value="taxable">Taxable</SelectItem>
+  </SelectContent>
+</Select>
+</div>
                   <div className="space-y-2">
                     <Label htmlFor="deliveryTax">Delivery Tax Treatment</Label>
-                    <Select defaultValue="taxable">
+                    <Select 
+                      value={taxData.deliveryTaxTreatment}
+                      onValueChange={(value) => setTaxData(prev => ({ ...prev, deliveryTaxTreatment: value }))}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -724,19 +780,22 @@ export default function Settings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="consultationDuration">Consultation Duration</Label>
-                  <Select defaultValue="90">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="60">60 minutes</SelectItem>
-                      <SelectItem value="90">90 minutes</SelectItem>
-                      <SelectItem value="120">2 hours</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+  <Label htmlFor="consultationDuration">Consultation Duration</Label>
+  <Select 
+    value={operationsData.consultationDuration}
+    onValueChange={(value) => setOperationsData(prev => ({ ...prev, consultationDuration: value }))}
+  >
+    <SelectTrigger>
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="60">60 minutes</SelectItem>
+      <SelectItem value="90">90 minutes</SelectItem>
+      <SelectItem value="120">2 hours</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
                 <div className="space-y-2">
                   <Label htmlFor="proposalTurnaround">Proposal Turnaround</Label>
                   <Select defaultValue="48">
@@ -752,19 +811,25 @@ export default function Settings() {
                   </Select>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Auto Follow-up</Label>
-                    <p className="text-sm text-muted-foreground">Automatically schedule follow-ups</p>
-                  </div>
-                  <Switch defaultChecked />
+  <div className="space-y-0.5">
+    <Label>Auto Follow-up</Label>
+    <p className="text-sm text-muted-foreground">Automatically schedule follow-ups</p>
+  </div>
+  <Switch 
+    checked={operationsData.autoFollowUp}
+    onCheckedChange={(checked) => setOperationsData(prev => ({ ...prev, autoFollowUp: checked }))}
+  />
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Quality Control Checklists</Label>
-                    <p className="text-sm text-muted-foreground">Require completion before events</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
+  <div className="space-y-0.5">
+    <Label>Quality Control Checklists</Label>
+    <p className="text-sm text-muted-foreground">Require completion before events</p>
+  </div>
+  <Switch 
+    checked={operationsData.qualityControlChecklists}
+    onCheckedChange={(checked) => setOperationsData(prev => ({ ...prev, qualityControlChecklists: checked }))}
+  />
+</div>
               </CardContent>
             </Card>
 
@@ -780,18 +845,30 @@ export default function Settings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Preferred Suppliers</Label>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="secondary">Wholesale Flowers Inc.</Badge>
-                    <Badge variant="secondary">Garden Fresh Supply</Badge>
-                    <Badge variant="secondary">Premium Blooms Co.</Badge>
-                    <Button variant="outline" size="sm">Add Supplier</Button>
-                  </div>
-                </div>
+              <div className="space-y-2">
+  <Label>Preferred Suppliers</Label>
+  <div className="flex flex-wrap gap-2">
+    {operationsData.preferredSuppliers.map((supplier, index) => (
+      <Badge 
+        key={index} 
+        variant="secondary" 
+        className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground"
+        onClick={() => removeSupplier(supplier)}
+      >
+        {supplier} ×
+      </Badge>
+    ))}
+    <Button variant="outline" size="sm" onClick={addSupplier}>
+      Add Supplier
+    </Button>
+  </div>
+</div>
                 <div className="space-y-2">
                   <Label htmlFor="orderSchedule">Standard Order Schedule</Label>
-                  <Select defaultValue="tuesday-friday">
+                  <Select 
+  value={operationsData.orderSchedule}
+  onValueChange={(value) => setOperationsData(prev => ({ ...prev, orderSchedule: value }))}
+>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -804,15 +881,23 @@ export default function Settings() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="leadTime">Standard Lead Time (days)</Label>
-                  <Input id="leadTime" type="number" defaultValue="3" />
+                  <Input 
+  id="leadTime" 
+  type="number" 
+  value={operationsData.leadTime}
+  onChange={(e) => setOperationsData(prev => ({ ...prev, leadTime: parseInt(e.target.value) || 0 }))}
+/>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Auto Reorder</Label>
-                    <p className="text-sm text-muted-foreground">Automatically reorder based on inventory levels</p>
-                  </div>
-                  <Switch />
-                </div>
+  <div className="space-y-0.5">
+    <Label>Auto Reorder</Label>
+    <p className="text-sm text-muted-foreground">Automatically reorder based on inventory levels</p>
+  </div>
+  <Switch 
+    checked={operationsData.autoReorder}
+    onCheckedChange={(checked) => setOperationsData(prev => ({ ...prev, autoReorder: checked }))}
+  />
+</div>
               </CardContent>
             </Card>
 
