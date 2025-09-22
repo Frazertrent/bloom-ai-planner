@@ -140,6 +140,28 @@ export default function Settings() {
         monthlyNewsletter: (businessSettings.monthlyNewsletter as boolean) !== undefined ? businessSettings.monthlyNewsletter as boolean : true,
         venueRelationshipUpdates: (businessSettings.venueRelationshipUpdates as boolean) !== undefined ? businessSettings.venueRelationshipUpdates as boolean : false
       });
+      setAiData({
+        designCreativityLevel: (businessSettings.designCreativityLevel as string) || "conservative",
+        budgetEstimation: (businessSettings.budgetEstimation as string) || "balanced",
+        seasonalAdjustments: (businessSettings.seasonalAdjustments as boolean) !== undefined ? businessSettings.seasonalAdjustments as boolean : true,
+        clientStyleLearning: (businessSettings.clientStyleLearning as boolean) !== undefined ? businessSettings.clientStyleLearning as boolean : true,
+        autoTaskCreation: (businessSettings.autoTaskCreation as boolean) !== undefined ? businessSettings.autoTaskCreation as boolean : true,
+        emailAutoResponses: (businessSettings.emailAutoResponses as boolean) !== undefined ? businessSettings.emailAutoResponses as boolean : true,
+        inventoryReorderAlerts: (businessSettings.inventoryReorderAlerts as boolean) !== undefined ? businessSettings.inventoryReorderAlerts as boolean : true,
+        performanceMonitoring: (businessSettings.performanceMonitoring as boolean) !== undefined ? businessSettings.performanceMonitoring as boolean : false,
+        aiModelImprovements: (businessSettings.aiModelImprovements as boolean) !== undefined ? businessSettings.aiModelImprovements as boolean : true,
+        personalizationLearning: (businessSettings.personalizationLearning as boolean) !== undefined ? businessSettings.personalizationLearning as boolean : true,
+        industryTrendAnalysis: (businessSettings.industryTrendAnalysis as boolean) !== undefined ? businessSettings.industryTrendAnalysis as boolean : false,
+        usageAnalytics: (businessSettings.usageAnalytics as boolean) !== undefined ? businessSettings.usageAnalytics as boolean : false
+      });
+      setBillingData({
+        currentPlan: (businessSettings.currentPlan as string) || "professional",
+        planPrice: (businessSettings.planPrice as number) || 99,
+        billingEmail: (businessSettings.billingEmail as string) || "billing@bloomflourish.com",
+        billingAddress: (businessSettings.billingAddress as string) || "123 Garden Street Flower District Bloomington, FL 32801",
+        paymentMethod: (businessSettings.paymentMethod as string) || "**** **** **** 4242",
+        cardExpiry: (businessSettings.cardExpiry as string) || "12/25"
+      });
     }
   }, [organization]);
   useEffect(() => {
@@ -303,6 +325,24 @@ export default function Settings() {
           seasonalCampaigns: notificationsData.seasonalCampaigns,
           monthlyNewsletter: notificationsData.monthlyNewsletter,
           venueRelationshipUpdates: notificationsData.venueRelationshipUpdates,
+          designCreativityLevel: aiData.designCreativityLevel,
+          budgetEstimation: aiData.budgetEstimation,
+          seasonalAdjustments: aiData.seasonalAdjustments,
+          clientStyleLearning: aiData.clientStyleLearning,
+          autoTaskCreation: aiData.autoTaskCreation,
+          emailAutoResponses: aiData.emailAutoResponses,
+          inventoryReorderAlerts: aiData.inventoryReorderAlerts,
+          performanceMonitoring: aiData.performanceMonitoring,
+          aiModelImprovements: aiData.aiModelImprovements,
+          personalizationLearning: aiData.personalizationLearning,
+          industryTrendAnalysis: aiData.industryTrendAnalysis,
+          usageAnalytics: aiData.usageAnalytics,
+          currentPlan: billingData.currentPlan,
+          planPrice: billingData.planPrice,
+          billingEmail: billingData.billingEmail,
+          billingAddress: billingData.billingAddress,
+          paymentMethod: billingData.paymentMethod,
+          cardExpiry: billingData.cardExpiry,
         }
       });
       
@@ -371,6 +411,28 @@ export default function Settings() {
     seasonalCampaigns: true,
     monthlyNewsletter: true,
     venueRelationshipUpdates: false
+  });
+  const [aiData, setAiData] = useState({
+    designCreativityLevel: "conservative",
+    budgetEstimation: "balanced",
+    seasonalAdjustments: true,
+    clientStyleLearning: true,
+    autoTaskCreation: true,
+    emailAutoResponses: true,
+    inventoryReorderAlerts: true,
+    performanceMonitoring: false,
+    aiModelImprovements: true,
+    personalizationLearning: true,
+    industryTrendAnalysis: false,
+    usageAnalytics: false
+  });
+  const [billingData, setBillingData] = useState({
+    currentPlan: "professional",
+    planPrice: 99,
+    billingEmail: "billing@bloomflourish.com",
+    billingAddress: "123 Garden Street Flower District Bloomington, FL 32801",
+    paymentMethod: "**** **** **** 4242",
+    cardExpiry: "12/25"
   });
   const SaveButton = () => (
     <Button 
@@ -1455,46 +1517,71 @@ export default function Settings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+              <div className="space-y-2">
+  <Label htmlFor="aiCreativity">Design Creativity Level</Label>
+  <div className="flex gap-2">
+    <Button
+      variant={aiData.designCreativityLevel === "conservative" ? "default" : "outline"}
+      size="sm"
+      onClick={() => setAiData({...aiData, designCreativityLevel: "conservative"})}
+      className="flex-1"
+    >
+      Conservative
+    </Button>
+    <Button
+      variant={aiData.designCreativityLevel === "balanced" ? "default" : "outline"}
+      size="sm"
+      onClick={() => setAiData({...aiData, designCreativityLevel: "balanced"})}
+      className="flex-1"
+    >
+      Balanced
+    </Button>
+    <Button
+      variant={aiData.designCreativityLevel === "creative" ? "default" : "outline"}
+      size="sm"
+      onClick={() => setAiData({...aiData, designCreativityLevel: "creative"})}
+      className="flex-1"
+    >
+      Creative
+    </Button>
+  </div>
+</div>
                 <div className="space-y-2">
-                  <Label htmlFor="aiCreativity">Design Creativity Level</Label>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span>Conservative</span>
-                      <span>Balanced</span>
-                      <span>Creative</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div className="bg-primary h-2 rounded-full" style={{width: '60%'}}></div>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="budgetAccuracy">Budget Estimation</Label>
-                  <Select defaultValue="balanced">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="conservative">Conservative (higher estimates)</SelectItem>
-                      <SelectItem value="balanced">Balanced approach</SelectItem>
-                      <SelectItem value="competitive">Competitive pricing</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Seasonal Adjustments</Label>
-                    <p className="text-sm text-muted-foreground">AI learns seasonal preferences</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Client Style Learning</Label>
-                    <p className="text-sm text-muted-foreground">Remember individual client preferences</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
+  <Label htmlFor="budgetEstimation">Budget Estimation</Label>
+  <Select 
+    value={aiData.budgetEstimation} 
+    onValueChange={(value) => setAiData({...aiData, budgetEstimation: value})}
+  >
+    <SelectTrigger>
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="conservative">Conservative estimates</SelectItem>
+      <SelectItem value="balanced">Balanced approach</SelectItem>
+      <SelectItem value="optimistic">Optimistic projections</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
+<div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>Seasonal Adjustments</Label>
+    <p className="text-sm text-muted-foreground">AI learns seasonal preferences</p>
+  </div>
+  <Switch 
+    checked={aiData.seasonalAdjustments} 
+    onCheckedChange={(checked) => setAiData({...aiData, seasonalAdjustments: checked})}
+  />
+</div>
+<div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>Client Style Learning</Label>
+    <p className="text-sm text-muted-foreground">Remember individual client preferences</p>
+  </div>
+  <Switch 
+    checked={aiData.clientStyleLearning} 
+    onCheckedChange={(checked) => setAiData({...aiData, clientStyleLearning: checked})}
+  />
+</div>
               </CardContent>
             </Card>
 
@@ -1510,34 +1597,46 @@ export default function Settings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Auto Task Creation</Label>
-                    <p className="text-sm text-muted-foreground">Create tasks from new bookings</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Email Auto-Responses</Label>
-                    <p className="text-sm text-muted-foreground">Send immediate acknowledgments</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Inventory Reorder Alerts</Label>
-                    <p className="text-sm text-muted-foreground">Alert when supplies run low</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Performance Monitoring</Label>
-                    <p className="text-sm text-muted-foreground">Auto-generate performance reports</p>
-                  </div>
-                  <Switch />
-                </div>
+              <div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>Auto Task Creation</Label>
+    <p className="text-sm text-muted-foreground">Create tasks from new bookings</p>
+  </div>
+  <Switch 
+    checked={aiData.autoTaskCreation} 
+    onCheckedChange={(checked) => setAiData({...aiData, autoTaskCreation: checked})}
+  />
+</div>
+<div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>Email Auto-Responses</Label>
+    <p className="text-sm text-muted-foreground">Send immediate acknowledgments</p>
+  </div>
+  <Switch 
+    checked={aiData.emailAutoResponses} 
+    onCheckedChange={(checked) => setAiData({...aiData, emailAutoResponses: checked})}
+  />
+</div>
+<div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>Inventory Reorder Alerts</Label>
+    <p className="text-sm text-muted-foreground">Alert when supplies run low</p>
+  </div>
+  <Switch 
+    checked={aiData.inventoryReorderAlerts} 
+    onCheckedChange={(checked) => setAiData({...aiData, inventoryReorderAlerts: checked})}
+  />
+</div>
+<div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>Performance Monitoring</Label>
+    <p className="text-sm text-muted-foreground">Auto-generate performance reports</p>
+  </div>
+  <Switch 
+    checked={aiData.performanceMonitoring} 
+    onCheckedChange={(checked) => setAiData({...aiData, performanceMonitoring: checked})}
+  />
+</div>
               </CardContent>
             </Card>
 
@@ -1555,36 +1654,48 @@ export default function Settings() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>AI Model Improvements</Label>
-                        <p className="text-sm text-muted-foreground">Use anonymized data for AI training</p>
-                      </div>
-                      <Switch defaultChecked />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Personalization Learning</Label>
-                        <p className="text-sm text-muted-foreground">Learn from your workflow patterns</p>
-                      </div>
-                      <Switch defaultChecked />
-                    </div>
+                  <div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>AI Model Improvements</Label>
+    <p className="text-sm text-muted-foreground">Use anonymized data for AI training</p>
+  </div>
+  <Switch 
+    checked={aiData.aiModelImprovements} 
+    onCheckedChange={(checked) => setAiData({...aiData, aiModelImprovements: checked})}
+  />
+</div>
+<div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>Personalization Learning</Label>
+    <p className="text-sm text-muted-foreground">Learn from your workflow patterns</p>
+  </div>
+  <Switch 
+    checked={aiData.personalizationLearning} 
+    onCheckedChange={(checked) => setAiData({...aiData, personalizationLearning: checked})}
+  />
+</div>
                   </div>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Industry Trend Analysis</Label>
-                        <p className="text-sm text-muted-foreground">Participate in market research</p>
-                      </div>
-                      <Switch />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Usage Analytics</Label>
-                        <p className="text-sm text-muted-foreground">Share anonymous usage statistics</p>
-                      </div>
-                      <Switch />
-                    </div>
+                  <div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>Industry Trend Analysis</Label>
+    <p className="text-sm text-muted-foreground">Participate in market research</p>
+  </div>
+  <Switch 
+    checked={aiData.industryTrendAnalysis} 
+    onCheckedChange={(checked) => setAiData({...aiData, industryTrendAnalysis: checked})}
+  />
+</div>
+<div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label>Usage Analytics</Label>
+    <p className="text-sm text-muted-foreground">Share anonymous usage statistics</p>
+  </div>
+  <Switch 
+    checked={aiData.usageAnalytics} 
+    onCheckedChange={(checked) => setAiData({...aiData, usageAnalytics: checked})}
+  />
+</div>
                   </div>
                 </div>
               </CardContent>
@@ -1665,20 +1776,23 @@ export default function Settings() {
                   <Button variant="outline" size="sm">Update</Button>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="billingEmail">Billing Email</Label>
-                  <Input id="billingEmail" defaultValue="billing@bloomflourish.com" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="billingAddress">Billing Address</Label>
-                  <Textarea id="billingAddress" rows={3} defaultValue="123 Garden Street&#10;Flower District&#10;Bloomington, FL 32801" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Auto-renew</Label>
-                    <p className="text-sm text-muted-foreground">Automatic monthly billing</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
+  <Label htmlFor="billingEmail">Billing Email</Label>
+  <Input 
+    id="billingEmail" 
+    value={billingData.billingEmail}
+    onChange={(e) => setBillingData({...billingData, billingEmail: e.target.value})}
+  />
+</div>
+<div className="space-y-2">
+  <Label htmlFor="billingAddress">Billing Address</Label>
+  <Textarea 
+    id="billingAddress" 
+    rows={3}
+    value={billingData.billingAddress}
+    onChange={(e) => setBillingData({...billingData, billingAddress: e.target.value})}
+  />
+</div>
+                
               </CardContent>
             </Card>
 
