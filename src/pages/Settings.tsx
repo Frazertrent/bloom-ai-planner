@@ -44,14 +44,13 @@ import {
   RefreshCw
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
-import { useProfile } from "@/hooks/useProfile";
+import { useProfile } from "../hooks/useProfile";
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState("business");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user } = useProfile();
   const { profile, organization, loading, error, updateProfile, updateOrganization } = useProfile();
   const [paymentData, setPaymentData] = useState({
     depositPercent: "50",
@@ -95,6 +94,13 @@ export default function Settings() {
   useEffect(() => {
     if (organization && organization.business_settings) {
       const businessSettings = organization.business_settings as Record<string, unknown> || {};
+      
+      setPaymentData({
+        depositPercent: (businessSettings.depositPercent as string) || "50",
+        paymentSchedule: (businessSettings.paymentSchedule as string) || "50-50",
+        lateFee: (businessSettings.lateFee as number) || 25,
+        gracePeriod: (businessSettings.gracePeriod as number) || 7
+      });
       
       setStaffingData({
         leadDesignerRate: (businessSettings.leadDesignerRate as number) || 28,
@@ -169,8 +175,25 @@ export default function Settings() {
       const businessSettings = organization.business_settings && 
                                typeof organization.business_settings === 'object' && 
                                organization.business_settings !== null ? 
-                               organization.business_settings as { laborTaxTreatment?: string; deliveryTaxTreatment?: string; hourlyRate?: number; flowerMarkup?: number; hardGoodsMarkup?: number; rushFee?: number; setupFee?: number; depositPercent?: number; lateFee?: number; gracePeriod?: number; salesTax?: number; tagline?: string; description?: string; serviceRadius?: number; deliveryFee?: number; mileageRate?: number } : {};
-      
+                               organization.business_settings as { 
+                                 laborTaxTreatment?: string; 
+                                 deliveryTaxTreatment?: string; 
+                                 hourlyRate?: number; 
+                                 flowerMarkup?: number; 
+                                 hardGoodsMarkup?: number; 
+                                 rushFee?: number; 
+                                 setupFee?: number; 
+                                 depositPercent?: number; 
+                                 lateFee?: number; 
+                                 gracePeriod?: number; 
+                                 salesTax?: number; 
+                                 tagline?: string; 
+                                 description?: string; 
+                                 serviceRadius?: number; 
+                                 deliveryFee?: number; 
+                                 mileageRate?: number;
+                                 premiumServiceAreas?: string[];  // ADD THIS LINE
+                               } : {};
       setTaxData({
         laborTaxTreatment: businessSettings.laborTaxTreatment || "exempt",
         deliveryTaxTreatment: businessSettings.deliveryTaxTreatment || "taxable"
@@ -222,8 +245,16 @@ export default function Settings() {
       const businessSettings = organization.business_settings && 
                                typeof organization.business_settings === 'object' && 
                                organization.business_settings !== null ? 
-                               organization.business_settings as { tagline?: string; description?: string; serviceRadius?: number; deliveryFee?: number; mileageRate?: number } : {};
+                               organization.business_settings as { tagline?: string; description?: string; serviceRadius?: number; deliveryFee?: number; mileageRate?: number; premiumServiceAreas?: string[] } : {};
   
+                               setPremiumServiceAreas(
+                                (businessSettings.premiumServiceAreas as string[]) || [
+                                  "Downtown District",
+                                  "Luxury Resort Area", 
+                                  "Historic Wedding Venues"
+                                ]
+                              );
+                               
       setBusinessData({
         name: organization.name || "",
         phone: organization.phone || "",
@@ -253,6 +284,17 @@ export default function Settings() {
     }
   };
   
+  const addPremiumServiceArea = () => {
+    const areaName = prompt("Enter premium service area name:");
+    if (areaName && areaName.trim()) {
+      setPremiumServiceAreas(prev => [...prev, areaName.trim()]);
+    }
+  };
+  
+  const removePremiumServiceArea = (areaToRemove: string) => {
+    setPremiumServiceAreas(prev => prev.filter(area => area !== areaToRemove));
+  };
+
   const removeSupplier = (supplierToRemove: string) => {
     setOperationsData(prev => ({
       ...prev,
@@ -270,26 +312,33 @@ export default function Settings() {
         website: businessData.website,
         address: businessData.address,
         business_settings: {
+          // Business Data
           tagline: businessData.tagline,
           description: businessData.description,
           serviceRadius: businessData.serviceRadius,
           deliveryFee: businessData.deliveryFee,
           mileageRate: businessData.mileageRate,
+          premiumServiceAreas: premiumServiceAreas,
+          
+          // Pricing Data
           hourlyRate: pricingData.hourlyRate,
           flowerMarkup: pricingData.flowerMarkup,
           hardGoodsMarkup: pricingData.hardGoodsMarkup,
           rushFee: pricingData.rushFee,
           setupFee: pricingData.setupFee,
-          depositPercent: pricingData.depositPercent,
-          lateFee: pricingData.lateFee,
-          gracePeriod: pricingData.gracePeriod,
           salesTax: pricingData.salesTax,
-          paymentDepositPercent: paymentData.depositPercent,
+          
+          // Payment Data - FIXED: No duplicates, correct sources
+          depositPercent: paymentData.depositPercent,
           paymentSchedule: paymentData.paymentSchedule,
-          paymentLateFee: paymentData.lateFee,
-          paymentGracePeriod: paymentData.gracePeriod,
+          lateFee: paymentData.lateFee,
+          gracePeriod: paymentData.gracePeriod,
+          
+          // Tax Data
           laborTaxTreatment: taxData.laborTaxTreatment,
           deliveryTaxTreatment: taxData.deliveryTaxTreatment,
+          
+          // Operations Data
           consultationDuration: operationsData.consultationDuration,
           proposalTurnaround: operationsData.proposalTurnaround,
           autoFollowUp: operationsData.autoFollowUp,
@@ -298,10 +347,14 @@ export default function Settings() {
           leadTime: operationsData.leadTime,
           autoReorder: operationsData.autoReorder,
           preferredSuppliers: operationsData.preferredSuppliers,
+          
+          // Staffing Data
           leadDesignerRate: staffingData.leadDesignerRate,
           assistantRate: staffingData.assistantRate,
           setupCrewRate: staffingData.setupCrewRate,
           driverRate: staffingData.driverRate,
+          
+          // Security Data
           multiFactorAuth: securityData.multiFactorAuth,
           sessionTimeout: securityData.sessionTimeout,
           passwordPolicy: securityData.passwordPolicy,
@@ -313,6 +366,8 @@ export default function Settings() {
           newDeviceNotifications: securityData.newDeviceNotifications,
           unusualActivityDetection: securityData.unusualActivityDetection,
           apiAccessMonitoring: securityData.apiAccessMonitoring,
+          
+          // Notifications Data
           newInquiries: notificationsData.newInquiries,
           paymentConfirmations: notificationsData.paymentConfirmations,
           eventReminders: notificationsData.eventReminders,
@@ -325,6 +380,8 @@ export default function Settings() {
           seasonalCampaigns: notificationsData.seasonalCampaigns,
           monthlyNewsletter: notificationsData.monthlyNewsletter,
           venueRelationshipUpdates: notificationsData.venueRelationshipUpdates,
+          
+          // AI Data
           designCreativityLevel: aiData.designCreativityLevel,
           budgetEstimation: aiData.budgetEstimation,
           seasonalAdjustments: aiData.seasonalAdjustments,
@@ -337,6 +394,8 @@ export default function Settings() {
           personalizationLearning: aiData.personalizationLearning,
           industryTrendAnalysis: aiData.industryTrendAnalysis,
           usageAnalytics: aiData.usageAnalytics,
+          
+          // Billing Data
           currentPlan: billingData.currentPlan,
           planPrice: billingData.planPrice,
           billingEmail: billingData.billingEmail,
@@ -375,6 +434,13 @@ export default function Settings() {
     setupCrewRate: 16,
     driverRate: 15
   });
+
+  const [premiumServiceAreas, setPremiumServiceAreas] = useState<string[]>([
+    "Downtown District",
+    "Luxury Resort Area", 
+    "Historic Wedding Venues"
+  ]);
+
   const [operationsData, setOperationsData] = useState({
     consultationDuration: "90",
     proposalTurnaround: "48",
@@ -950,7 +1016,10 @@ export default function Settings() {
 </div>
                 <div className="space-y-2">
                   <Label htmlFor="proposalTurnaround">Proposal Turnaround</Label>
-                  <Select defaultValue="48">
+                  <Select 
+  value={operationsData.proposalTurnaround}
+  onValueChange={(value) => setOperationsData(prev => ({ ...prev, proposalTurnaround: value }))}
+>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

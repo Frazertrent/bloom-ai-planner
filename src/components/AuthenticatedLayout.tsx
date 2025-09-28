@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../hooks/useProfile';
 
 interface AuthenticatedLayoutProps {
   children: React.ReactNode;

@@ -1,6 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import React from 'react'
+import { useAuth } from '../hooks/useProfile'
+import { Button } from '../components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
+import { Badge } from '../components/ui/badge'
 import { 
   Calendar, 
   DollarSign, 
@@ -11,10 +13,11 @@ import {
   TrendingUp,
   MapPin,
   Phone,
-  Mail
-} from 'lucide-react';
+  Mail,
+  LogOut
+} from 'lucide-react'
 
-// Mock data
+// Mock data (from existing Dashboard)
 const stats = [
   {
     title: "Revenue This Month",
@@ -44,7 +47,7 @@ const stats = [
     icon: Users,
     color: "text-accent-gold"
   }
-];
+]
 
 const upcomingEvents = [
   {
@@ -87,7 +90,7 @@ const upcomingEvents = [
     budget: "$15,500",
     statusColor: "bg-muted text-muted-foreground"
   }
-];
+]
 
 const recentActivity = [
   {
@@ -118,157 +121,192 @@ const recentActivity = [
     time: "2 days ago",
     icon: Phone
   }
-];
+]
 
-const Dashboard = () => {
+export function Dashboard() {
+  const { user, signOut, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    )
+  }
+
+  const handleSignOut = async () => {
+    await signOut()
+  }
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome back! Here's what's happening with your floral business.
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Button variant="outline" className="gap-2">
-            <FileAudio className="w-4 h-4" />
-            Upload Consultation
-          </Button>
-          <Button className="gap-2 bg-gradient-primary hover:shadow-glow">
-            <Plus className="w-4 h-4" />
-            New Event
-          </Button>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header with Auth Integration */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900">AI Florist Platform</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-700">Welcome, {user?.email}</span>
+              <Button onClick={handleSignOut} variant="outline" size="sm" className="gap-2">
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
-          <Card key={index} className="shadow-card hover:shadow-elegant transition-smooth">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {stat.title}
-                  </p>
-                  <p className="text-2xl font-bold">{stat.value}</p>
-                  <p className={`text-sm ${stat.color}`}>
-                    {stat.change}
-                  </p>
+      {/* Main Dashboard Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-8">
+          {/* Dashboard Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+              <p className="text-muted-foreground">
+                Welcome back! Here's what's happening with your floral business.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" className="gap-2">
+                <FileAudio className="w-4 h-4" />
+                Upload Consultation
+              </Button>
+              <Button className="gap-2 bg-gradient-primary hover:shadow-glow">
+                <Plus className="w-4 h-4" />
+                New Event
+              </Button>
+            </div>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {stats.map((stat, index) => (
+              <Card key={index} className="shadow-card hover:shadow-elegant transition-smooth">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {stat.title}
+                      </p>
+                      <p className="text-2xl font-bold">{stat.value}</p>
+                      <p className={`text-sm ${stat.color}`}>
+                        {stat.change}
+                      </p>
+                    </div>
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-card flex items-center justify-center ${stat.color}`}>
+                      <stat.icon className="w-6 h-6" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Upcoming Events */}
+            <Card className="lg:col-span-2 shadow-card">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5" />
+                  Upcoming Events
+                </CardTitle>
+                <Button variant="ghost" size="sm">
+                  View all
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {upcomingEvents.map((event) => (
+                    <div key={event.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/30 transition-smooth">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold">{event.client}</h4>
+                          <Badge className={event.statusColor}>
+                            {event.status}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{event.event}</p>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {event.date}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            {event.venue}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-primary">{event.budget}</p>
+                        <Button variant="ghost" size="sm">
+                          View
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className={`w-12 h-12 rounded-xl bg-gradient-card flex items-center justify-center ${stat.color}`}>
-                  <stat.icon className="w-6 h-6" />
+              </CardContent>
+            </Card>
+
+            {/* Recent Activity */}
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5" />
+                  Recent Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recentActivity.map((activity) => (
+                    <div key={activity.id} className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                        <activity.icon className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium">{activity.action}</p>
+                        <p className="text-xs text-muted-foreground">{activity.client}</p>
+                        <p className="text-xs text-muted-foreground">{activity.time}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick Actions */}
+          <Card className="shadow-card bg-gradient-card">
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Button variant="outline" className="h-20 flex-col gap-2">
+                  <Calendar className="w-6 h-6" />
+                  Schedule Event
+                </Button>
+                <Button variant="outline" className="h-20 flex-col gap-2">
+                  <Users className="w-6 h-6" />
+                  Add Client
+                </Button>
+                <Button variant="outline" className="h-20 flex-col gap-2">
+                  <Mail className="w-6 h-6" />
+                  Send Proposal
+                </Button>
+                <Button variant="outline" className="h-20 flex-col gap-2">
+                  <DollarSign className="w-6 h-6" />
+                  Generate Invoice
+                </Button>
               </div>
             </CardContent>
           </Card>
-        ))}
+        </div>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Upcoming Events */}
-        <Card className="lg:col-span-2 shadow-card">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              Upcoming Events
-            </CardTitle>
-            <Button variant="ghost" size="sm">
-              View all
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {upcomingEvents.map((event) => (
-                <div key={event.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/30 transition-smooth">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-semibold">{event.client}</h4>
-                      <Badge className={event.statusColor}>
-                        {event.status}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{event.event}</p>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {event.date}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        {event.venue}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-primary">{event.budget}</p>
-                    <Button variant="ghost" size="sm">
-                      View
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recent Activity */}
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Recent Activity
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                    <activity.icon className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium">{activity.action}</p>
-                    <p className="text-xs text-muted-foreground">{activity.client}</p>
-                    <p className="text-xs text-muted-foreground">{activity.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <Card className="shadow-card bg-gradient-card">
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-20 flex-col gap-2">
-              <Calendar className="w-6 h-6" />
-              Schedule Event
-            </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2">
-              <Users className="w-6 h-6" />
-              Add Client
-            </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2">
-              <Mail className="w-6 h-6" />
-              Send Proposal
-            </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2">
-              <DollarSign className="w-6 h-6" />
-              Generate Invoice
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
-  );
-};
-
-export default Dashboard;console.log('OUR AUTH DASHBOARD IS LOADING')
+  )
+}

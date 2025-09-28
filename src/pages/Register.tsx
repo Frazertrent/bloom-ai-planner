@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Leaf, Mail, Lock, User, Building, Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -26,13 +26,52 @@ const Register = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
-  const { signUp } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
     }));
+  };
+
+  const createOrganization = async (userEmail: string) => {
+    const orgName = formData.businessName || `${formData.firstName} Florals`;
+    const orgSlug = orgName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now();
+    
+    const { data, error } = await supabase
+      .from('organizations')
+      .insert({
+        name: orgName,
+        slug: orgSlug,
+        plan: 'free',
+        email: userEmail,
+        subscription_status: 'active',
+        business_settings: {}
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  };
+
+  const createUserProfile = async (userId: string, userEmail: string, organizationId: string) => {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .insert({
+        id: userId,
+        organization_id: organizationId,
+        email: userEmail,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        role: 'admin',
+        status: 'available'
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,24 +90,69 @@ const Register = () => {
     setIsLoading(true);
     
     try {
-      const { error } = await signUp(formData.email, formData.password);
-      if (error) {
-        setError(error.message);
-      } else {
-        setSuccess(true);
-        // Don't navigate immediately - let user confirm email first
+      console.log('🚀 Starting registration process...');
+      
+      // Step 1: Create user in Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            business_name: formData.businessName
+          }
+        }
+      });
+
+      if (authError) {
+        console.error('❌ Auth error:', authError);
+        setError(authError.message);
+        return;
       }
+
+      if (!authData.user) {
+        setError('Failed to create user account');
+        return;
+      }
+
+      console.log('✅ User created in auth:', authData.user.id);
+
+      // Step 2: Create organization
+      console.log('🏢 Creating organization...');
+      const organization = await createOrganization(formData.email);
+      console.log('✅ Organization created:', organization.id);
+
+      // Step 3: Create user profile
+      console.log('👤 Creating user profile...');
+      const profile = await createUserProfile(
+        authData.user.id, 
+        formData.email, 
+        organization.id
+      );
+      console.log('✅ User profile created:', profile.id);
+
+      // Success!
+      console.log('🎉 Registration completed successfully!');
+      
+      if (authData.session) {
+        // User is automatically signed in
+        navigate('/dashboard');
+      } else {
+        // User needs to confirm email
+        setSuccess(true);
+      }
+
     } catch (err) {
-      setError('An unexpected error occurred');
+      console.error('💥 Registration failed:', err);
+      setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleGoogleSignUp = async () => {
-    setIsLoading(true);
     setError('Google sign-up will be available soon');
-    setIsLoading(false);
   };
 
   if (success) {
