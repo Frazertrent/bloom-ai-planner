@@ -22,6 +22,10 @@ import NotFound from "./pages/NotFound";
 import Team from "./pages/Team";
 import PhotoGallery from "./pages/PhotoGallery";
 import Settings from "./pages/Settings";
+import NewEvent from "./pages/NewEvent";
+import NewClient from "./pages/NewClient";
+import EventDetail from "./pages/EventDetail";
+
 
 const queryClient = new QueryClient();
 
@@ -111,21 +115,56 @@ const AppContent = () => (
         </AuthenticatedLayout>
       </ProtectedRoute>
     } />
+    <Route path="/events/new" element={
+  <ProtectedRoute>
+    <AuthenticatedLayout>
+      <NewEvent />
+    </AuthenticatedLayout>
+  </ProtectedRoute>
+} />
+<Route path="/events/:id" element={
+  <ProtectedRoute>
+    <AuthenticatedLayout>
+      <EventDetail />
+    </AuthenticatedLayout>
+  </ProtectedRoute>
+} />
+<Route path="/events/:id/edit" element={
+  <ProtectedRoute>
+    <AuthenticatedLayout>
+      <NewEvent />
+    </AuthenticatedLayout>
+  </ProtectedRoute>
+} />
     <Route path="/clients" element={
-      <ProtectedRoute>
-        <AuthenticatedLayout>
-          <Clients />
-        </AuthenticatedLayout>
-      </ProtectedRoute>
-    } />
-    <Route path="/clients/:id" element={
-      <ProtectedRoute>
-        <AuthenticatedLayout>
-          <ClientDetail />
-        </AuthenticatedLayout>
-      </ProtectedRoute>
-    } />
-    <Route path="/marketing" element={
+  <ProtectedRoute>
+    <AuthenticatedLayout>
+      <Clients />
+    </AuthenticatedLayout>
+  </ProtectedRoute>
+} />
+<Route path="/clients/new" element={
+  <ProtectedRoute>
+    <AuthenticatedLayout>
+      <NewClient />
+    </AuthenticatedLayout>
+  </ProtectedRoute>
+} />
+<Route path="/clients/:id" element={
+  <ProtectedRoute>
+    <AuthenticatedLayout>
+      <ClientDetail />
+    </AuthenticatedLayout>
+  </ProtectedRoute>
+} />
+<Route path="/clients/:id/edit" element={
+  <ProtectedRoute>
+    <AuthenticatedLayout>
+      <NewClient />
+    </AuthenticatedLayout>
+  </ProtectedRoute>
+} />
+<Route path="/marketing" element={
       <ProtectedRoute>
         <AuthenticatedLayout>
           <Marketing />

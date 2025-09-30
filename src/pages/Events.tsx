@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +16,8 @@ import {
   Users,
   Eye,
   Edit,
-  MoreHorizontal
+  MoreHorizontal,
+  Loader2
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -23,162 +25,264 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { supabase } from '@/integrations/supabase/client';
 
-// Mock data
-const events = [
-  {
-    id: 1,
-    client: "Sarah & Michael Johnson",
-    event: "Wedding Reception",
-    date: "2024-03-15",
-    venue: "Rosewood Manor",
-    status: "Planning",
-    budget: "$8,500",
-    guests: 120,
-    statusColor: "bg-warning/20 text-warning-foreground",
-    progress: 65
-  },
-  {
-    id: 2,
-    client: "Emily Chen",
-    event: "Corporate Gala",
-    date: "2024-03-18",
-    venue: "Grand Ballroom",
-    status: "Approved",
-    budget: "$12,000",
-    guests: 200,
-    statusColor: "bg-success/20 text-success-foreground",
-    progress: 90
-  },
-  {
-    id: 3,
-    client: "David & Lisa Park",
-    event: "Anniversary Party",
-    date: "2024-03-22",
-    venue: "Garden Terrace",
-    status: "Consultation",
-    budget: "$3,500",
-    guests: 50,
-    statusColor: "bg-accent/20 text-accent-foreground",
-    progress: 25
-  },
-  {
-    id: 4,
-    client: "Thompson Foundation",
-    event: "Charity Fundraiser",
-    date: "2024-03-25",
-    venue: "City Convention Center",
-    status: "Completed",
-    budget: "$15,500",
-    guests: 300,
-    statusColor: "bg-muted text-muted-foreground",
-    progress: 100
-  },
-  {
-    id: 5,
-    client: "Jennifer Martinez",
-    event: "Birthday Celebration",
-    date: "2024-04-02",
-    venue: "Sunset Rooftop",
-    status: "Planning",
-    budget: "$2,800",
-    guests: 35,
-    statusColor: "bg-warning/20 text-warning-foreground",
-    progress: 40
-  }
-];
+interface Venue {
+  name: string;
+  address?: string;
+}
 
-const getEventsByStatus = (status: string) => {
+interface Client {
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone?: string;
+}
+
+interface Event {
+  id: string;
+  title: string;
+  client_name?: string;
+  event_date: string;
+  venue: string;
+  status: string;
+  budget: string;
+  guests: number;
+  statusColor: string;
+  progress: number;
+}
+
+const getEventsByStatus = (events: Event[], status: string) => {
   if (status === 'all') return events;
   return events.filter(event => event.status.toLowerCase() === status);
 };
 
-const EventCard = ({ event }: { event: any }) => (
-  <Card className="shadow-card hover:shadow-elegant transition-smooth">
-    <CardContent className="p-6">
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <h3 className="font-semibold text-lg">{event.client}</h3>
-          <p className="text-muted-foreground">{event.event}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge className={event.statusColor}>
-            {event.status}
-          </Badge>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <MoreHorizontal className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem>
-                <Eye className="w-4 h-4 mr-2" />
-                View Details
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Event
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-      
-      <div className="space-y-3">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Progress</span>
-          <span className="font-medium">{event.progress}%</span>
-        </div>
-        <div className="w-full bg-muted rounded-full h-2">
-          <div 
-            className="bg-gradient-primary h-2 rounded-full transition-all duration-500"
-            style={{ width: `${event.progress}%` }}
-          />
+const EventCard = ({ event }: { event: Event }) => {
+  const navigate = useNavigate();
+
+  return (
+    <Card className="shadow-card hover:shadow-elegant transition-smooth">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="font-semibold text-lg">{event.client_name}</h3>
+            <p className="text-muted-foreground">{event.title}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge className={event.statusColor}>
+              {event.status}
+            </Badge>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => navigate(`/events/${event.id}`)}>
+                  <Eye className="w-4 h-4 mr-2" />
+                  View Details
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         
-        <div className="grid grid-cols-2 gap-4 pt-2">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="w-4 h-4" />
-            {event.date}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Progress</span>
+            <span className="font-medium">{event.progress}%</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <MapPin className="w-4 h-4" />
-            {event.venue}
+          <div className="w-full bg-muted rounded-full h-2">
+            <div 
+              className="bg-gradient-primary h-2 rounded-full transition-all duration-500"
+              style={{ width: `${event.progress}%` }}
+            />
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <DollarSign className="w-4 h-4" />
-            {event.budget}
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Users className="w-4 h-4" />
-            {event.guests} guests
+          
+          <div className="grid grid-cols-2 gap-4 pt-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock className="w-4 h-4" />
+              {event.event_date}
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <MapPin className="w-4 h-4" />
+              {event.venue}
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <DollarSign className="w-4 h-4" />
+              {event.budget}
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Users className="w-4 h-4" />
+              {event.guests} guests
+            </div>
           </div>
         </div>
-      </div>
-      
-      <div className="flex gap-2 mt-4">
-        <Button size="sm" className="flex-1">
+        
+        <Button 
+          className="w-full mt-4"
+          onClick={() => navigate(`/events/${event.id}`)}
+        >
           <Eye className="w-4 h-4 mr-2" />
           View Details
         </Button>
-        <Button size="sm" variant="outline" className="flex-1">
-          <Edit className="w-4 h-4 mr-2" />
-          Edit
-        </Button>
-      </div>
-    </CardContent>
-  </Card>
-);
+      </CardContent>
+    </Card>
+  );
+};
 
 const Events = () => {
+  const navigate = useNavigate();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
 
-  const filteredEvents = getEventsByStatus(activeTab).filter(event =>
-    event.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    event.event.toLowerCase().includes(searchQuery.toLowerCase())
+  // Handle event creation
+  const handleCreateEvent = () => {
+    navigate('/events/new');
+  };
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setLoading(true);
+        
+        // Query events with client data
+        const { data: eventsData, error: eventsError } = await supabase
+          .from('events')
+          .select(`
+            id,
+            title,
+            event_date,
+            status,
+            guest_count,
+            quoted_amount,
+            budget_target,
+            venues,
+            clients (
+              first_name,
+              last_name
+            )
+          `);
+
+        if (eventsError) throw eventsError;
+
+        // Transform the data to match your existing interface
+        const transformedEvents: Event[] = (eventsData || []).map(event => {
+          // Get venue name from JSON
+          const venues = (event.venues as unknown) as Venue[] || [];
+          const venue = venues[0]?.name || 'TBD';
+          
+          // Format client name
+          const client = (event.clients as unknown) as Client;
+          const client_name = client ? `${client.first_name} ${client.last_name}` : 'Unknown Client';
+          
+          // Format date
+          const event_date = event.event_date ? 
+            new Date(event.event_date).toLocaleDateString() : 'TBD';
+          
+          // Format budget
+          const amount = event.quoted_amount || event.budget_target || 0;
+          const budget = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+          }).format(amount);
+          
+          // Determine status color and progress
+          const status = event.status || 'draft';
+          let statusColor = '';
+          let progress = 0;
+          
+          switch (status.toLowerCase()) {
+            case 'consultation':
+              statusColor = 'bg-accent/20 text-accent-foreground';
+              progress = 25;
+              break;
+            case 'planning':
+              statusColor = 'bg-warning/20 text-warning-foreground';
+              progress = 65;
+              break;
+            case 'approved':
+              statusColor = 'bg-success/20 text-success-foreground';
+              progress = 90;
+              break;
+            case 'completed':
+              statusColor = 'bg-muted text-muted-foreground';
+              progress = 100;
+              break;
+            default:
+              statusColor = 'bg-muted text-muted-foreground';
+              progress = 10;
+          }
+
+          return {
+            id: event.id,
+            title: event.title,
+            client_name,
+            event_date,
+            venue,
+            status,
+            budget,
+            guests: event.guest_count || 0,
+            statusColor,
+            progress
+          };
+        });
+
+        setEvents(transformedEvents);
+      } catch (err) {
+        console.error('Error fetching events:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch events');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
+  const filteredEvents = getEventsByStatus(events, activeTab).filter(event =>
+    event.client_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    event.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Events</h1>
+            <p className="text-muted-foreground">
+              Manage your floral events and track their progress.
+            </p>
+          </div>
+          <Button className="gap-2 bg-gradient-primary hover:shadow-glow">
+            <Plus className="w-4 h-4" />
+            New Event
+          </Button>
+        </div>
+        <Card className="shadow-card">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <div className="text-red-500 mb-4">Error: {error}</div>
+            <Button onClick={() => window.location.reload()} variant="outline">
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -190,7 +294,10 @@ const Events = () => {
             Manage your floral events and track their progress.
           </p>
         </div>
-        <Button className="gap-2 bg-gradient-primary hover:shadow-glow">
+        <Button 
+          onClick={handleCreateEvent}
+          className="gap-2 bg-gradient-primary hover:shadow-glow"
+        >
           <Plus className="w-4 h-4" />
           New Event
         </Button>
@@ -244,7 +351,10 @@ const Events = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
+                <EventCard 
+                  key={event.id} 
+                  event={event}
+                />
               ))}
             </div>
           )}

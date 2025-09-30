@@ -2549,3 +2549,119 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
+// Add these interfaces to your existing types.ts file
+
+export interface Consultation {
+  id: string;
+  event_id: string;
+  consultation_date: string;
+  audio_url?: string;
+  transcript?: string;
+  notes?: string;
+  duration_minutes?: number;
+  key_points?: {
+    colors?: string[];
+    flowers?: string[];
+    themes?: string[];
+    special_requests?: string[];
+  };
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Quote {
+  id: string;
+  event_id: string;
+  version_number: number;
+  quote_date: string;
+  total_amount: number;
+  status: 'draft' | 'sent' | 'approved' | 'rejected' | 'superseded';
+  notes?: string;
+  is_final: boolean;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+  budget_lines?: BudgetLine[];
+}
+
+export interface BudgetLine {
+  id: string;
+  quote_id: string;
+  category: 'flowers' | 'labor' | 'rentals' | 'delivery' | 'setup' | 'other';
+  item_name: string;
+  description?: string;
+  quantity: number;
+  unit_price: number;
+  markup_percentage: number;
+  total_price: number;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Payment {
+  id: string;
+  event_id: string;
+  amount: number;
+  payment_date: string;
+  payment_method: 'cash' | 'check' | 'credit_card' | 'bank_transfer' | 'other';
+  reference_number?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TimelineTask {
+  id: string;
+  event_id: string;
+  task_name: string;
+  description?: string;
+  start_date?: string;
+  end_date?: string;
+  order_by_date?: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'blocked';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  assigned_to?: string;
+  dependencies?: string[];
+  milestone: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StaffAssignment {
+  id: string;
+  event_id: string;
+  user_id?: string;
+  role: 'lead_designer' | 'assistant' | 'driver' | 'setup_crew' | 'other';
+  hourly_rate?: number;
+  estimated_hours?: number;
+  actual_hours?: number;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StaffAvailability {
+  id: string;
+  user_id?: string;
+  available_date: string;
+  start_time?: string;
+  end_time?: string;
+  all_day: boolean;
+  notes?: string;
+  created_at: string;
+}
+
+export interface EventDesign {
+  id: string;
+  event_id: string;
+  color_scheme?: string[];
+  style?: 'modern' | 'classic' | 'rustic' | 'romantic' | 'bohemian' | 'minimalist' | 'garden' | 'vintage' | 'elegant' | 'maximalist' | 'mountain' | 'other';
+  key_flowers?: string[];
+  inspiration_images?: string[];
+  special_requirements?: string;
+  created_at: string;
+  updated_at: string;
+}

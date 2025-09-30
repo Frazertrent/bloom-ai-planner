@@ -1,449 +1,477 @@
-import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { ArrowLeft, Phone, Mail, MapPin, Calendar, DollarSign, Package, Map as MapIcon, Clock } from "lucide-react";
+// src/pages/ClientDetail.tsx
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  ArrowLeft, 
+  Edit, 
+  Phone, 
+  Mail,
+  MapPin,
+  Calendar,
+  DollarSign,
+  Users,
+  Loader2,
+  Eye,
+  Plus
+} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
-// Mock client data
-const clientData = {
-  "1": {
-    id: "1",
-    name: "Sarah Johnson",
-    email: "sarah.johnson@email.com",
-    phone: "(555) 123-4567",
-    avatar: "",
-    initials: "SJ",
-    status: "Active",
-    joinDate: "2024-01-15",
-    location: "Nashville, TN",
-    notes: "Prefers soft pastels, no roses",
-    events: [
-      {
-        id: "e1",
-        name: "Sarah's Wedding",
-        date: "2024-12-15",
-        type: "Wedding",
-        status: "Planning",
-        venue: "Belle Meade Plantation",
-        budget: 8500,
-        guests: 150
-      },
-      {
-        id: "e2",
-        name: "Bridal Portraits",
-        date: "2024-11-20",
-        type: "Photography",
-        status: "Completed",
-        venue: "Cheekwood Gardens",
-        budget: 1200,
-        guests: 8
-      }
-    ],
-    orders: [
-      {
-        id: "o1",
-        eventId: "e1",
-        eventName: "Sarah's Wedding",
-        date: "2024-12-10",
-        items: [
-          { name: "Bridal Bouquet", quantity: 1, price: 250 },
-          { name: "Bridesmaids Bouquets", quantity: 6, price: 85 },
-          { name: "Centerpieces", quantity: 15, price: 120 },
-          { name: "Ceremony Arch", quantity: 1, price: 450 }
-        ],
-        total: 2210,
-        status: "Pending"
-      }
-    ],
-    layouts: [
-      {
-        id: "l1",
-        eventId: "e1",
-        eventName: "Sarah's Wedding",
-        name: "Reception Layout",
-        venue: "Belle Meade Plantation",
-        tables: 15,
-        capacity: 150,
-        lastModified: "2024-09-01"
-      }
-    ],
-    schedules: [
-      {
-        id: "s1",
-        eventId: "e1",
-        eventName: "Sarah's Wedding",
-        tasks: [
-          { name: "Order flowers", date: "2024-11-15", status: "Completed" },
-          { name: "Prep arrangements", date: "2024-12-13", status: "Pending" },
-          { name: "Delivery & setup", date: "2024-12-15", status: "Pending" }
-        ]
-      }
-    ],
-    budgets: [
-      {
-        id: "b1", 
-        eventId: "e1",
-        eventName: "Sarah's Wedding",
-        categories: [
-          { name: "Flowers", budgeted: 3000, actual: 2800, remaining: 200 },
-          { name: "Hard goods", budgeted: 500, actual: 450, remaining: 50 },
-          { name: "Labor", budgeted: 800, actual: 800, remaining: 0 },
-          { name: "Delivery", budgeted: 200, actual: 160, remaining: 40 }
-        ],
-        totalBudget: 4500,
-        totalActual: 4210,
-        totalRemaining: 290
-      }
-    ]
+interface Address {
+  street?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+}
+
+interface Event {
+  id: string;
+  title: string;
+  event_date: string;
+  event_type?: string;
+  status?: string;
+  guest_count?: number;
+  quoted_amount?: number;
+  venues?: Venue[];
+}
+
+interface Venue {
+  name: string;
+  address?: string;
+}
+
+interface ClientDetail {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone?: string;
+  status?: string;
+  client_type?: string;
+  referral_source?: string;
+  address?: Address;
+  notes?: string;
+  events_count?: number;
+  total_spent?: number;
+  created_at?: string;
+  events?: Event[];
+}
+
+const getStatusColor = (status: string): string => {
+  switch (status?.toLowerCase()) {
+    case 'active':
+      return 'bg-green-100 text-green-800';
+    case 'inactive':
+      return 'bg-gray-100 text-gray-800';
+    case 'prospect':
+      return 'bg-blue-100 text-blue-800';
+    case 'archived':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
   }
 };
 
-export default function ClientDetail() {
-  const { clientId } = useParams();
-  const [activeTab, setActiveTab] = useState("overview");
-  
-  const client = clientData[clientId as keyof typeof clientData];
-  
-  if (!client) {
+const formatCurrency = (amount?: number): string => {
+  if (!amount) return '$0';
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(amount);
+};
+
+const formatDate = (dateString?: string): string => {
+  if (!dateString) return 'Not set';
+  try {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } catch {
+    return 'Invalid Date';
+  }
+};
+
+const ClientDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [client, setClient] = useState<ClientDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchClient = async () => {
+      if (!id) return;
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch client details
+        const { data: clientData, error: clientError } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (clientError) throw clientError;
+
+        // Fetch client's events
+        const { data: eventsData, error: eventsError } = await supabase
+          .from('events')
+          .select('id, title, event_date, event_type, status, guest_count, quoted_amount, venues')
+          .eq('client_id', id)
+          .order('event_date', { ascending: false });
+
+        if (eventsError) throw eventsError;
+
+        // Transform the data
+        const transformedClient: ClientDetail = {
+          id: clientData.id,
+          first_name: clientData.first_name,
+          last_name: clientData.last_name,
+          email: clientData.email || undefined,
+          phone: clientData.phone || undefined,
+          status: clientData.status || undefined,
+          client_type: clientData.client_type || undefined,
+          referral_source: clientData.referral_source || undefined,
+          address: (clientData.address as unknown) as Address || undefined,
+          notes: clientData.notes || undefined,
+          events_count: clientData.events_count || undefined,
+          total_spent: clientData.total_spent || undefined,
+          created_at: clientData.created_at || undefined,
+          events: eventsData?.map(event => ({
+            ...event,
+            venues: (event.venues as unknown) as Venue[] || undefined,
+          })) || []
+        };
+
+        setClient(transformedClient);
+      } catch (err) {
+        console.error('Error fetching client:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch client');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchClient();
+  }, [id]);
+
+  if (loading) {
     return (
-      <div className="text-center py-12">
-        <h1 className="text-2xl font-bold mb-4">Client Not Found</h1>
-        <p className="text-muted-foreground mb-4">The client you're looking for doesn't exist.</p>
-        <Button asChild>
-          <Link to="/clients">Back to Clients</Link>
-        </Button>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin" />
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link to="/clients">
+  if (error || !client) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/clients')}
+            className="gap-2"
+          >
             <ArrowLeft className="w-4 h-4" />
             Back to Clients
-          </Link>
-        </Button>
+          </Button>
+        </div>
+        <Card className="shadow-card">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <div className="text-red-500 mb-4">
+              {error || 'Client not found'}
+            </div>
+            <Button onClick={() => navigate('/clients')} variant="outline">
+              Back to Clients
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const fullName = `${client.first_name} ${client.last_name}`;
+  const initials = `${client.first_name[0] || ''}${client.last_name[0] || ''}`;
+  const address = client.address;
+  const addressString = address ? 
+    [address.street, address.city, address.state, address.zip]
+      .filter(Boolean)
+      .join(', ') : undefined;
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/clients')}
+            className="gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Clients
+          </Button>
+          <Avatar className="h-16 w-16">
+            <AvatarFallback className="bg-primary/10 text-primary font-semibold text-lg">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{fullName}</h1>
+            <p className="text-muted-foreground">
+              {client.client_type || 'Client'} • Member since {formatDate(client.created_at)}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <Badge className={getStatusColor(client.status || '')}>
+            {client.status || 'Active'}
+          </Badge>
+          <Button
+            onClick={() => navigate(`/clients/${id}/edit`)}
+            className="gap-2"
+          >
+            <Edit className="w-4 h-4" />
+            Edit Client
+          </Button>
+        </div>
       </div>
 
-      {/* Client Info Card */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-              <Avatar className="w-16 h-16">
-                <AvatarImage src={client.avatar} alt={client.name} />
-                <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xl">
-                  {client.initials}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <CardTitle className="text-2xl">{client.name}</CardTitle>
-                <CardDescription className="text-base mt-1">
-                  Client since {new Date(client.joinDate).toLocaleDateString()}
-                </CardDescription>
-              </div>
-            </div>
-            <Badge variant="default">{client.status}</Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center gap-2 text-sm">
-              <Mail className="w-4 h-4 text-muted-foreground" />
-              {client.email}
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Phone className="w-4 h-4 text-muted-foreground" />
-              {client.phone}
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <MapPin className="w-4 h-4 text-muted-foreground" />
-              {client.location}
-            </div>
-          </div>
-          {client.notes && (
-            <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-              <p className="text-sm"><strong>Notes:</strong> {client.notes}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6 lg:grid-cols-6">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="orders">Orders</TabsTrigger>
-          <TabsTrigger value="layouts">Layouts</TabsTrigger>
-          <TabsTrigger value="schedules">Schedules</TabsTrigger>
-          <TabsTrigger value="budgets">Budgets</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
-        </TabsList>
-
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Events */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5" />
-                  Events ({client.events.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {client.events.map((event) => (
-                    <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <div className="font-medium">{event.name}</div>
-                        <div className="text-sm text-muted-foreground">{event.venue}</div>
-                        <div className="text-sm text-muted-foreground">{new Date(event.date).toLocaleDateString()}</div>
-                      </div>
-                      <Badge variant={event.status === 'Completed' ? 'default' : 'secondary'}>
-                        {event.status}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Stats */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Stats</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Total Events</span>
-                    <span className="font-semibold">{client.events.length}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Active Orders</span>
-                    <span className="font-semibold">{client.orders.filter(o => o.status !== 'Completed').length}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Total Spent</span>
-                    <span className="font-semibold">${client.events.reduce((sum, e) => sum + e.budget, 0).toLocaleString()}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Orders Tab */}
-        <TabsContent value="orders" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Orders</h3>
-            <Button size="sm">New Order</Button>
-          </div>
-          
-          {client.orders.map((order) => (
-            <Card key={order.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Order #{order.id.toUpperCase()}</CardTitle>
-                    <CardDescription>{order.eventName} • {new Date(order.date).toLocaleDateString()}</CardDescription>
-                  </div>
-                  <Badge variant="outline">{order.status}</Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Quantity</TableHead>
-                      <TableHead>Unit Price</TableHead>
-                      <TableHead>Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {order.items.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{item.name}</TableCell>
-                        <TableCell>{item.quantity}</TableCell>
-                        <TableCell>${item.price}</TableCell>
-                        <TableCell>${item.quantity * item.price}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                <div className="flex justify-end mt-4 pt-4 border-t">
-                  <div className="text-lg font-semibold">Total: ${order.total}</div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </TabsContent>
-
-        {/* Layouts Tab */}
-        <TabsContent value="layouts" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Venue Layouts</h3>
-            <Button size="sm">New Layout</Button>
-          </div>
-          
-          {client.layouts.map((layout) => (
-            <Card key={layout.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <MapIcon className="w-5 h-5" />
-                      {layout.name}
-                    </CardTitle>
-                    <CardDescription>{layout.eventName} • {layout.venue}</CardDescription>
-                  </div>
-                  <Button variant="outline" size="sm">Edit Layout</Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Tables:</span>
-                    <div className="font-semibold">{layout.tables}</div>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Capacity:</span>
-                    <div className="font-semibold">{layout.capacity} guests</div>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Last Modified:</span>
-                    <div className="font-semibold">{new Date(layout.lastModified).toLocaleDateString()}</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </TabsContent>
-
-        {/* Schedules Tab */}
-        <TabsContent value="schedules" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Event Schedules</h3>
-            <Button size="sm">New Schedule</Button>
-          </div>
-          
-          {client.schedules.map((schedule) => (
-            <Card key={schedule.id}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
-                  {schedule.eventName}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {schedule.tasks.map((task, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <div className="font-medium">{task.name}</div>
-                        <div className="text-sm text-muted-foreground">{new Date(task.date).toLocaleDateString()}</div>
-                      </div>
-                      <Badge variant={task.status === 'Completed' ? 'default' : 'secondary'}>
-                        {task.status}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </TabsContent>
-
-        {/* Budgets Tab */}
-        <TabsContent value="budgets" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Event Budgets</h3>
-            <Button size="sm">New Budget</Button>
-          </div>
-          
-          {client.budgets.map((budget) => (
-            <Card key={budget.id}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="w-5 h-5" />
-                  {budget.eventName}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Budgeted</TableHead>
-                      <TableHead>Actual</TableHead>
-                      <TableHead>Remaining</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {budget.categories.map((category, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{category.name}</TableCell>
-                        <TableCell>${category.budgeted}</TableCell>
-                        <TableCell>${category.actual}</TableCell>
-                        <TableCell className={category.remaining < 0 ? 'text-red-600' : 'text-green-600'}>
-                          ${category.remaining}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                <div className="flex justify-end mt-4 pt-4 border-t space-x-6">
-                  <div>
-                    <span className="text-muted-foreground">Total Budget: </span>
-                    <span className="font-semibold">${budget.totalBudget}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Total Actual: </span>
-                    <span className="font-semibold">${budget.totalActual}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Remaining: </span>
-                    <span className={`font-semibold ${budget.totalRemaining < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      ${budget.totalRemaining}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </TabsContent>
-
-        {/* History Tab */}
-        <TabsContent value="history" className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Client History</CardTitle>
-              <CardDescription>Complete timeline of interactions and events</CardDescription>
+              <CardTitle>Contact Information</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                History timeline coming soon...
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {client.email && (
+                  <div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                      <Mail className="w-4 h-4" />
+                      Email
+                    </div>
+                    <a href={`mailto:${client.email}`} className="font-medium text-blue-600 hover:underline">
+                      {client.email}
+                    </a>
+                  </div>
+                )}
+                {client.phone && (
+                  <div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                      <Phone className="w-4 h-4" />
+                      Phone
+                    </div>
+                    <a href={`tel:${client.phone}`} className="font-medium text-blue-600 hover:underline">
+                      {client.phone}
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              {addressString && (
+                <div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                    <MapPin className="w-4 h-4" />
+                    Address
+                  </div>
+                  <div className="font-medium">{addressString}</div>
+                </div>
+              )}
+
+              {client.referral_source && (
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Referral Source</div>
+                  <div className="font-medium capitalize">{client.referral_source.replace('_', ' ')}</div>
+                </div>
+              )}
+
+              {client.notes && (
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Notes</div>
+                  <div className="font-medium">{client.notes}</div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Tabs defaultValue="events" className="w-full">
+            <TabsList>
+              <TabsTrigger value="events">Events ({client.events?.length || 0})</TabsTrigger>
+              <TabsTrigger value="history">History</TabsTrigger>
+              <TabsTrigger value="documents">Documents</TabsTrigger>
+            </TabsList>
+            <TabsContent value="events" className="space-y-4">
+              {client.events && client.events.length > 0 ? (
+                <div className="space-y-4">
+                  {client.events.map((event) => (
+                    <Card key={event.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-semibold">{event.title}</h4>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {formatDate(event.event_date)}
+                              </div>
+                              {event.guest_count && (
+                                <div className="flex items-center gap-1">
+                                  <Users className="w-3 h-3" />
+                                  {event.guest_count} guests
+                                </div>
+                              )}
+                              {event.quoted_amount && (
+                                <div className="flex items-center gap-1">
+                                  <DollarSign className="w-3 h-3" />
+                                  {formatCurrency(event.quoted_amount)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {event.status && (
+                              <Badge variant="outline">
+                                {event.status}
+                              </Badge>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => navigate(`/events/${event.id}`)}
+                            >
+                              <Eye className="w-3 h-3 mr-1" />
+                              View
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <Calendar className="w-12 h-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No events yet</h3>
+                    <p className="text-muted-foreground text-center mb-4">
+                      This client hasn't booked any events yet.
+                    </p>
+                    <Button 
+                      onClick={() => navigate('/events/new')}
+                      className="gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Create Event
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+            <TabsContent value="history">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="text-center text-muted-foreground">
+                    Client interaction history will be displayed here.
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="documents">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="text-center text-muted-foreground">
+                    Client documents and contracts will be displayed here.
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Stats Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Client Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Total Events</span>
+                <span className="font-semibold">{client.events_count || 0}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Total Spent</span>
+                <span className="font-semibold">{formatCurrency(client.total_spent)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Average Event</span>
+                <span className="font-semibold">
+                  {client.events_count ? 
+                    formatCurrency((client.total_spent || 0) / client.events_count) : 
+                    '$0'
+                  }
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Client Since</span>
+                <span className="font-semibold">{formatDate(client.created_at)}</span>
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Button 
+                className="w-full justify-start gap-2" 
+                variant="outline"
+                onClick={() => navigate('/events/new')}
+              >
+                <Calendar className="w-4 h-4" />
+                Create New Event
+              </Button>
+              {client.email && (
+                <Button 
+                  className="w-full justify-start gap-2" 
+                  variant="outline"
+                  onClick={() => window.open(`mailto:${client.email}`, '_blank')}
+                >
+                  <Mail className="w-4 h-4" />
+                  Send Email
+                </Button>
+              )}
+              {client.phone && (
+                <Button 
+                  className="w-full justify-start gap-2" 
+                  variant="outline"
+                  onClick={() => window.open(`tel:${client.phone}`, '_blank')}
+                >
+                  <Phone className="w-4 h-4" />
+                  Call Client
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+export default ClientDetail;

@@ -1,226 +1,235 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, Phone, Mail, Calendar, MapPin } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Search, Plus, Phone, Mail, MapPin, Loader2, Eye, Edit } from "lucide-react";
+import { supabase } from '@/integrations/supabase/client';
 
-// Mock client data
-const clients = [
-  {
-    id: "1",
-    name: "Sarah Johnson",
-    email: "sarah.johnson@email.com",
-    phone: "(555) 123-4567",
-    avatar: "",
-    initials: "SJ",
-    status: "Active",
-    statusColor: "default",
-    totalEvents: 2,
-    upcomingEvents: 1,
-    totalSpent: 12500,
-    joinDate: "2024-01-15",
-    location: "Nashville, TN",
-    notes: "Prefers soft pastels, no roses",
-    events: [
-      {
-        id: "e1",
-        name: "Sarah's Wedding",
-        date: "2024-12-15",
-        type: "Wedding",
-        status: "Planning",
-        venue: "Belle Meade Plantation"
-      },
-      {
-        id: "e2", 
-        name: "Bridal Portraits",
-        date: "2024-11-20",
-        type: "Photography",
-        status: "Completed",
-        venue: "Cheekwood Gardens"
-      }
-    ]
-  },
-  {
-    id: "2",
-    name: "Michael Chen",
-    email: "m.chen@email.com", 
-    phone: "(555) 987-6543",
-    avatar: "",
-    initials: "MC",
-    status: "Active",
-    statusColor: "default",
-    totalEvents: 1,
-    upcomingEvents: 1,
-    totalSpent: 8500,
-    joinDate: "2024-02-20",
-    location: "Franklin, TN",
-    notes: "Corporate event specialist",
-    events: [
-      {
-        id: "e3",
-        name: "Company Gala",
-        date: "2024-10-30",
-        type: "Corporate",
-        status: "Approved",
-        venue: "Music City Center"
-      }
-    ]
-  },
-  {
-    id: "3",
-    name: "Emma Rodriguez",
-    email: "emma.r@email.com",
-    phone: "(555) 456-7890", 
-    avatar: "",
-    initials: "ER",
-    status: "Lead",
-    statusColor: "secondary",
-    totalEvents: 0,
-    upcomingEvents: 0,
-    totalSpent: 0,
-    joinDate: "2024-03-10",
-    location: "Brentwood, TN",
-    notes: "Interested in spring wedding package",
-    events: []
-  },
-  {
-    id: "4",
-    name: "David & Lisa Thompson",
-    email: "thompson.wedding@email.com",
-    phone: "(555) 234-5678",
-    avatar: "",
-    initials: "DL",
-    status: "Active", 
-    statusColor: "default",
-    totalEvents: 3,
-    upcomingEvents: 0,
-    totalSpent: 18750,
-    joinDate: "2023-11-05",
-    location: "Murfreesboro, TN",
-    notes: "Repeat clients - annual anniversary flowers",
-    events: [
-      {
-        id: "e4",
-        name: "Wedding Ceremony",
-        date: "2023-12-20",
-        type: "Wedding",
-        status: "Completed",  
-        venue: "The Hermitage Hotel"
-      },
-      {
-        id: "e5",
-        name: "1st Anniversary",
-        date: "2024-02-14",
-        type: "Anniversary",
-        status: "Completed",
-        venue: "Home Delivery"
-      }
-    ]
-  }
-];
+interface Address {
+  street?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+}
 
-const getClientsByStatus = (status: string) => {
-  if (status === "All") return clients;
-  return clients.filter(client => client.status === status);
-};
+interface Client {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone?: string;
+  status?: string;
+  address?: Address;
+  events_count?: number;
+  total_spent?: number;
+}
 
-const ClientCard = ({ client }: { client: typeof clients[0] }) => (
-  <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-    <CardHeader>
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <Avatar className="w-12 h-12">
-            <AvatarImage src={client.avatar} alt={client.name} />
+interface ClientStats {
+  total: number;
+  active: number;
+  leads: number;
+  totalRevenue: number;
+}
+
+const ClientCard = ({ client }: { client: Client }) => {
+  const navigate = useNavigate();
+  const initials = `${client.first_name?.[0] || ''}${client.last_name?.[0] || ''}`;
+  const fullName = `${client.first_name} ${client.last_name}`;
+  const location = client.address ? `${client.address.city || ''}, ${client.address.state || ''}`.trim().replace(/^,\s*|,\s*$/g, '') : '';
+  
+  const statusColor = client.status === 'active' ? 'default' : 'secondary';
+
+  return (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardContent className="p-6">
+        <div className="flex items-start gap-4">
+          <Avatar className="h-12 w-12">
             <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-              {client.initials}
+              {initials}
             </AvatarFallback>
           </Avatar>
-          <div>
-            <CardTitle className="text-lg">{client.name}</CardTitle>
-            <CardDescription className="flex items-center gap-1 mt-1">
-              <MapPin className="w-3 h-3" />
-              {client.location}
-            </CardDescription>
-          </div>
-        </div>
-        <Badge variant={client.statusColor as any}>{client.status}</Badge>
-      </div>
-    </CardHeader>
-    <CardContent>
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Mail className="w-4 h-4" />
-          {client.email}
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Phone className="w-4 h-4" />
-          {client.phone}
-        </div>
-        
-        <div className="grid grid-cols-3 gap-4 pt-3 border-t">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-primary">{client.totalEvents}</div>
-            <div className="text-xs text-muted-foreground">Total Events</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-accent">{client.upcomingEvents}</div>
-            <div className="text-xs text-muted-foreground">Upcoming</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-secondary">${(client.totalSpent / 1000).toFixed(1)}k</div>
-            <div className="text-xs text-muted-foreground">Total Spent</div>
-          </div>
-        </div>
+          
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold truncate">{fullName}</h3>
+              <Badge variant={statusColor}>
+                {client.status || 'Active'}
+              </Badge>
+            </div>
+            
+            {location && (
+              <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+                <MapPin className="h-3 w-3" />
+                {location}
+              </div>
+            )}
+            
+            {client.email && (
+              <div className="flex items-center gap-1 text-sm text-muted-foreground mb-1">
+                <Mail className="h-3 w-3" />
+                {client.email}
+              </div>
+            )}
+            
+            {client.phone && (
+              <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
+                <Phone className="h-3 w-3" />
+                {client.phone}
+              </div>
+            )}
+            
+            <div className="flex justify-between text-sm mb-4">
+              <div className="text-center">
+                <div className="font-semibold text-primary">{client.events_count || 0}</div>
+                <div className="text-xs text-muted-foreground">Total Events</div>
+              </div>
+              <div className="text-center">
+                <div className="font-semibold text-muted-foreground">0</div>
+                <div className="text-xs text-muted-foreground">Upcoming</div>
+              </div>
+              <div className="text-center">
+                <div className="font-semibold text-secondary">
+                  ${((client.total_spent || 0) / 1000).toFixed(1)}k
+                </div>
+                <div className="text-xs text-muted-foreground">Total Spent</div>
+              </div>
+            </div>
 
-        <div className="flex gap-2 pt-3">
-          <Button asChild variant="outline" size="sm" className="flex-1">
-            <Link to={`/clients/${client.id}`}>
+            <Button 
+              className="w-full"
+              onClick={() => navigate(`/clients/${client.id}`)}
+            >
+              <Eye className="w-4 h-4 mr-2" />
               View Details
-            </Link>
-          </Button>
-          <Button variant="default" size="sm" className="flex-1">
-            New Event
-          </Button>
+            </Button>
+          </div>
         </div>
-      </div>
-    </CardContent>
-  </Card>
-);
+      </CardContent>
+    </Card>
+  );
+};
 
 export default function Clients() {
+  const navigate = useNavigate();
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("All");
 
-  const filteredClients = getClientsByStatus(activeTab).filter(client =>
-    client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.location.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const stats = {
-    total: clients.length,
-    active: clients.filter(c => c.status === "Active").length,
-    leads: clients.filter(c => c.status === "Lead").length,
-    totalRevenue: clients.reduce((sum, c) => sum + c.totalSpent, 0)
+  // Handle client creation
+  const handleCreateClient = () => {
+    navigate('/clients/new');
   };
 
+  // Handle client editing
+  const handleEditClient = (clientId: string) => {
+    navigate(`/clients/${clientId}/edit`);
+  };
+
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const { data: clientsData, error: clientsError } = await supabase
+          .from('clients')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (clientsError) throw clientsError;
+
+        // Transform the data to match our interface
+        const transformedClients: Client[] = (clientsData || []).map(client => ({
+          id: client.id,
+          first_name: client.first_name,
+          last_name: client.last_name,
+          email: client.email || undefined,
+          phone: client.phone || undefined,
+          status: client.status || undefined,
+          address: client.address as Address || undefined,
+          events_count: client.events_count || undefined,
+          total_spent: client.total_spent || undefined,
+        }));
+
+        setClients(transformedClients);
+      } catch (err) {
+        console.error('Error fetching clients:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch clients');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchClients();
+  }, []);
+
+  // Calculate stats
+  const stats: ClientStats = {
+    total: clients.length,
+    active: clients.filter(c => c.status === 'active').length,
+    leads: clients.filter(c => c.status === 'prospect').length,
+    totalRevenue: clients.reduce((sum, c) => sum + (c.total_spent || 0), 0)
+  };
+
+  // Filter clients
+  const filteredClients = clients
+    .filter(client => {
+      if (activeTab === "Active") return client.status === "active";
+      if (activeTab === "Lead") return client.status === "prospect";
+      return true;
+    })
+    .filter(client => {
+      const searchLower = searchQuery.toLowerCase();
+      const fullName = `${client.first_name} ${client.last_name}`.toLowerCase();
+      const email = client.email?.toLowerCase() || '';
+      const location = client.address ? `${client.address.city || ''} ${client.address.state || ''}`.toLowerCase() : '';
+      
+      return fullName.includes(searchLower) || 
+             email.includes(searchLower) || 
+             location.includes(searchLower);
+    });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Clients</h1>
-          <p className="text-muted-foreground">Manage your client relationships and event history</p>
+          <h1 className="text-3xl font-bold tracking-tight">Clients</h1>
+          <p className="text-muted-foreground">
+            Manage your client relationships and event history
+          </p>
         </div>
-        <Button className="gap-2">
+        <Button 
+          onClick={handleCreateClient}
+          className="gap-2"
+        >
           <Plus className="w-4 h-4" />
           Add Client
         </Button>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-4">
+            <div className="text-red-700">Error: {error}</div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -244,7 +253,9 @@ export default function Clients() {
         </Card>
         <Card>
           <CardContent className="p-6">
-            <div className="text-2xl font-bold text-secondary">${(stats.totalRevenue / 1000).toFixed(0)}k</div>
+            <div className="text-2xl font-bold text-secondary">
+              ${(stats.totalRevenue / 1000).toFixed(0)}k
+            </div>
             <p className="text-xs text-muted-foreground">Total Revenue</p>
           </CardContent>
         </Card>
@@ -267,25 +278,42 @@ export default function Clients() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="All">All ({clients.length})</TabsTrigger>
-          <TabsTrigger value="Active">Active ({clients.filter(c => c.status === "Active").length})</TabsTrigger>
-          <TabsTrigger value="Lead">Leads ({clients.filter(c => c.status === "Lead").length})</TabsTrigger>
+          <TabsTrigger value="Active">
+            Active ({clients.filter(c => c.status === "active").length})
+          </TabsTrigger>
+          <TabsTrigger value="Lead">
+            Leads ({clients.filter(c => c.status === "prospect").length})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-6">
           {filteredClients.length === 0 ? (
             <div className="text-center py-12 border-2 border-dashed border-muted rounded-lg">
               <div className="text-muted-foreground mb-4">
-                {searchQuery ? "No clients found matching your search." : "No clients found."}
+                {searchQuery 
+                  ? "No clients found matching your search." 
+                  : clients.length === 0 
+                    ? "No clients found." 
+                    : `No clients in "${activeTab}" category.`
+                }
               </div>
-              <Button className="gap-2">
-                <Plus className="w-4 h-4" />
-                Add Your First Client
-              </Button>
+              {clients.length === 0 && (
+                <Button 
+                  onClick={handleCreateClient}
+                  className="gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Your First Client
+                </Button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredClients.map((client) => (
-                <ClientCard key={client.id} client={client} />
+                <ClientCard 
+                  key={client.id} 
+                  client={client}
+                />
               ))}
             </div>
           )}
