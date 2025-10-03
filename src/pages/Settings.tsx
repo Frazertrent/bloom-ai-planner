@@ -11,6 +11,14 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
+import { Flower2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { 
   Building2, 
   DollarSign, 
@@ -41,11 +49,21 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-  RefreshCw
+  RefreshCw,
+  Plus, Trash2, Edit3, Scissors, User, BarChart2, ChefHat
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useProfile } from "../hooks/useProfile";
-
+interface CatalogItem {
+  id: string;
+  name: string;
+  variety?: string;
+  color?: string;
+  base_price: number;
+  unit?: string;
+  category?: string;
+  type: 'flower' | 'hardgood' | 'labor';
+}
 export default function Settings() {
   const [activeTab, setActiveTab] = useState("business");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
@@ -58,6 +76,9 @@ export default function Settings() {
     lateFee: 25,
     gracePeriod: 7
   });
+
+  const [catalogDialogOpen, setCatalogDialogOpen] = useState<'flower' | 'hardgood' | 'labor' | null>(null);
+
   // Duplicate declaration removed
   const [taxData, setTaxData] = useState({
     laborTaxTreatment: "exempt",
@@ -170,6 +191,16 @@ export default function Settings() {
       });
     }
   }, [organization]);
+  
+  useEffect(() => {
+  if (organization) {
+    fetchCatalogData();
+    fetchRecipeData();
+  }
+}, [organization]);
+  
+
+
   useEffect(() => {
     if (organization) {
       const businessSettings = organization.business_settings && 
@@ -284,6 +315,36 @@ export default function Settings() {
     }
   };
   
+  const [catalogData, setCatalogData] = useState({
+    flowers: [] as { id: string; name: string; variety?: string; color: string; base_price: number; unit: string; bulk_pricing: { quantity: number; price: number }[]; is_year_round: boolean; preferred_vendor?: string; color_hex: string; notes?: string; seasonal_months?: string }[],
+    hardGoods: [] as { id: string; name: string; category: string; purchase_price: number; rental_price: number; unit: string; size_dimensions?: string; preferred_vendor?: string; notes?: string }[],
+    laborRates: [] as { id: string; name: string; category: string; hourly_rate: number; minimum_hours: number; default_for_category: boolean; description: string }[]
+  });
+
+const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
+  
+const [editingCatalogItem, setEditingCatalogItem] = useState<{
+  id?: string;
+  name?: string;
+  variety?: string;
+  color?: string;
+  base_price?: number;
+  unit?: string;
+  is_year_round?: boolean;
+  preferred_vendor?: string;
+  color_hex?: string;
+  notes?: string;
+  category?: string;
+  purchase_price?: number;
+  rental_price?: number;
+  size_dimensions?: string;
+  hourly_rate?: number;
+  minimum_hours?: number;
+  default_for_category?: boolean;
+  description?: string;
+  seasonal_months?: string;
+} | null>(null);
+
   const addPremiumServiceArea = () => {
     const areaName = prompt("Enter premium service area name:");
     if (areaName && areaName.trim()) {
@@ -426,6 +487,428 @@ export default function Settings() {
     
     setTimeout(() => setSaveStatus("idle"), 2000);
   };
+
+const fetchCatalogData = async () => {
+  if (!organization) return;
+  
+  try {
+    const [flowersRes, hardGoodsRes, laborRes] = await Promise.all([
+      supabase
+        .from('flower_catalog')
+        .select('*')
+        .eq('organization_id', organization.id)
+        .order('name'),
+      supabase
+        .from('hard_goods_catalog')
+        .select('*')
+        .eq('organization_id', organization.id)
+        .order('name'),
+      supabase
+        .from('labor_rates_catalog')
+        .select('*')
+        .eq('organization_id', organization.id)
+        .order('name')
+    ]);
+console.log('Flowers:', flowersRes.data); // ADD THIS
+    console.log('Hard goods:', hardGoodsRes.data); // ADD THIS
+    console.log('Labor:', laborRes.data); // ADD THIS
+    setCatalogData({
+      flowers: flowersRes.data || [],
+      hardGoods: hardGoodsRes.data || [],
+      laborRates: laborRes.data || []
+    });
+
+const allItems: CatalogItem[] = [
+  ...(flowersRes.data || []).map((f: { id: string; name: string; variety?: string; color?: string; base_price: number; unit: string }) => ({
+    id: f.id,
+    name: `${f.name}${f.variety ? ' - ' + f.variety : ''}${f.color ? ' - ' + f.color : ''}`,
+    base_price: f.base_price,
+    unit: f.unit,
+    type: 'flower' as const
+  })),
+  ...(hardGoodsRes.data || []).map((h: { id: string; name: string; purchase_price?: number; rental_price?: number; unit: string }) => ({
+    id: h.id,
+    name: h.name,
+    base_price: h.purchase_price || h.rental_price,
+    unit: h.unit,
+    type: 'hardgood' as const
+  })),
+  ...(laborRes.data || []).map((l: { id: string; name: string; category: string; hourly_rate: number; minimum_hours: number; default_for_category: boolean; description: string }) => ({
+    id: l.id,
+    name: l.name,
+    base_price: l.hourly_rate,
+    unit: 'hour',
+    type: 'labor' as const
+  }))
+];
+
+setCatalogItems(allItems);
+    
+  } catch (error) {
+    console.error('Error fetching catalog:', error);
+  }
+};
+
+const openNewFlowerDialog = () => {
+  setEditingCatalogItem({
+    name: '',
+    variety: '',
+    color: '',
+    base_price: 0,
+    unit: 'stem',
+    is_year_round: true,
+    preferred_vendor: '',
+    color_hex: '#FFFFFF',
+    notes: ''
+  });
+  setCatalogDialogOpen('flower');
+};
+
+const openNewHardGoodDialog = () => {
+  setEditingCatalogItem({
+    name: '',
+    category: 'vase',
+    purchase_price: 0,
+    rental_price: 0,
+    unit: 'each',
+    size_dimensions: '',
+    preferred_vendor: '',
+    notes: ''
+  });
+  setCatalogDialogOpen('hardgood');
+};
+
+const openNewLaborDialog = () => {
+  setEditingCatalogItem({
+    name: '',
+    category: 'design',
+    hourly_rate: 0,
+    minimum_hours: 1.0,
+    default_for_category: false,
+    description: ''
+  });
+  setCatalogDialogOpen('labor');
+};
+
+
+
+const openEditFlowerDialog = (flower: { 
+  id: string; 
+  name: string; 
+  variety?: string; 
+  color: string; 
+  base_price: number; 
+  unit: string; 
+  is_year_round: boolean; 
+  seasonal_months?: string;
+  preferred_vendor?: string; 
+  color_hex: string; 
+  notes?: string; 
+}) => {
+  setEditingCatalogItem({
+    id: flower.id,
+    name: flower.name,
+    variety: flower.variety,
+    color: flower.color,
+    base_price: flower.base_price,
+    unit: flower.unit,
+    is_year_round: flower.is_year_round,
+    seasonal_months: flower.seasonal_months,
+    preferred_vendor: flower.preferred_vendor,
+    color_hex: flower.color_hex,
+    notes: flower.notes
+  });
+  setCatalogDialogOpen('flower');
+};
+
+const openEditHardGoodDialog = (item: { 
+  id: string; 
+  name: string; 
+  category: string; 
+  purchase_price: number; 
+  rental_price: number; 
+  unit: string; 
+  size_dimensions?: string; 
+  preferred_vendor?: string; 
+  notes?: string; 
+}) => {
+  setEditingCatalogItem({
+    id: item.id,
+    name: item.name,
+    category: item.category,
+    purchase_price: item.purchase_price,
+    rental_price: item.rental_price,
+    unit: item.unit,
+    size_dimensions: item.size_dimensions,
+    preferred_vendor: item.preferred_vendor,
+    notes: item.notes
+  });
+  setCatalogDialogOpen('hardgood');
+};
+
+const openEditLaborDialog = (rate: { 
+  id: string; 
+  name: string; 
+  category: string; 
+  hourly_rate: number; 
+  minimum_hours: number; 
+  default_for_category: boolean; 
+  description: string; 
+}) => {
+  setEditingCatalogItem({
+    id: rate.id,
+    name: rate.name,
+    category: rate.category,
+    hourly_rate: rate.hourly_rate,
+    minimum_hours: rate.minimum_hours,
+    default_for_category: rate.default_for_category,
+    description: rate.description
+  });
+  setCatalogDialogOpen('labor');
+};
+
+const saveCatalogItem = async () => {
+  if (!organization) return;
+
+  try {
+    const isEditing = !!editingCatalogItem?.id;
+
+    if (catalogDialogOpen === 'flower') {
+      if (isEditing) {
+        const { error } = await supabase
+          .from('flower_catalog')
+          .update({
+            name: editingCatalogItem.name,
+            variety: editingCatalogItem.variety,
+            color: editingCatalogItem.color,
+            base_price: editingCatalogItem.base_price,
+            unit: editingCatalogItem.unit,
+            is_year_round: editingCatalogItem.is_year_round,
+            seasonal_months: editingCatalogItem.seasonal_months,
+            preferred_vendor: editingCatalogItem.preferred_vendor,
+            color_hex: editingCatalogItem.color_hex,
+            notes: editingCatalogItem.notes,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', editingCatalogItem.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('flower_catalog')
+          .insert({
+            organization_id: organization.id,
+            ...editingCatalogItem
+          });
+
+        if (error) throw error;
+      }
+    } else if (catalogDialogOpen === 'hardgood') {
+      if (isEditing) {
+        const { error } = await supabase
+          .from('hard_goods_catalog')
+          .update({
+            name: editingCatalogItem.name,
+            category: editingCatalogItem.category,
+            purchase_price: editingCatalogItem.purchase_price,
+            rental_price: editingCatalogItem.rental_price,
+            unit: editingCatalogItem.unit,
+            size_dimensions: editingCatalogItem.size_dimensions,
+            preferred_vendor: editingCatalogItem.preferred_vendor,
+            notes: editingCatalogItem.notes,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', editingCatalogItem.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('hard_goods_catalog')
+          .insert({
+            organization_id: organization.id,
+            ...editingCatalogItem
+          });
+
+        if (error) throw error;
+      }
+    } else if (catalogDialogOpen === 'labor') {
+      if (isEditing) {
+        const { error } = await supabase
+          .from('labor_rates_catalog')
+          .update({
+            name: editingCatalogItem.name,
+            category: editingCatalogItem.category,
+            hourly_rate: editingCatalogItem.hourly_rate,
+            minimum_hours: editingCatalogItem.minimum_hours,
+            default_for_category: editingCatalogItem.default_for_category,
+            description: editingCatalogItem.description,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', editingCatalogItem.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('labor_rates_catalog')
+          .insert({
+            organization_id: organization.id,
+            ...editingCatalogItem
+          });
+
+        if (error) throw error;
+      }
+    }
+
+    await fetchCatalogData();
+    setCatalogDialogOpen(null);
+    setEditingCatalogItem(null);
+
+    toast({
+      title: 'Success',
+      description: isEditing ? 'Item updated in catalog' : 'Item added to catalog'
+    });
+  } catch (error) {
+    console.error('Error saving catalog item:', error);
+    toast({
+      title: 'Error',
+      description: 'Failed to save catalog item',
+      variant: 'destructive'
+    });
+  }
+};
+
+const fetchRecipeData = async () => {
+  if (!organization) return;
+  
+  try {
+    const { data: recipes, error } = await supabase
+      .from('recipe_templates')
+      .select(`
+        *,
+        recipe_ingredients (
+          id,
+          catalog_item_id,
+          catalog_item_type,
+          quantity
+        )
+      `)
+      .eq('organization_id', organization.id)
+      .eq('is_active', true)
+      .order('name');
+
+    if (error) throw error;
+
+    // Enrich ingredients with names from catalog
+    const enrichedRecipes = await Promise.all(
+      (recipes || []).map(async (recipe) => {
+        const enrichedIngredients = await Promise.all(
+          (recipe.recipe_ingredients || []).map(async (ing) => {
+            let itemName = 'Unknown Item';
+            
+            if (ing.catalog_item_type === 'flower') {
+              const { data } = await supabase
+                .from('flower_catalog')
+                .select('name, variety, color')
+                .eq('id', ing.catalog_item_id)
+                .single();
+              if (data) itemName = `${data.name}${data.variety ? ' - ' + data.variety : ''}${data.color ? ' - ' + data.color : ''}`;
+            } else if (ing.catalog_item_type === 'hardgood') {
+              const { data } = await supabase
+                .from('hard_goods_catalog')
+                .select('name')
+                .eq('id', ing.catalog_item_id)
+                .single();
+              if (data) itemName = data.name;
+            } else if (ing.catalog_item_type === 'labor') {
+              const { data } = await supabase
+                .from('labor_rates_catalog')
+                .select('name')
+                .eq('id', ing.catalog_item_id)
+                .single();
+              if (data) itemName = data.name;
+            }
+
+            return { ...ing, item_name: itemName };
+          })
+        );
+
+        return {
+          ...recipe,
+          ingredients: enrichedIngredients
+        };
+      })
+    );
+
+    setRecipeData(enrichedRecipes);
+  } catch (error) {
+    console.error('Error fetching recipes:', error);
+  }
+};
+
+const deleteCatalogItem = async (type: 'flower' | 'hardgood' | 'labor', id: string) => {
+  try {
+    const table = type === 'flower' ? 'flower_catalog' : 
+                  type === 'hardgood' ? 'hard_goods_catalog' : 
+                  'labor_rates_catalog';
+
+    const { error } = await supabase
+      .from(table)
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+
+    await fetchCatalogData();
+
+    toast({
+      title: 'Success',
+      description: 'Item removed from catalog'
+    });
+  } catch (error) {
+    console.error('Error deleting catalog item:', error);
+    toast({
+      title: 'Error',
+      description: 'Failed to remove item',
+      variant: 'destructive'
+    });
+  }
+};
+
+const [recipeData, setRecipeData] = useState<{
+  id: string;
+  name: string;
+  category: string;
+  description?: string;
+  estimated_labor_hours: number;
+  estimated_cost: number;
+  typical_client_price: number;
+  notes?: string;
+  ingredients?: Array<{
+    id: string;
+    catalog_item_id: string;
+    catalog_item_type: string;
+    quantity: number;
+    item_name?: string;
+  }>;
+}[]>([]);
+
+const [recipeDialogOpen, setRecipeDialogOpen] = useState(false);
+const [editingRecipe, setEditingRecipe] = useState<{
+  id?: string;
+  name?: string;
+  category?: string;
+  description?: string;
+  estimated_labor_hours?: number;
+  estimated_cost?: number;
+  typical_client_price?: number;
+  notes?: string;
+  ingredients?: Array<{
+    catalog_item_id: string;
+    catalog_item_type: string;
+    quantity: number;
+  }>;
+} | null>(null);
+
 // Removed duplicate declaration of integrationsData and setIntegrationsData
 // Removed duplicate declaration of handleIntegrationAction
   const [staffingData, setStaffingData] = useState({
@@ -542,10 +1025,14 @@ export default function Settings() {
             <Building2 className="w-3 h-3" />
             <span className="hidden sm:inline">Business</span>
           </TabsTrigger>
-          <TabsTrigger value="pricing" className="flex items-center gap-1 text-xs">
-            <DollarSign className="w-3 h-3" />
-            <span className="hidden sm:inline">Pricing</span>
-          </TabsTrigger>
+                    <TabsTrigger value="catalog" className="flex items-center gap-1 text-xs">
+  <Package className="w-3 h-3" />
+  <span className="hidden sm:inline">Catalog</span>
+</TabsTrigger>
+<TabsTrigger value="recipes" className="flex items-center gap-1 text-xs">
+  <ChefHat className="w-3 h-3" />
+  <span className="hidden sm:inline">Recipes</span>
+</TabsTrigger>
           <TabsTrigger value="operations" className="flex items-center gap-1 text-xs">
             <Settings2 className="w-3 h-3" />
             <span className="hidden sm:inline">Operations</span>
@@ -856,6 +1343,10 @@ export default function Settings() {
               </CardContent>
             </Card>
 
+
+  <Flower2 className="w-3 h-3" />
+  <span className="hidden sm:inline">Catalog</span>
+
             {/* Payment Terms */}
             <Card className="shadow-card">
               <CardHeader>
@@ -982,6 +1473,222 @@ export default function Settings() {
             </Card>
           </div>
         </TabsContent>
+
+        <TabsContent value="catalog" className="space-y-6">
+  <div className="grid gap-6">
+    {/* Flowers Catalog */}
+    <Card className="shadow-card">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Flower2 className="w-5 h-5 text-primary" />
+              Flower Catalog
+            </CardTitle>
+            <CardDescription>
+              Master library with pricing, bulk tiers, and seasonal availability
+            </CardDescription>
+          </div>
+          <Button size="sm" onClick={openNewFlowerDialog}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Flower
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {catalogData.flowers.map((flower) => (
+            <div key={flower.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+              <div className="flex items-center gap-3">
+                <div 
+                  className="w-8 h-8 rounded-full border-2"
+                  style={{ backgroundColor: flower.color_hex }}
+                />
+                <div>
+                  <p className="font-medium">{flower.name} {flower.variety && `- ${flower.variety}`}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-sm text-muted-foreground">{flower.color}</span>
+                    <span className="text-sm font-semibold text-primary">${flower.base_price?.toFixed(2)}/{flower.unit}</span>
+                    
+                    {flower.is_year_round ? (
+  <Badge variant="outline" className="text-xs">Year-round</Badge>
+) : (
+  <Badge variant="outline" className="text-xs">
+    {flower.seasonal_months || 'Seasonal'}
+  </Badge>
+)}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+  <Button 
+    size="sm" 
+    variant="ghost"
+    onClick={() => openEditFlowerDialog(flower)}
+  >
+    <Edit3 className="w-4 h-4" />
+  </Button>
+  <div className="flex gap-2">
+  <Button 
+    size="sm" 
+    variant="ghost"
+    onClick={() => openEditFlowerDialog(flower)}
+  >
+    <Trash2 className="w-4 h-4" />
+  </Button>
+</div>
+</div>
+            </div>
+          ))}
+          {catalogData.flowers.length === 0 && (
+            <p className="text-center text-muted-foreground py-8">
+              No flowers in catalog yet. Add your first flower to get started.
+            </p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+
+    {/* Hard Goods Catalog */}
+    <Card className="shadow-card">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="w-5 h-5 text-primary" />
+              Hard Goods Catalog
+            </CardTitle>
+            <CardDescription>
+              Vases, foam, wire, ribbon, containers, and supplies
+            </CardDescription>
+          </div>
+          <Button size="sm" onClick={openNewHardGoodDialog}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Hard Good
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {catalogData.hardGoods.map((item) => (
+            <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+              <div>
+                <p className="font-medium">{item.name}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant="secondary" className="text-xs">{item.category}</Badge>
+                  {item.purchase_price && (
+                    <span className="text-sm text-muted-foreground">
+                      Purchase: ${item.purchase_price.toFixed(2)}
+                    </span>
+                  )}
+                  {item.rental_price && (
+                    <span className="text-sm text-muted-foreground">
+                      Rental: ${item.rental_price.toFixed(2)}
+                    </span>
+                  )}
+                  {item.size_dimensions && (
+                    <span className="text-xs text-muted-foreground">({item.size_dimensions})</span>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2">
+  <Button 
+    size="sm" 
+    variant="ghost"
+    onClick={() => openEditHardGoodDialog(item)}
+  >
+    <Edit3 className="w-4 h-4" />
+  </Button>
+  <div className="flex gap-2">
+  <Button 
+    size="sm" 
+    variant="ghost"
+    onClick={() => openEditHardGoodDialog(item)}
+  >
+
+    <Trash2 className="w-4 h-4" />
+  </Button>
+</div>
+</div>
+            </div>
+          ))}
+          {catalogData.hardGoods.length === 0 && (
+            <p className="text-center text-muted-foreground py-8">
+              No hard goods in catalog yet.
+            </p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+
+    {/* Labor Rates Catalog */}
+    <Card className="shadow-card">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-primary" />
+              Labor Rates
+            </CardTitle>
+            <CardDescription>
+              Hourly rates for services
+            </CardDescription>
+          </div>
+          <Button size="sm" onClick={openNewLaborDialog}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Labor Rate
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {catalogData.laborRates.map((rate) => (
+            <div key={rate.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+              <div>
+                <p className="font-medium">{rate.name}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant="secondary" className="text-xs">{rate.category}</Badge>
+                  <span className="text-sm font-semibold text-primary">
+                    ${rate.hourly_rate?.toFixed(2)}/hour
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Min: {rate.minimum_hours}hrs
+                  </span>
+                  {rate.default_for_category && (
+                    <Badge variant="outline" className="text-xs">Default</Badge>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2">
+  <div className="flex gap-2">
+  <Button 
+    size="sm" 
+    variant="ghost"
+    onClick={() => openEditLaborDialog(rate)}
+  >
+    <Edit3 className="w-4 h-4" />
+  </Button>
+  <Button 
+    size="sm" 
+    variant="ghost"
+    onClick={() => deleteCatalogItem('labor', rate.id)}
+  >
+    <Trash2 className="w-4 h-4" />
+  </Button>
+</div>
+</div>
+            </div>
+          ))}
+          {catalogData.laborRates.length === 0 && (
+            <p className="text-center text-muted-foreground py-8">
+              No labor rates in catalog yet.
+            </p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+</TabsContent>
 
         {/* Operational Preferences */}
         <TabsContent value="operations" className="space-y-6">
@@ -1922,7 +2629,736 @@ export default function Settings() {
             </Card>
           </div>
         </TabsContent>
+
+{/* Recipes Tab */}
+<TabsContent value="recipes" className="space-y-6">
+  <Card className="shadow-card">
+    <CardHeader>
+      <div className="flex items-center justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <ChefHat className="w-5 h-5 text-primary" />
+            Recipe Templates
+          </CardTitle>
+          <CardDescription>
+            Create reusable recipe templates with ingredients and labor
+          </CardDescription>
+        </div>
+        <Button size="sm" onClick={() => {
+  setEditingRecipe({
+    id: recipe.id,
+    name: recipe.name,
+    category: recipe.category,
+    description: recipe.description,
+    estimated_labor_hours: recipe.estimated_labor_hours,
+    estimated_cost: recipe.estimated_cost,
+    typical_client_price: recipe.typical_client_price,
+    notes: recipe.notes,
+    ingredients: (recipe.ingredients || []).map(ing => ({
+  catalog_item_id: ing.catalog_item_id,
+  catalog_item_type: ing.catalog_item_type,
+  quantity: ing.quantity
+})) || []
+  });
+  setRecipeDialogOpen(true);
+}}>
+          <Plus className="w-4 h-4 mr-2" />
+          Add Recipe
+        </Button>
+      </div>
+    </CardHeader>
+    <CardContent>
+      <div className="space-y-2">
+        {recipeData.map((recipe) => (
+          <div key={recipe.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+            <div>
+              <p className="font-medium">{recipe.name}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="secondary" className="text-xs">{recipe.category}</Badge>
+                <span className="text-sm text-muted-foreground">
+                  {recipe.ingredients?.length || 0} ingredients
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {recipe.estimated_labor_hours}hrs labor
+                </span>
+                <span className="text-sm font-semibold text-primary">
+                  ~${recipe.typical_client_price?.toFixed(2)}
+                </span>
+              </div>
+              {recipe.description && (
+                <p className="text-sm text-muted-foreground mt-1">{recipe.description}</p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button 
+  size="sm" 
+  variant="ghost"
+  onClick={() => {
+    setEditingRecipe({
+      id: recipe.id,
+      name: recipe.name,
+      category: recipe.category,
+      description: recipe.description,
+      estimated_labor_hours: recipe.estimated_labor_hours,
+      estimated_cost: recipe.estimated_cost,
+      typical_client_price: recipe.typical_client_price,
+      notes: recipe.notes,
+      ingredients: recipe.ingredients
+    });
+    setRecipeDialogOpen(true);
+  }}
+>
+  <Eye className="w-4 h-4 mr-1" />
+  View
+</Button>
+              <Button 
+                size="sm" 
+                variant="ghost"
+                onClick={async () => {
+                  try {
+                    const { error } = await supabase
+                      .from('recipe_templates')
+                      .update({ is_active: false })
+                      .eq('id', recipe.id);
+                    
+                    if (error) throw error;
+                    await fetchRecipeData();
+                    toast({ title: 'Success', description: 'Recipe deleted' });
+                  } catch (error) {
+                    console.error('Error deleting recipe:', error);
+                    toast({ title: 'Error', description: 'Failed to delete recipe', variant: 'destructive' });
+                  }
+                }}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        ))}
+        {recipeData.length === 0 && (
+          <p className="text-center text-muted-foreground py-8">
+            No recipes yet. Create your first recipe template.
+          </p>
+        )}
+      </div>
+    </CardContent>
+  </Card>
+</TabsContent>
+
+{/* Recipe Dialog */}
+<Dialog open={recipeDialogOpen} onOpenChange={setRecipeDialogOpen}>
+  <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+  <DialogHeader>
+    <DialogTitle>{editingRecipe?.id ? 'Recipe Details' : 'Add New Recipe'}</DialogTitle>
+  </DialogHeader>
+  <div className="space-y-4">
+    {/* All your form fields stay the same, just add disabled={!!editingRecipe?.id} to inputs when in view mode */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Recipe Name *</Label>
+          <Input
+            value={editingRecipe?.name || ''}
+            onChange={(e) => setEditingRecipe({ ...editingRecipe, name: e.target.value })}
+            placeholder="Bridal Bouquet - Classic"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Category</Label>
+          <Select
+            value={editingRecipe?.category || 'bouquet'}
+            onValueChange={(value) => setEditingRecipe({ ...editingRecipe, category: value })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="bouquet">Bouquet</SelectItem>
+              <SelectItem value="centerpiece">Centerpiece</SelectItem>
+              <SelectItem value="arrangement">Arrangement</SelectItem>
+              <SelectItem value="boutonniere">Boutonniere</SelectItem>
+              <SelectItem value="corsage">Corsage</SelectItem>
+              <SelectItem value="arch">Arch/Installation</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Description</Label>
+        <Textarea
+          value={editingRecipe?.description || ''}
+          onChange={(e) => setEditingRecipe({ ...editingRecipe, description: e.target.value })}
+          rows={2}
+          placeholder="Classic romantic bouquet with blush tones"
+        />
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label>Labor Hours</Label>
+          <Input
+            type="number"
+            step="0.5"
+            value={editingRecipe?.estimated_labor_hours || 0}
+            onChange={(e) => setEditingRecipe({ ...editingRecipe, estimated_labor_hours: parseFloat(e.target.value) || 0 })}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Est. Cost</Label>
+          <Input
+            type="number"
+            step="0.01"
+            value={editingRecipe?.estimated_cost || 0}
+            onChange={(e) => setEditingRecipe({ ...editingRecipe, estimated_cost: parseFloat(e.target.value) || 0 })}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Typical Client Price</Label>
+          <Input
+            type="number"
+            step="0.01"
+            value={editingRecipe?.typical_client_price || 0}
+            onChange={(e) => setEditingRecipe({ ...editingRecipe, typical_client_price: parseFloat(e.target.value) || 0 })}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Notes</Label>
+        <Textarea
+          value={editingRecipe?.notes || ''}
+          onChange={(e) => setEditingRecipe({ ...editingRecipe, notes: e.target.value })}
+          rows={2}
+        />
+      </div>
+
+      {/* Ingredient Builder */}
+<div className="space-y-3">
+  <div className="flex items-center justify-between">
+    <Label>Recipe Ingredients</Label>
+    <Button 
+      type="button" 
+      size="sm" 
+      variant="outline"
+      onClick={() => {
+        const newIngredients = editingRecipe?.ingredients || [];
+        setEditingRecipe({
+          ...editingRecipe,
+          ingredients: [
+            ...newIngredients,
+            { catalog_item_id: '', catalog_item_type: 'flower', quantity: 1 }
+          ]
+        });
+      }}
+    >
+      <Plus className="w-3 h-3 mr-1" />
+      Add Ingredient
+    </Button>
+  </div>
+
+  <div className="space-y-2 max-h-64 overflow-y-auto">
+    {editingRecipe?.ingredients?.map((ingredient, index) => (
+      <div key={index} className="grid grid-cols-12 gap-2 items-center p-2 border rounded">
+        <div className="col-span-2">
+          <Select
+            value={ingredient.catalog_item_type}
+            onValueChange={(value) => {
+              const updated = [...(editingRecipe.ingredients || [])];
+              updated[index] = { ...ingredient, catalog_item_type: value, catalog_item_id: '' };
+              setEditingRecipe({ ...editingRecipe, ingredients: updated });
+            }}
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="flower">Flower</SelectItem>
+              <SelectItem value="hardgood">Hard Good</SelectItem>
+              <SelectItem value="labor">Labor</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="col-span-7">
+          <Select
+            value={ingredient.catalog_item_id}
+            onValueChange={(value) => {
+              const updated = [...(editingRecipe.ingredients || [])];
+              updated[index] = { ...ingredient, catalog_item_id: value };
+              setEditingRecipe({ ...editingRecipe, ingredients: updated });
+            }}
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Select item..." />
+            </SelectTrigger>
+            <SelectContent>
+              {catalogItems
+                .filter(item => item.type === ingredient.catalog_item_type)
+                .map(item => (
+                  <SelectItem key={item.id} value={item.id}>
+                    {item.name} - ${item.base_price?.toFixed(2)}
+                  </SelectItem>
+                ))
+              }
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="col-span-2">
+          <Input
+            type="number"
+            step="0.1"
+            value={ingredient.quantity}
+            onChange={(e) => {
+              const updated = [...(editingRecipe.ingredients || [])];
+              updated[index] = { ...ingredient, quantity: parseFloat(e.target.value) || 1 };
+              setEditingRecipe({ ...editingRecipe, ingredients: updated });
+            }}
+            className="h-8 text-xs"
+            placeholder="Qty"
+          />
+        </div>
+
+        <div className="col-span-1">
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              const updated = (editingRecipe.ingredients || []).filter((_, i) => i !== index);
+              setEditingRecipe({ ...editingRecipe, ingredients: updated });
+            }}
+            className="h-8 w-8 p-0"
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
+      </div>
+    ))}
+  </div>
+
+  {(!editingRecipe?.ingredients || editingRecipe.ingredients.length === 0) && (
+    <p className="text-sm text-muted-foreground text-center py-4">
+      No ingredients yet. Click "Add Ingredient" to start building your recipe.
+    </p>
+  )}
+</div>
+    </div>
+    
+    <div className="flex justify-end gap-2 pt-4">
+      <Button variant="outline" onClick={() => setRecipeDialogOpen(false)}>
+        Cancel
+      </Button>
+      <Button onClick={async () => {
+        if (!editingRecipe?.name || !organization) return;
+
+        try {
+          if (editingRecipe.id) {
+  // Update existing recipe
+  const { error } = await supabase
+    .from('recipe_templates')
+    .update({
+      name: editingRecipe.name,
+      type: 'recipe',
+      category: editingRecipe.category,
+      description: editingRecipe.description,
+      estimated_labor_hours: editingRecipe.estimated_labor_hours,
+      estimated_cost: editingRecipe.estimated_cost,
+      typical_client_price: editingRecipe.typical_client_price,
+      notes: editingRecipe.notes,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', editingRecipe.id);
+
+  if (error) throw error;
+
+  // Delete existing ingredients and re-insert
+  await supabase
+    .from('recipe_ingredients')
+    .delete()
+    .eq('recipe_id', editingRecipe.id);
+
+  if (editingRecipe.ingredients && editingRecipe.ingredients.length > 0) {
+    const ingredientsToInsert = editingRecipe.ingredients
+      .filter(ing => ing.catalog_item_id) // Only save if item selected
+      .map(ing => ({
+        recipe_id: editingRecipe.id,
+        catalog_item_id: ing.catalog_item_id,
+        catalog_item_type: ing.catalog_item_type,
+        quantity: ing.quantity
+      }));
+
+    if (ingredientsToInsert.length > 0) {
+      const { error: ingError } = await supabase
+        .from('recipe_ingredients')
+        .insert(ingredientsToInsert);
+
+      if (ingError) throw ingError;
+    }
+  }
+} else {
+  // Create new recipe
+  const { data: newRecipe, error } = await supabase
+    .from('recipe_templates')
+    .insert({
+      organization_id: organization.id,
+      name: editingRecipe.name,
+      type: 'recipe',
+      category: editingRecipe.category,
+      description: editingRecipe.description,
+      estimated_labor_hours: editingRecipe.estimated_labor_hours || 0,
+      estimated_cost: editingRecipe.estimated_cost || 0,
+      typical_client_price: editingRecipe.typical_client_price || 0,
+      notes: editingRecipe.notes
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  // Insert ingredients for new recipe
+  if (newRecipe && editingRecipe.ingredients && editingRecipe.ingredients.length > 0) {
+    const ingredientsToInsert = editingRecipe.ingredients
+      .filter(ing => ing.catalog_item_id)
+      .map(ing => ({
+        recipe_id: newRecipe.id,
+        catalog_item_id: ing.catalog_item_id,
+        catalog_item_type: ing.catalog_item_type,
+        quantity: ing.quantity
+      }));
+
+    if (ingredientsToInsert.length > 0) {
+      const { error: ingError } = await supabase
+        .from('recipe_ingredients')
+        .insert(ingredientsToInsert);
+
+      if (ingError) throw ingError;
+    }
+  }
+}
+
+          await fetchRecipeData();
+          setRecipeDialogOpen(false);
+          setEditingRecipe(null);
+
+          toast({
+            title: 'Success',
+            description: editingRecipe.id ? 'Recipe updated' : 'Recipe created'
+          });
+        } catch (error) {
+          console.error('Error saving recipe:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to save recipe',
+            variant: 'destructive'
+          });
+        }
+      }}>
+        {editingRecipe?.id ? 'Update Recipe' : 'Create Recipe'}
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
+
       </Tabs>
+
+{/* Flower Dialog */}
+<Dialog open={catalogDialogOpen === 'flower'} onOpenChange={() => setCatalogDialogOpen(null)}>
+  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <DialogHeader>
+      <DialogTitle>{editingCatalogItem?.id ? 'Edit Flower' : 'Add New Flower'}</DialogTitle>
+    </DialogHeader>
+    <div className="space-y-4">
+      <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label>Name *</Label>
+          <Input
+            value={editingCatalogItem?.name || ''}
+            onChange={(e) => setEditingCatalogItem({ ...editingCatalogItem, name: e.target.value })}
+            placeholder="Rose"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Variety</Label>
+          <Input
+            value={editingCatalogItem?.variety || ''}
+            onChange={(e) => setEditingCatalogItem({ ...editingCatalogItem, variety: e.target.value })}
+            placeholder="Garden"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Color</Label>
+          <Input
+            value={editingCatalogItem?.color || ''}
+            onChange={(e) => setEditingCatalogItem({ ...editingCatalogItem, color: e.target.value })}
+            placeholder="Blush Pink"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label>Base Price *</Label>
+          <Input
+            type="number"
+            step="0.01"
+            value={editingCatalogItem?.base_price || 0}
+            onChange={(e) => setEditingCatalogItem({ ...editingCatalogItem, base_price: parseFloat(e.target.value) })}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Unit</Label>
+          <Select
+            value={editingCatalogItem?.unit || 'stem'}
+            onValueChange={(value) => setEditingCatalogItem({ ...editingCatalogItem, unit: value })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="stem">Stem</SelectItem>
+              <SelectItem value="bunch">Bunch</SelectItem>
+              <SelectItem value="bunch-10">Bunch (10)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Color Hex</Label>
+          <div className="flex gap-2">
+            <Input
+              value={editingCatalogItem?.color_hex || ''}
+              onChange={(e) => setEditingCatalogItem({ ...editingCatalogItem, color_hex: e.target.value })}
+              placeholder="#F4C2C2"
+            />
+            <input
+              type="color"
+              value={editingCatalogItem?.color_hex || '#FFFFFF'}
+              onChange={(e) => setEditingCatalogItem({ ...editingCatalogItem, color_hex: e.target.value })}
+              className="w-12 h-10 rounded border cursor-pointer"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Preferred Vendor</Label>
+        <Input
+          value={editingCatalogItem?.preferred_vendor || ''}
+          onChange={(e) => setEditingCatalogItem({ ...editingCatalogItem, preferred_vendor: e.target.value })}
+          placeholder="Wholesale Flowers Inc."
+        />
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Switch
+          checked={editingCatalogItem?.is_year_round || false}
+          onCheckedChange={(checked) => setEditingCatalogItem({ ...editingCatalogItem, is_year_round: checked })}
+        />
+        <Label>Available Year-Round</Label>
+      </div>
+{!editingCatalogItem?.is_year_round && (
+  <div className="space-y-2">
+    <Label>Available Months</Label>
+    <Input
+      value={editingCatalogItem?.seasonal_months || ''}
+      onChange={(e) => setEditingCatalogItem({ ...editingCatalogItem, seasonal_months: e.target.value })}
+      placeholder="e.g., April-October or Spring, Summer"
+    />
+    <p className="text-xs text-muted-foreground">Specify when this flower is available</p>
+  </div>
+)}
+      <div className="space-y-2">
+        <Label>Notes</Label>
+        <Textarea
+          value={editingCatalogItem?.notes || ''}
+          onChange={(e) => setEditingCatalogItem({ ...editingCatalogItem, notes: e.target.value })}
+          rows={2}
+        />
+      </div>
+    </div>
+    <div className="flex justify-end gap-2 pt-4">
+      <Button variant="outline" onClick={() => setCatalogDialogOpen(null)}>Cancel</Button>
+      <Button onClick={saveCatalogItem}>Save Flower</Button>
+    </div>
+  </DialogContent>
+</Dialog>
+
+{/* Hard Good Dialog */}
+<Dialog open={catalogDialogOpen === 'hardgood'} onOpenChange={() => setCatalogDialogOpen(null)}>
+  <DialogContent className="max-w-2xl">
+    <DialogHeader>
+      <DialogTitle>{editingCatalogItem?.id ? 'Edit Hard Good' : 'Add New Hard Good'}</DialogTitle>
+    </DialogHeader>
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Name *</Label>
+          <Input
+            value={editingCatalogItem?.name || ''}
+            onChange={(e) => setEditingCatalogItem({ ...editingCatalogItem, name: e.target.value })}
+            placeholder="Cylinder Vase"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Category</Label>
+          <Select
+            value={editingCatalogItem?.category || 'vase'}
+            onValueChange={(value) => setEditingCatalogItem({ ...editingCatalogItem, category: value })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="vase">Vase</SelectItem>
+              <SelectItem value="foam">Foam</SelectItem>
+              <SelectItem value="wire">Wire</SelectItem>
+              <SelectItem value="ribbon">Ribbon</SelectItem>
+              <SelectItem value="container">Container</SelectItem>
+              <SelectItem value="tape">Tape</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label>Purchase Price</Label>
+          <Input
+            type="number"
+            step="0.01"
+            value={editingCatalogItem?.purchase_price || 0}
+            onChange={(e) => setEditingCatalogItem({ ...editingCatalogItem, purchase_price: parseFloat(e.target.value) })}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Rental Price</Label>
+          <Input
+            type="number"
+            step="0.01"
+            value={editingCatalogItem?.rental_price || 0}
+            onChange={(e) => setEditingCatalogItem({ ...editingCatalogItem, rental_price: parseFloat(e.target.value) })}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Unit</Label>
+          <Input
+            value={editingCatalogItem?.unit || 'each'}
+            onChange={(e) => setEditingCatalogItem({ ...editingCatalogItem, unit: e.target.value })}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Size/Dimensions</Label>
+        <Input
+          value={editingCatalogItem?.size_dimensions || ''}
+          onChange={(e) => setEditingCatalogItem({ ...editingCatalogItem, size_dimensions: e.target.value })}
+          placeholder='8" height'
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Preferred Vendor</Label>
+        <Input
+          value={editingCatalogItem?.preferred_vendor || ''}
+          onChange={(e) => setEditingCatalogItem({ ...editingCatalogItem, preferred_vendor: e.target.value })}
+        />
+      </div>
+    </div>
+    <div className="flex justify-end gap-2 pt-4">
+      <Button variant="outline" onClick={() => setCatalogDialogOpen(null)}>Cancel</Button>
+      <Button onClick={saveCatalogItem}>Save Hard Good</Button>
+    </div>
+  </DialogContent>
+</Dialog>
+
+{/* Labor Rate Dialog */}
+<Dialog open={catalogDialogOpen === 'labor'} onOpenChange={() => setCatalogDialogOpen(null)}>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>{editingCatalogItem?.id ? 'Edit Hard Good' : 'Add New Hard Good'}</DialogTitle>
+    </DialogHeader>
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label>Name *</Label>
+        <Input
+          value={editingCatalogItem?.name || ''}
+          onChange={(e) => setEditingCatalogItem({ ...editingCatalogItem, name: e.target.value })}
+          placeholder="Design Consultation"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Category</Label>
+        <Select
+          value={editingCatalogItem?.category || 'design'}
+          onValueChange={(value) => setEditingCatalogItem({ ...editingCatalogItem, category: value })}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="consultation">Consultation</SelectItem>
+            <SelectItem value="design">Design</SelectItem>
+            <SelectItem value="assembly">Assembly</SelectItem>
+            <SelectItem value="delivery">Delivery</SelectItem>
+            <SelectItem value="setup">Setup</SelectItem>
+            <SelectItem value="breakdown">Breakdown</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Hourly Rate *</Label>
+          <Input
+            type="number"
+            step="0.01"
+            value={editingCatalogItem?.hourly_rate || 0}
+            onChange={(e) => setEditingCatalogItem({ ...editingCatalogItem, hourly_rate: parseFloat(e.target.value) })}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Minimum Hours</Label>
+          <Input
+            type="number"
+            step="0.5"
+            value={editingCatalogItem?.minimum_hours || 1.0}
+            onChange={(e) => setEditingCatalogItem({ ...editingCatalogItem, minimum_hours: parseFloat(e.target.value) })}
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Switch
+          checked={editingCatalogItem?.default_for_category || false}
+          onCheckedChange={(checked) => setEditingCatalogItem({ ...editingCatalogItem, default_for_category: checked })}
+        />
+        <Label>Use as default for this category</Label>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Description</Label>
+        <Textarea
+          value={editingCatalogItem?.description || ''}
+          onChange={(e) => setEditingCatalogItem({ ...editingCatalogItem, description: e.target.value })}
+          rows={2}
+        />
+      </div>
+    </div>
+    <div className="flex justify-end gap-2 pt-4">
+      <Button variant="outline" onClick={() => setCatalogDialogOpen(null)}>Cancel</Button>
+      <Button onClick={saveCatalogItem}>Save Labor Rate</Button>
+    </div>
+  </DialogContent>
+</Dialog>
+
     </div>
   );
+}
+
+function setCatalogDialogOpen(arg0: string) {
+  throw new Error("Function not implemented.");
 }

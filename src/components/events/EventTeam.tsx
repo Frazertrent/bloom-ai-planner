@@ -404,139 +404,133 @@ const EventTeam = ({ eventId }: EventTeamProps) => {
       </div>
 
       {/* Staff Assignments */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Staff Assignments</span>
-            <div className="flex gap-2">
-              {eventDate && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowAvailability(!showAvailability)}
-                >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  {showAvailability ? 'Hide' : 'Show'} Availability
-                </Button>
+<Card>
+  <CardHeader>
+    <CardTitle className="flex items-center justify-between">
+      <span>Staff Assignments</span>
+      <div className="flex gap-2">
+        {eventDate && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowAvailability(!showAvailability)}
+          >
+            <Calendar className="w-4 h-4 mr-2" />
+            {showAvailability ? 'Hide' : 'Show'} Availability
+          </Button>
+        )}
+        <Button
+          size="sm"
+          onClick={() => {
+            setEditingAssignment(null);
+            setNewAssignment({
+              role: 'assistant',
+              hourly_rate: 25,
+              estimated_hours: 8
+            });
+            setIsAddingAssignment(true);
+          }}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Staff
+        </Button>
+      </div>
+    </CardTitle>
+  </CardHeader>
+  <CardContent>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Team Member</TableHead>
+          <TableHead>Role</TableHead>
+          <TableHead>Hourly Rate</TableHead>
+          <TableHead>Est. Hours</TableHead>
+          <TableHead>Actual Hours</TableHead>
+          <TableHead>Cost</TableHead>
+          {showAvailability && <TableHead>Available</TableHead>}
+          <TableHead></TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {assignments.map((assignment) => {
+          const hours = assignment.actual_hours || assignment.estimated_hours || 0;
+          const cost = hours * (assignment.hourly_rate || 0);
+          const roleInfo = ROLE_OPTIONS.find(r => r.value === assignment.role);
+          
+          return (
+            <TableRow key={assignment.id}>
+              <TableCell className="font-medium">
+                {getTeamMemberName(assignment.user_id)}
+              </TableCell>
+              <TableCell>
+                <Badge className={roleInfo?.color}>
+                  <span className="mr-1">{roleInfo?.icon}</span>
+                  {roleInfo?.label}
+                </Badge>
+              </TableCell>
+              <TableCell>${assignment.hourly_rate || 0}/hr</TableCell>
+              <TableCell>{assignment.estimated_hours || 0}h</TableCell>
+              <TableCell>
+                <Input
+                  type="number"
+                  step="0.5"
+                  value={assignment.actual_hours || ''}
+                  onChange={(e) => assignment.id && updateActualHours(
+                    assignment.id,
+                    parseFloat(e.target.value) || 0
+                  )}
+                  className="w-20"
+                  placeholder={assignment.estimated_hours?.toString()}
+                />
+              </TableCell>
+              <TableCell className="font-semibold">
+                ${cost.toFixed(2)}
+              </TableCell>
+              {showAvailability && (
+                <TableCell>
+                  {assignment.user_id && isTeamMemberAvailable(assignment.user_id) ? (
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <AlertCircle className="w-5 h-5 text-gray-400" />
+                  )}
+                </TableCell>
               )}
-              <Button
-                size="sm"
-                onClick={() => {
-                  setEditingAssignment(null);
-                  setNewAssignment({
-                    role: 'assistant',
-                    hourly_rate: 25,
-                    estimated_hours: 8
-                  });
-                  setIsAddingAssignment(true);
-                }}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Staff
-              </Button>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Team Member</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Hourly Rate</TableHead>
-                <TableHead>Est. Hours</TableHead>
-                <TableHead>Actual Hours</TableHead>
-                <TableHead>Cost</TableHead>
-                {showAvailability && <TableHead>Available</TableHead>}
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {assignments.map((assignment) => {
-                const hours = assignment.actual_hours || assignment.estimated_hours || 0;
-                const cost = hours * (assignment.hourly_rate || 0);
-                const roleInfo = ROLE_OPTIONS.find(r => r.value === assignment.role);
-                
-                return (
-                  <TableRow key={assignment.id}>
-                    <TableCell className="font-medium">
-                      {getTeamMemberName(assignment.user_id)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={roleInfo?.color}>
-                        <span className="mr-1">{roleInfo?.icon}</span>
-                        {roleInfo?.label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>${assignment.hourly_rate || 0}/hr</TableCell>
-                    <TableCell>{assignment.estimated_hours || 0}h</TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        step="0.5"
-                        value={assignment.actual_hours || ''}
-                        onChange={(e) => assignment.id && updateActualHours(
-                          assignment.id,
-                          parseFloat(e.target.value) || 0
-                        )}
-                        className="w-20"
-                        placeholder={assignment.estimated_hours?.toString()}
-                      />
-                    </TableCell>
-                    <TableCell className="font-semibold">
-                      ${cost.toFixed(2)}
-                    </TableCell>
-                    {showAvailability && (
-                      <TableCell>
-                        {assignment.user_id && isTeamMemberAvailable(assignment.user_id) ? (
-                          <CheckCircle className="w-5 h-5 text-green-600" />
-                        ) : (
-                          <AlertCircle className="w-5 h-5 text-gray-400" />
-                        )}
-                      </TableCell>
-                    )}
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setEditingAssignment(assignment);
-                            setNewAssignment(assignment);
-                            setIsAddingAssignment(true);
-                          }}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => assignment.id && deleteAssignment(assignment.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-              {assignments.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={showAvailability ? 8 : 7} className="text-center text-muted-foreground">
-                    No staff assigned yet
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-
-          {assignment.notes && (
-            <div className="mt-2 p-2 bg-gray-50 rounded">
-              <p className="text-sm text-gray-600">{assignment.notes}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              <TableCell>
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setEditingAssignment(assignment);
+                      setNewAssignment(assignment);
+                      setIsAddingAssignment(true);
+                    }}
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => assignment.id && deleteAssignment(assignment.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          );
+        })}
+        {assignments.length === 0 && (
+          <TableRow>
+            <TableCell colSpan={showAvailability ? 8 : 7} className="text-center text-muted-foreground">
+              No staff assigned yet
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
+  </CardContent>
+</Card>
 
       {/* Labor Cost Breakdown */}
       <Card>
