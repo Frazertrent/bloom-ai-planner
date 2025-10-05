@@ -9,29 +9,25 @@ import {
   ArrowLeft, 
   Edit, 
   Calendar,
-  Clock,
   MapPin,
   Users,
-  DollarSign,
   Phone,
   Mail,
   Loader2,
-  FileText,
-  Palette,
-  Flower,
-  Plus,
-  ChevronRight,
-  CheckCircle,
-  AlertCircle,
-  Package
+  Package,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { EventPhase, PHASE_CONFIGS } from '@/types/phase1';  // Adjust the import path as necessary
 
-// Import the tab components (we'll create these next)
-import EventOverview from '@/components/events/EventOverview.tsx';
-import EventBudget from '@/components/events/EventBudget.tsx';
-import EventTimeline from '@/components/events/EventTimeline.tsx';
-import EventTeam from '@/components/events/EventTeam.tsx';
+// Import the tab components
+import EventOverview from '@/components/events/EventOverview';
+import EventConsultation from '@/components/events/EventConsultation';
+import EventBudget from '@/components/events/EventBudget';
+import EventTimeline from '@/components/events/EventTimeline';
+import EventTeam from '@/components/events/EventTeam';
+import EnhancedDesignTab from '@/components/events/EnhancedDesignTab';
 
 interface EventData {
   id: string;
@@ -43,6 +39,13 @@ interface EventData {
   budget_target: number;
   quoted_amount: number;
   special_instructions?: string;
+  
+  // Phase tracking
+  current_phase: EventPhase;
+  order_deadline_date?: string;
+  processing_date?: string;
+  production_date?: string;
+  
   venues: Array<{
     name: string;
     address?: string;
@@ -56,12 +59,27 @@ interface EventData {
   };
 }
 
+// Define which tabs are available in which phases
+const TAB_PHASE_VISIBILITY = {
+  overview: ['lead', 'consultation', 'design', 'ordering', 'processing', 'production', 'delivery', 'closeout'],
+  consultation: ['consultation', 'design', 'ordering', 'processing', 'production', 'delivery', 'closeout'],
+  budget: ['consultation', 'design', 'ordering', 'processing', 'production', 'delivery', 'closeout'],
+  design: ['design', 'ordering', 'processing', 'production', 'delivery', 'closeout'],
+  timeline: ['design', 'ordering', 'processing', 'production', 'delivery', 'closeout'],
+  team: ['design', 'ordering', 'processing', 'production', 'delivery', 'closeout'],
+  orders: ['ordering', 'processing', 'production', 'delivery', 'closeout'],
+  production: ['processing', 'production', 'delivery', 'closeout'],
+  delivery: ['delivery', 'closeout'],
+  financials: ['closeout']
+};
+
 const EventDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState<EventData | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [showHiddenTabs, setShowHiddenTabs] = useState(false);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -112,6 +130,75 @@ const EventDetail = () => {
     return `${month}/${day}/${year}`;
   };
 
+  const getStatusBadge = () => {
+    const statusColors: Record<string, string> = {
+      consultation: 'bg-blue-100 text-blue-800',
+      planning: 'bg-yellow-100 text-yellow-800',
+      approved: 'bg-green-100 text-green-800',
+      completed: 'bg-gray-100 text-gray-800'
+    };
+    
+    return (
+      <Badge className={statusColors[event?.status || ''] || 'bg-gray-100 text-gray-800'}>
+        {event?.status}
+      </Badge>
+    );
+  };
+
+  const getPhaseBadge = () => {
+    console.log('getPhaseBadge called, phase:', event?.current_phase);
+    if (!event?.current_phase) return null;
+    
+    const phaseColors: Record<EventPhase, string> = {
+      lead: 'bg-gray-100 text-gray-800',
+      consultation: 'bg-blue-100 text-blue-800',
+      design: 'bg-purple-100 text-purple-800',
+      ordering: 'bg-orange-100 text-orange-800',
+      processing: 'bg-yellow-100 text-yellow-800',
+      production: 'bg-green-100 text-green-800',
+      delivery: 'bg-cyan-100 text-cyan-800',
+      closeout: 'bg-pink-100 text-pink-800'
+    };
+
+    const config = PHASE_CONFIGS[event.current_phase];
+    
+    return (
+      <Badge className={phaseColors[event.current_phase]}>
+        Phase: {config.label}
+      </Badge>
+    );
+  };
+
+  const isTabVisible = (tabName: string): boolean => {
+    if (!event?.current_phase) return tabName === 'overview';
+    if (showHiddenTabs) return true; // Show all tabs if user toggles visibility
+    
+    const visiblePhases = TAB_PHASE_VISIBILITY[tabName as keyof typeof TAB_PHASE_VISIBILITY] || [];
+    return visiblePhases.includes(event.current_phase);
+  };
+
+  const getVisibleTabs = () => {
+    const allTabs = [
+      { id: 'overview', label: 'Overview', alwaysVisible: true },
+      { id: 'consultation', label: 'Consultation', alwaysVisible: false },
+      { id: 'budget', label: 'Budget', alwaysVisible: false },
+      { id: 'design', label: 'Design', alwaysVisible: false },
+      { id: 'timeline', label: 'Timeline', alwaysVisible: false },
+      { id: 'team', label: 'Team', alwaysVisible: false },
+      { id: 'orders', label: 'Orders', alwaysVisible: false },
+      { id: 'production', label: 'Production', alwaysVisible: false },
+      { id: 'delivery', label: 'Delivery', alwaysVisible: false },
+      { id: 'financials', label: 'Financials', alwaysVisible: false }
+    ];
+
+    return allTabs.filter(tab => tab.alwaysVisible || isTabVisible(tab.id));
+  };
+
+  const getHiddenTabsCount = () => {
+    const allTabs = ['overview', 'consultation', 'budget', 'design', 'timeline', 'team', 'orders', 'production', 'delivery', 'financials'];
+    return allTabs.filter(tab => !isTabVisible(tab)).length;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -137,20 +224,9 @@ const EventDetail = () => {
     );
   }
 
-  const getStatusBadge = () => {
-    const statusColors: Record<string, string> = {
-      consultation: 'bg-blue-100 text-blue-800',
-      planning: 'bg-yellow-100 text-yellow-800',
-      approved: 'bg-green-100 text-green-800',
-      completed: 'bg-gray-100 text-gray-800'
-    };
-    
-    return (
-      <Badge className={statusColors[event.status] || 'bg-gray-100 text-gray-800'}>
-        {event.status}
-      </Badge>
-    );
-  };
+  const visibleTabs = getVisibleTabs();
+  
+  const hiddenTabsCount = getHiddenTabsCount();
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
@@ -169,6 +245,7 @@ const EventDetail = () => {
         </div>
         <div className="flex items-center gap-2">
           {getStatusBadge()}
+          {getPhaseBadge()}
           <Button
             onClick={() => navigate(`/events/${id}/edit`)}
             className="gap-2"
@@ -186,6 +263,11 @@ const EventDetail = () => {
           <p className="text-lg text-muted-foreground">
             {event.clients.first_name} {event.clients.last_name}
           </p>
+          {event.current_phase && (
+            <p className="text-sm text-muted-foreground mt-2">
+              {PHASE_CONFIGS[event.current_phase].description}
+            </p>
+          )}
         </div>
         <Card>
           <CardHeader className="pb-3">
@@ -302,21 +384,63 @@ const EventDetail = () => {
         </CardContent>
       </Card>
 
+      {/* Phase-Based Tab Navigation */}
+      {hiddenTabsCount > 0 && (
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="flex items-center justify-between p-4">
+            <div>
+              <p className="text-sm font-medium text-blue-900">
+                {hiddenTabsCount} tab{hiddenTabsCount !== 1 ? 's' : ''} hidden for current phase
+              </p>
+              <p className="text-xs text-blue-700">
+                Tabs will become available as you progress through phases
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowHiddenTabs(!showHiddenTabs)}
+              className="gap-2"
+            >
+              {showHiddenTabs ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {showHiddenTabs ? 'Hide' : 'Show'} All Tabs
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Tabs Section */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="budget">Budget</TabsTrigger>
-          <TabsTrigger value="timeline">Timeline</TabsTrigger>
-          <TabsTrigger value="team">Team</TabsTrigger>
+        <TabsList className={`grid w-full ${visibleTabs.length <= 4 ? `grid-cols-${visibleTabs.length}` : 'grid-cols-4'}`}>
+          {visibleTabs.map(tab => (
+            <TabsTrigger 
+              key={tab.id} 
+              value={tab.id}
+              className={!isTabVisible(tab.id) && showHiddenTabs ? 'opacity-50' : ''}
+            >
+              {tab.label}
+              {!isTabVisible(tab.id) && showHiddenTabs && (
+                <span className="ml-1 text-xs">🔒</span>
+              )}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
           <EventOverview eventId={id!} />
         </TabsContent>
 
+        {/* NEW CONSULTATION TAB */}
+        <TabsContent value="consultation" className="mt-6">
+          <EventConsultation eventId={id!} />
+        </TabsContent>
+
         <TabsContent value="budget" className="mt-6">
           <EventBudget eventId={id!} />
+        </TabsContent>
+
+        <TabsContent value="design" className="mt-6">
+          <EnhancedDesignTab />
         </TabsContent>
 
         <TabsContent value="timeline" className="mt-6">
@@ -325,6 +449,51 @@ const EventDetail = () => {
 
         <TabsContent value="team" className="mt-6">
           <EventTeam eventId={id!} />
+        </TabsContent>
+
+        {/* Placeholder tabs for future implementation */}
+        <TabsContent value="orders" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Flower Orders</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Order management coming in Phase 2</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="production" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Production Tracking</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Production tracking coming in Phase 2</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="delivery" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Delivery & Setup</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Delivery tracking coming in Phase 2</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="financials" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Financial Reconciliation</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Financial reconciliation coming in Phase 2</p>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

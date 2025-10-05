@@ -2645,20 +2645,21 @@ const [editingRecipe, setEditingRecipe] = useState<{
           </CardDescription>
         </div>
         <Button size="sm" onClick={() => {
+  if (!editingRecipe) return; // Ensure editingRecipe is defined
   setEditingRecipe({
-    id: recipe.id,
-    name: recipe.name,
-    category: recipe.category,
-    description: recipe.description,
-    estimated_labor_hours: recipe.estimated_labor_hours,
-    estimated_cost: recipe.estimated_cost,
-    typical_client_price: recipe.typical_client_price,
-    notes: recipe.notes,
-    ingredients: (recipe.ingredients || []).map(ing => ({
-  catalog_item_id: ing.catalog_item_id,
-  catalog_item_type: ing.catalog_item_type,
-  quantity: ing.quantity
-})) || []
+    id: editingRecipe.id,
+    name: editingRecipe.name,
+    category: editingRecipe.category,
+    description: editingRecipe.description,
+    estimated_labor_hours: editingRecipe.estimated_labor_hours,
+    estimated_cost: editingRecipe.estimated_cost,
+    typical_client_price: editingRecipe.typical_client_price,
+    notes: editingRecipe.notes,
+    ingredients: (editingRecipe.ingredients || []).map(ing => ({
+      catalog_item_id: ing.catalog_item_id,
+      catalog_item_type: ing.catalog_item_type,
+      quantity: ing.quantity
+    })) || []
   });
   setRecipeDialogOpen(true);
 }}>

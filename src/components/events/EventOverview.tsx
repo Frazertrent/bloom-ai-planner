@@ -7,25 +7,30 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 
-  Mic, 
-  FileText, 
-  Palette, 
-  Flower, 
-  Plus, 
+  MessageSquare,
+  Palette,
+  Flower,
+  Plus,
   Edit,
   Save,
   X,
   Loader2,
   CheckCircle,
-  AlertCircle,
+  AlertTriangle,
   Clock,
   TrendingUp,
   Calendar,
-  MessageSquare
+  ShoppingCart,
+  Package,
+  Truck,
+  DollarSign,
+  AlertCircle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import { EventPhase, PHASE_CONFIGS } from '@/types/phase1';
 
 interface EventOverviewProps {
   eventId: string;
@@ -58,6 +63,10 @@ interface EventData {
   event_date?: string;
   status: string;
   updated_at: string;
+  current_phase: EventPhase;
+  order_deadline_date?: string;
+  processing_date?: string;
+  production_date?: string;
 }
 
 const STYLE_OPTIONS = [
@@ -72,6 +81,7 @@ const COMMON_COLORS = [
 ];
 
 const EventOverview = ({ eventId }: EventOverviewProps) => {
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [consultation, setConsultation] = useState<Consultation | null>(null);
   const [eventDesign, setEventDesign] = useState<EventDesign>({});
@@ -87,15 +97,6 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
     'Lilies', 'Carnations', 'Baby\'s Breath', 'Greenery'
   ]);
   const [customFlower, setCustomFlower] = useState('');
-
-  // Event status timeline data
-  const [statusTimeline, setStatusTimeline] = useState([
-    { status: 'consultation', label: 'Consultation', date: '', completed: false, current: false },
-    { status: 'planning', label: 'Planning', date: '', completed: false, current: false },
-    { status: 'approved', label: 'Approved', date: '', completed: false, current: false },
-    { status: 'completed', label: 'Completed', date: '', completed: false, current: false }
-  ]);
-  const [editingStatus, setEditingStatus] = useState(false);
 
   useEffect(() => {
     fetchOverviewData();
@@ -140,44 +141,16 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
         setTempDesign(designData);
       }
 
-      // Fetch event status and date for timeline
+      // Fetch event data including phase
       const { data: eventInfo, error: eventError } = await supabase
         .from('events')
-        .select('status, event_date, created_at, updated_at')
+        .select('status, event_date, created_at, updated_at, current_phase, order_deadline_date, processing_date, production_date')
         .eq('id', eventId)
         .single();
 
       if (eventError) throw eventError;
 
       setEventData(eventInfo);
-
-      // FIXED: Update status timeline based on current status
-      const updatedTimeline = statusTimeline.map(item => ({
-        ...item,
-        completed: false,
-        current: false,
-        date: ''
-      }));
-
-      const statusMap: Record<string, number> = {
-        'consultation': 0,
-        'planning': 1,
-        'approved': 2,
-        'completed': 3
-      };
-
-      const currentIndex = statusMap[eventInfo.status.toLowerCase()] || 0;
-      
-      // Mark all statuses up to current as completed
-      for (let i = 0; i <= currentIndex; i++) {
-        updatedTimeline[i].completed = true;
-      }
-      
-      // Mark ONLY the current status as current
-      updatedTimeline[currentIndex].current = true;
-      updatedTimeline[currentIndex].date = new Date(eventInfo.updated_at).toLocaleDateString();
-      
-      setStatusTimeline(updatedTimeline);
 
     } catch (error) {
       console.error('Error fetching overview data:', error);
@@ -191,38 +164,8 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
     }
   };
 
-  const handleStatusUpdate = async (newStatus: string) => {
-    try {
-      const { error } = await supabase
-        .from('events')
-        .update({ 
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', eventId);
-
-      if (error) throw error;
-
-      setEditingStatus(false);
-      await fetchOverviewData(); // Refresh to update timeline
-      
-      toast({
-        title: 'Success',
-        description: 'Event status updated successfully'
-      });
-    } catch (error) {
-      console.error('Error updating status:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update event status',
-        variant: 'destructive'
-      });
-    }
-  };
-
   const handleSaveNotes = async () => {
     try {
-      // First, get the organization_id from the event
       const { data: eventDataOrg, error: eventError } = await supabase
         .from('events')
         .select('organization_id')
@@ -232,7 +175,6 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
       if (eventError) throw eventError;
 
       if (consultation) {
-        // Update existing consultation
         const { error } = await supabase
           .from('consultations')
           .update({ 
@@ -243,14 +185,12 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
 
         if (error) throw error;
         
-        // Update local state
         setConsultation({
           ...consultation,
           notes,
           duration_minutes: durationMinutes ? Number(durationMinutes) : undefined
         });
       } else {
-        // Create new consultation - audio_url can be null if schema is fixed
         const { data, error } = await supabase
           .from('consultations')
           .insert({
@@ -286,7 +226,6 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
   const handleSaveDesign = async () => {
     try {
       if (eventDesign.id) {
-        // Update existing design
         const { error } = await supabase
           .from('event_design')
           .update(tempDesign)
@@ -295,7 +234,6 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
         if (error) throw error;
         setEventDesign(tempDesign);
       } else {
-        // Create new design
         const { data, error } = await supabase
           .from('event_design')
           .insert({
@@ -357,10 +295,8 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
   const addCustomFlower = () => {
     if (!customFlower.trim()) return;
     
-    // Add to temp design
     addFlower(customFlower.trim());
     
-    // Add to common flowers if not already there
     if (!commonFlowers.includes(customFlower.trim())) {
       setCommonFlowers([...commonFlowers, customFlower.trim()].sort());
     }
@@ -377,10 +313,8 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
   };
 
   const calculateDaysUntilEvent = () => {
-    if (!eventData?.event_date) return '--';
+    if (!eventData?.event_date) return null;
     
-    // event_date is stored as timestamptz in Postgres
-    // Extract just the date part and use UTC to avoid timezone issues
     const eventDate = new Date(eventData.event_date);
     const eventDateOnly = new Date(Date.UTC(
       eventDate.getUTCFullYear(),
@@ -401,6 +335,148 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
     return diffDays >= 0 ? diffDays : 0;
   };
 
+  const calculateDaysUntilDeadline = (deadlineDate?: string) => {
+    if (!deadlineDate) return null;
+    
+    const deadline = new Date(deadlineDate);
+    const today = new Date();
+    const diffTime = deadline.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
+  };
+
+  const getPhaseAlerts = () => {
+    if (!eventData?.current_phase) return [];
+    
+    const phase = eventData.current_phase;
+    const alerts = [];
+    const daysUntilEvent = calculateDaysUntilEvent();
+
+    // Phase-specific critical alerts
+    switch (phase) {
+      case 'lead':
+        if (!consultation) {
+          alerts.push({
+            type: 'warning' as const,
+            icon: MessageSquare,
+            title: 'Schedule Consultation',
+            description: 'Book initial consultation with client to gather requirements',
+            action: 'Add Consultation'
+          });
+        }
+        break;
+
+      case 'consultation':
+        if (!consultation?.notes) {
+          alerts.push({
+            type: 'warning' as const,
+            icon: MessageSquare,
+            title: 'Complete Consultation Notes',
+            description: 'Document client preferences and requirements',
+            action: 'Add Notes'
+          });
+        }
+        if (!eventDesign.style) {
+          alerts.push({
+            type: 'info' as const,
+            icon: Palette,
+            title: 'Start Design Planning',
+            description: 'Begin defining color scheme and style preferences',
+            action: 'Add Design'
+          });
+        }
+        break;
+
+      case 'design':
+        if (!eventDesign.color_scheme || eventDesign.color_scheme.length === 0) {
+          alerts.push({
+            type: 'warning' as const,
+            icon: Palette,
+            title: 'Finalize Color Scheme',
+            description: 'Select and confirm color palette with client',
+            action: 'Edit Design'
+          });
+        }
+        if (!eventData.order_deadline_date) {
+          alerts.push({
+            type: 'error' as const,
+            icon: ShoppingCart,
+            title: 'Set Order Deadline',
+            description: 'Critical: Set flower order deadline date',
+            action: 'Set Deadline'
+          });
+        }
+        break;
+
+      case 'ordering':
+        if (eventData.order_deadline_date) {
+          const daysUntilOrder = calculateDaysUntilDeadline(eventData.order_deadline_date);
+          if (daysUntilOrder !== null && daysUntilOrder <= 3) {
+            alerts.push({
+              type: 'error' as const,
+              icon: AlertTriangle,
+              title: 'Order Deadline Approaching!',
+              description: `Only ${daysUntilOrder} day${daysUntilOrder !== 1 ? 's' : ''} until order deadline`,
+              action: 'Place Orders'
+            });
+          }
+        }
+        break;
+
+      case 'processing':
+        alerts.push({
+          type: 'info' as const,
+          icon: Package,
+          title: 'Processing Phase Active',
+          description: 'Track flower receipt and processing progress',
+          action: 'View Production'
+        });
+        if (daysUntilEvent !== null && daysUntilEvent <= 2) {
+          alerts.push({
+            type: 'warning' as const,
+            icon: Clock,
+            title: 'Production Starts Soon',
+            description: 'Event in 2 days - ensure all flowers are processed',
+            action: 'Check Status'
+          });
+        }
+        break;
+
+      case 'production':
+        alerts.push({
+          type: 'warning' as const,
+          icon: Flower,
+          title: 'Production Day',
+          description: 'Creating arrangements - monitor progress',
+          action: 'View Production'
+        });
+        break;
+
+      case 'delivery':
+        alerts.push({
+          type: 'error' as const,
+          icon: Truck,
+          title: 'Delivery Day!',
+          description: 'Event is today - coordinate setup and delivery',
+          action: 'View Delivery'
+        });
+        break;
+
+      case 'closeout':
+        alerts.push({
+          type: 'info' as const,
+          icon: DollarSign,
+          title: 'Reconcile Event',
+          description: 'Complete financial reconciliation and close out',
+          action: 'View Financials'
+        });
+        break;
+    }
+
+    return alerts;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -409,89 +485,63 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
     );
   }
 
+  const phaseConfig = eventData?.current_phase ? PHASE_CONFIGS[eventData.current_phase] : null;
+  const phaseAlerts = getPhaseAlerts();
+
   return (
     <div className="space-y-6">
-      {/* Status Timeline */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Clock className="w-5 h-5" />
-              Event Timeline
-            </span>
-            {!editingStatus && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setEditingStatus(true)}
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Status
-              </Button>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="relative">
-            <div className="absolute left-0 top-5 bottom-5 w-0.5 bg-gray-200"></div>
-            <div className="space-y-6">
-              {statusTimeline.map((item, index) => (
-                <div key={index} className="relative flex items-center">
-                  <div className={`
-                    absolute left-0 w-4 h-4 rounded-full border-2 -translate-x-1/2
-                    ${item.completed 
-                      ? item.current 
-                        ? 'bg-blue-500 border-blue-500' 
-                        : 'bg-green-500 border-green-500'
-                      : 'bg-white border-gray-300'}
-                  `}>
-                    {item.completed && !item.current && (
-                      <CheckCircle className="w-3 h-3 text-white absolute -top-0.5 -left-0.5" />
-                    )}
-                  </div>
-                  <div className="ml-6 flex-1">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className={`font-medium ${item.current ? 'text-blue-600' : ''}`}>
-                          {item.label}
-                        </p>
-                        {item.date && (
-                          <p className="text-sm text-muted-foreground">{item.date}</p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {item.current && !editingStatus && (
-                          <Badge variant="secondary">Current</Badge>
-                        )}
-                        {editingStatus && (
-                          <Button
-                            size="sm"
-                            variant={item.current ? "secondary" : "outline"}
-                            onClick={() => handleStatusUpdate(item.status)}
-                          >
-                            {item.current ? 'Current' : 'Set as Current'}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+      {/* Current Phase Card */}
+      {phaseConfig && (
+        <Card className="border-2 border-blue-200 bg-blue-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-blue-600" />
+              Current Phase: {phaseConfig.label}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              {phaseConfig.description}
+            </p>
+            <div className="flex items-center gap-2 text-sm">
+              <Clock className="w-4 h-4" />
+              <span className="font-medium">
+                {calculateDaysUntilEvent() !== null 
+                  ? `${calculateDaysUntilEvent()} days until event`
+                  : 'Event date not set'}
+              </span>
             </div>
-            {editingStatus && (
-              <div className="mt-4 flex justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditingStatus(false)}
-                >
-                  Cancel
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Critical Alerts */}
+      {phaseAlerts.length > 0 && (
+        <div className="space-y-3">
+          {phaseAlerts.map((alert, index) => (
+            <Alert 
+              key={index}
+              variant={alert.type === 'error' ? 'destructive' : 'default'}
+              className={
+                alert.type === 'error' 
+                  ? 'border-red-300 bg-red-50' 
+                  : alert.type === 'warning'
+                  ? 'border-orange-300 bg-orange-50'
+                  : 'border-blue-300 bg-blue-50'
+              }
+            >
+              <alert.icon className="h-4 w-4" />
+              <AlertTitle>{alert.title}</AlertTitle>
+              <AlertDescription className="flex items-center justify-between">
+                <span>{alert.description}</span>
+                <Button size="sm" variant="outline">
+                  {alert.action}
                 </Button>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              </AlertDescription>
+            </Alert>
+          ))}
+        </div>
+      )}
 
       {/* Consultation Details */}
       <Card>
@@ -601,7 +651,6 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
         <CardContent className="space-y-6">
           {isEditingDesign ? (
             <>
-              {/* Style Selection */}
               <div>
                 <Label>Style</Label>
                 <Select
@@ -621,7 +670,6 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
                 </Select>
               </div>
 
-              {/* Color Scheme */}
               <div>
                 <Label>Color Scheme</Label>
                 <div className="flex flex-wrap gap-2 mt-2">
@@ -657,7 +705,6 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
                 </div>
               </div>
 
-              {/* Key Flowers */}
               <div>
                 <Label>Key Flowers</Label>
                 <div className="flex flex-wrap gap-2 mt-2">
@@ -710,7 +757,6 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
                 </div>
               </div>
 
-              {/* Special Requirements */}
               <div>
                 <Label>Special Requirements</Label>
                 <Textarea
@@ -807,7 +853,7 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
               <div>
                 <p className="text-sm text-muted-foreground">Days Until Event</p>
                 <p className="text-2xl font-bold">
-                  {calculateDaysUntilEvent()}
+                  {calculateDaysUntilEvent() ?? '--'}
                 </p>
               </div>
               <Calendar className="w-8 h-8 text-muted-foreground" />
@@ -833,9 +879,9 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Progress Status</p>
-                <p className="text-2xl font-bold">
-                  {statusTimeline.filter(s => s.completed).length} / {statusTimeline.length}
+                <p className="text-sm text-muted-foreground">Current Phase</p>
+                <p className="text-2xl font-bold capitalize">
+                  {phaseConfig?.label || '--'}
                 </p>
               </div>
               <TrendingUp className="w-8 h-8 text-muted-foreground" />
