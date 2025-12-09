@@ -10,6 +10,7 @@ import { Step1BasicInfo } from "@/components/bloomfundr/campaign-wizard/Step1Bas
 import { Step2Products } from "@/components/bloomfundr/campaign-wizard/Step2Products";
 import { Step3Pricing } from "@/components/bloomfundr/campaign-wizard/Step3Pricing";
 import { Step4Students } from "@/components/bloomfundr/campaign-wizard/Step4Students";
+import { Step5Review } from "@/components/bloomfundr/campaign-wizard/Step5Review";
 import { useCampaignWizard } from "@/hooks/useCampaignWizard";
 import { supabase } from "@/integrations/supabase/client";
 import { BFCampaign } from "@/types/bloomfundr";
@@ -128,6 +129,16 @@ export default function CampaignWizard() {
     navigate(`/org/campaigns/${campaignId}/edit?step=5`, { replace: true });
   };
 
+  const handleStep5Back = () => {
+    prevStep();
+    navigate(`/org/campaigns/${campaignId}/edit?step=4`, { replace: true });
+  };
+
+  const handleEditStep = (step: number) => {
+    setCurrentStep(step);
+    navigate(`/org/campaigns/${campaignId}/edit?step=${step}`, { replace: true });
+  };
+
   const getStepTitle = () => {
     switch (currentStep) {
       case 1:
@@ -212,9 +223,15 @@ export default function CampaignWizard() {
           </div>
         );
       case 5:
-        return (
+        return campaignId ? (
+          <Step5Review
+            campaignId={campaignId}
+            onBack={handleStep5Back}
+            onEditStep={handleEditStep}
+          />
+        ) : (
           <div className="py-12 text-center text-muted-foreground">
-            Step 5: Review - Coming soon
+            Please complete previous steps first.
           </div>
         );
       default:
