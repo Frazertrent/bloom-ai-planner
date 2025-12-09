@@ -1,29 +1,197 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { FloristLayout } from "@/components/bloomfundr/FloristLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { CampaignStatusBadge } from "@/components/bloomfundr/CampaignStatusBadge";
+import { supabase } from "@/integrations/supabase/client";
+import { useFloristProfile } from "@/hooks/useFloristData";
+import { Calendar, Eye } from "lucide-react";
+import { format } from "date-fns";
+import type { BFCampaign, BFOrganization, CampaignStatus } from "@/types/bloomfundr";
+
+interface CampaignWithOrg extends BFCampaign {
+  organization?: BFOrganization;
+  order_count: number;
+  total_revenue: number;
+}
+
+type FilterTab = "all" | "active" | "completed";
 
 export default function FloristCampaignsPage() {
+  const [activeTab, setActiveTab] = useState<FilterTab>("all");
+  const { data: florist } = useFloristProfile();
+
+  const { data: campaigns, isLoading } = useQuery({
+    queryKey: ["florist-campaigns-with-orgs", florist?.id, activeTab],
+    queryFn: async (): Promise<CampaignWithOrg[]> => {
+      if (!florist?.id) return [];
+
+      // Build status filter
+      let statusFilter: string[] = [];
+      if (activeTab === "active") {
+        statusFilter = ["active", "closed", "fulfilled"];
+      } else if (activeTab === "completed") {
+        statusFilter = ["completed"];
+      }
+
+      // Fetch campaigns
+      let query = supabase
+        .from("bf_campaigns")
+        .select("*")
+        .eq("florist_id", florist.id)
+        .order("created_at", { ascending: false });
+
+      if (statusFilter.length > 0) {
+        query = query.in("status", statusFilter);
+      }
+
+      const { data: campaignsData, error } = await query;
+
+      if (error) {
+        console.error("Error fetching campaigns:", error);
+        return [];
+      }
+
+      if (!campaignsData || campaignsData.length === 0) return [];
+
+      // Get unique organization IDs
+      const orgIds = [...new Set(campaignsData.map((c) => c.organization_id))];
+
+      // Fetch organizations
+      const { data: orgsData } = await supabase
+        .from("bf_organizations")
+        .select("*")
+        .in("id", orgIds);
+
+      const orgsMap = new Map(orgsData?.map((o) => [o.id, o]) || []);
+
+      // Fetch orders for each campaign to get counts and revenue
+      const campaignIds = campaignsData.map((c) => c.id);
+      const { data: ordersData } = await supabase
+        .from("bf_orders")
+        .select("campaign_id, subtotal, payment_status")
+        .in("campaign_id", campaignIds)
+        .eq("payment_status", "paid");
+
+      // Calculate order counts and revenue per campaign
+      const orderStats = new Map<string, { count: number; revenue: number }>();
+      ordersData?.forEach((order) => {
+        const existing = orderStats.get(order.campaign_id) || { count: 0, revenue: 0 };
+        existing.count += 1;
+        existing.revenue += Number(order.subtotal);
+        orderStats.set(order.campaign_id, existing);
+      });
+
+      return campaignsData.map((campaign) => {
+        const stats = orderStats.get(campaign.id) || { count: 0, revenue: 0 };
+        const floristRevenue = stats.revenue * (campaign.florist_margin_percent / 100);
+        return {
+          ...campaign,
+          status: campaign.status as CampaignStatus,
+          organization: orgsMap.get(campaign.organization_id) as BFOrganization | undefined,
+          order_count: stats.count,
+          total_revenue: floristRevenue,
+        };
+      });
+    },
+    enabled: !!florist?.id,
+  });
+
   return (
     <FloristLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Campaigns</h1>
+          <h1 className="text-3xl font-bold text-foreground">My Campaigns</h1>
           <p className="text-muted-foreground mt-1">
             View and manage your fundraising campaigns
           </p>
         </div>
 
-        <Card className="bg-bloomfundr-card border-bloomfundr-muted">
+        {/* Filter Tabs */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as FilterTab)}>
+          <TabsList>
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="active">Active</TabsTrigger>
+            <TabsTrigger value="completed">Completed</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* Campaigns Table */}
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-foreground">Your Campaigns</CardTitle>
+            <CardTitle>Campaigns</CardTitle>
             <CardDescription>Campaigns you're fulfilling for organizations</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-12 text-muted-foreground">
-              <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium">No campaigns yet</p>
-              <p className="text-sm mt-1">Organizations will invite you to fulfill campaigns</p>
-            </div>
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))}
+              </div>
+            ) : campaigns && campaigns.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Campaign</TableHead>
+                    <TableHead>Organization</TableHead>
+                    <TableHead>Dates</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Orders</TableHead>
+                    <TableHead className="text-right">Your Revenue</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {campaigns.map((campaign) => (
+                    <TableRow key={campaign.id}>
+                      <TableCell className="font-medium">{campaign.name}</TableCell>
+                      <TableCell>{campaign.organization?.name || "Unknown"}</TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <span>{format(new Date(campaign.start_date), "MMM d")}</span>
+                          <span className="text-muted-foreground"> - </span>
+                          <span>{format(new Date(campaign.end_date), "MMM d, yyyy")}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <CampaignStatusBadge status={campaign.status} />
+                      </TableCell>
+                      <TableCell className="text-right">{campaign.order_count}</TableCell>
+                      <TableCell className="text-right font-medium text-emerald-600">
+                        ${campaign.total_revenue.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link to={`/florist/campaigns/${campaign.id}`}>
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium">No campaigns yet</p>
+                <p className="text-sm mt-1">Organizations will invite you to fulfill campaigns</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
