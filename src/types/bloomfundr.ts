@@ -46,8 +46,23 @@ export interface BFFlorist {
   business_phone: string | null;
   stripe_account_id: string | null;
   is_verified: boolean;
+  notification_new_orders: boolean;
+  notification_fulfillment_reminders: boolean;
+  notification_email: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// Florist Notification
+export interface BFFloristNotification {
+  id: string;
+  florist_id: string;
+  title: string;
+  message: string;
+  notification_type: string;
+  link_url: string | null;
+  is_read: boolean;
+  created_at: string;
 }
 
 // Organization

@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { notifyNewOrder } from "@/lib/notifications";
+import { notifyNewOrder, notifyFloristNewOrder } from "@/lib/notifications";
 import type { CartItem } from "@/contexts/OrderContext";
 import type { CheckoutFormData } from "@/lib/checkoutValidation";
 import type { Json } from "@/integrations/supabase/types";
@@ -94,10 +94,10 @@ export function useCreateOrder() {
 
       if (itemsError) throw itemsError;
 
-      // 4. Get campaign and student info for notification
+      // 4. Get campaign and student info for notifications
       const { data: campaign } = await supabase
         .from("bf_campaigns")
-        .select("organization_id, name")
+        .select("organization_id, florist_id, name")
         .eq("id", campaignId)
         .single();
 
@@ -107,8 +107,9 @@ export function useCreateOrder() {
         .eq("id", studentId)
         .single();
 
-      // 5. Create notification for organization
+      // 5. Create notifications for organization and florist
       if (campaign) {
+        // Notify organization
         await notifyNewOrder({
           organizationId: campaign.organization_id,
           campaignId,
@@ -117,6 +118,18 @@ export function useCreateOrder() {
           customerName: customerData.fullName,
           studentName: student?.name || "Unknown Student",
           amount: total,
+        });
+
+        // Notify florist
+        const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+        await notifyFloristNewOrder({
+          floristId: campaign.florist_id,
+          campaignId,
+          campaignName: campaign.name,
+          orderNumber: order.order_number,
+          customerName: customerData.fullName,
+          amount: total,
+          itemCount: totalItems,
         });
       }
 

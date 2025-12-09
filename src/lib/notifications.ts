@@ -1,6 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export interface CreateNotificationParams {
+// Organization Notifications
+
+export interface CreateOrgNotificationParams {
   organizationId: string;
   title: string;
   message: string;
@@ -10,9 +12,8 @@ export interface CreateNotificationParams {
 
 /**
  * Creates an in-app notification for an organization
- * This uses the service role through RLS policy that allows inserts
  */
-export async function createNotification(params: CreateNotificationParams) {
+export async function createOrgNotification(params: CreateOrgNotificationParams) {
   const { organizationId, title, message, notificationType, linkUrl } = params;
 
   const { error } = await supabase.from("bf_notifications").insert({
@@ -24,13 +25,12 @@ export async function createNotification(params: CreateNotificationParams) {
   });
 
   if (error) {
-    console.error("Error creating notification:", error);
-    // Don't throw - notifications are non-critical
+    console.error("Error creating org notification:", error);
   }
 }
 
 /**
- * Creates a notification for a new order
+ * Creates a notification for a new order (organization)
  */
 export async function notifyNewOrder(params: {
   organizationId: string;
@@ -43,7 +43,7 @@ export async function notifyNewOrder(params: {
 }) {
   const { organizationId, campaignId, campaignName, orderNumber, customerName, studentName, amount } = params;
 
-  await createNotification({
+  await createOrgNotification({
     organizationId,
     title: `New Order for ${campaignName}`,
     message: `${customerName} placed order ${orderNumber} ($${amount.toFixed(2)}) via ${studentName}'s link`,
@@ -53,7 +53,7 @@ export async function notifyNewOrder(params: {
 }
 
 /**
- * Creates a notification for campaign events
+ * Creates a notification for campaign events (organization)
  */
 export async function notifyCampaignEvent(params: {
   organizationId: string;
@@ -75,11 +75,106 @@ export async function notifyCampaignEvent(params: {
     ended: "The campaign has ended. Review orders and prepare for fulfillment.",
   };
 
-  await createNotification({
+  await createOrgNotification({
     organizationId,
     title: titles[eventType],
     message: messages[eventType],
     notificationType: eventType === "ended" ? "alert" : "campaign",
     linkUrl: `/org/campaigns/${campaignId}`,
+  });
+}
+
+// Florist Notifications
+
+export interface CreateFloristNotificationParams {
+  floristId: string;
+  title: string;
+  message: string;
+  notificationType: "order" | "campaign" | "fulfillment" | "alert" | "success" | "info";
+  linkUrl?: string;
+}
+
+/**
+ * Creates an in-app notification for a florist
+ */
+export async function createFloristNotification(params: CreateFloristNotificationParams) {
+  const { floristId, title, message, notificationType, linkUrl } = params;
+
+  const { error } = await supabase.from("bf_florist_notifications").insert({
+    florist_id: floristId,
+    title,
+    message,
+    notification_type: notificationType,
+    link_url: linkUrl || null,
+  });
+
+  if (error) {
+    console.error("Error creating florist notification:", error);
+  }
+}
+
+/**
+ * Notifies florist of a new order
+ */
+export async function notifyFloristNewOrder(params: {
+  floristId: string;
+  campaignId: string;
+  campaignName: string;
+  orderNumber: string;
+  customerName: string;
+  amount: number;
+  itemCount: number;
+}) {
+  const { floristId, campaignId, campaignName, orderNumber, customerName, amount, itemCount } = params;
+
+  await createFloristNotification({
+    floristId,
+    title: `New Order: ${orderNumber}`,
+    message: `${customerName} ordered ${itemCount} item(s) ($${amount.toFixed(2)}) for ${campaignName}`,
+    notificationType: "order",
+    linkUrl: `/florist/orders`,
+  });
+}
+
+/**
+ * Notifies florist of a new campaign invitation
+ */
+export async function notifyFloristCampaignInvitation(params: {
+  floristId: string;
+  campaignId: string;
+  campaignName: string;
+  organizationName: string;
+  startDate: string;
+  endDate: string;
+}) {
+  const { floristId, campaignId, campaignName, organizationName, startDate, endDate } = params;
+
+  await createFloristNotification({
+    floristId,
+    title: `New Campaign: ${campaignName}`,
+    message: `${organizationName} created a campaign (${startDate} - ${endDate}). Review and prepare your products!`,
+    notificationType: "campaign",
+    linkUrl: `/florist/campaigns/${campaignId}`,
+  });
+}
+
+/**
+ * Notifies florist of fulfillment reminder
+ */
+export async function notifyFloristFulfillmentReminder(params: {
+  floristId: string;
+  campaignId: string;
+  campaignName: string;
+  pickupDate: string;
+  orderCount: number;
+}) {
+  const { floristId, campaignId, campaignName, pickupDate, orderCount } = params;
+
+  await createFloristNotification({
+    floristId,
+    title: `Pickup Tomorrow: ${campaignName}`,
+    message: `${orderCount} order(s) ready for pickup on ${pickupDate}. Ensure all items are prepared!`,
+    notificationType: "fulfillment",
+    linkUrl: `/florist/campaigns/${campaignId}`,
   });
 }
