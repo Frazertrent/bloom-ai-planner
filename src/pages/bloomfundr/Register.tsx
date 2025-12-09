@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useBloomFundrAuth } from "@/contexts/BloomFundrAuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const registerSchema = z.object({
@@ -20,9 +21,38 @@ const registerSchema = z.object({
   role: z.enum(["florist", "org_admin"], {
     required_error: "Please select a role",
   }),
+  // Florist-specific fields
+  businessName: z.string().optional(),
+  // Organization-specific fields
+  organizationName: z.string().optional(),
+  orgType: z.enum(["school", "sports", "dance", "cheer", "church", "other"]).optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
+}).refine((data) => {
+  if (data.role === "florist" && (!data.businessName || data.businessName.length < 2)) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Business name is required",
+  path: ["businessName"],
+}).refine((data) => {
+  if (data.role === "org_admin" && (!data.organizationName || data.organizationName.length < 2)) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Organization name is required",
+  path: ["organizationName"],
+}).refine((data) => {
+  if (data.role === "org_admin" && !data.orgType) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Organization type is required",
+  path: ["orgType"],
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -42,8 +72,13 @@ const Register = () => {
       password: "",
       confirmPassword: "",
       role: defaultRole === "organization" ? "org_admin" : defaultRole === "florist" ? "florist" : undefined,
+      businessName: "",
+      organizationName: "",
+      orgType: undefined,
     },
   });
+
+  const selectedRole = form.watch("role");
 
   const onSubmit = async (values: RegisterFormValues) => {
     setIsLoading(true);
@@ -62,6 +97,37 @@ const Register = () => {
           toast.error(error.message);
         }
         return;
+      }
+
+      // Get the user after signup
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Create florist or organization record based on role
+        if (values.role === "florist" && values.businessName) {
+          const { error: floristError } = await supabase
+            .from("bf_florists")
+            .insert({
+              user_id: user.id,
+              business_name: values.businessName,
+            });
+          
+          if (floristError) {
+            console.error("Error creating florist record:", floristError);
+          }
+        } else if (values.role === "org_admin" && values.organizationName && values.orgType) {
+          const { error: orgError } = await supabase
+            .from("bf_organizations")
+            .insert({
+              user_id: user.id,
+              name: values.organizationName,
+              org_type: values.orgType,
+            });
+          
+          if (orgError) {
+            console.error("Error creating organization record:", orgError);
+          }
+        }
       }
 
       toast.success("Account created! Please check your email to confirm your account.");
@@ -152,6 +218,76 @@ const Register = () => {
                   </FormItem>
                 )}
               />
+
+              {/* Florist-specific fields */}
+              {selectedRole === "florist" && (
+                <FormField
+                  control={form.control}
+                  name="businessName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Business Name</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Your Flower Shop"
+                          className="bg-bloomfundr-background border-bloomfundr-muted focus:border-bloomfundr-primary"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {/* Organization-specific fields */}
+              {selectedRole === "org_admin" && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="organizationName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Organization Name</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Lincoln High School"
+                            className="bg-bloomfundr-background border-bloomfundr-muted focus:border-bloomfundr-primary"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="orgType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Organization Type</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="bg-bloomfundr-background border-bloomfundr-muted">
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="school">School</SelectItem>
+                            <SelectItem value="sports">Sports Team</SelectItem>
+                            <SelectItem value="dance">Dance Team</SelectItem>
+                            <SelectItem value="cheer">Cheer Squad</SelectItem>
+                            <SelectItem value="church">Church / Religious</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
 
               <FormField
                 control={form.control}
