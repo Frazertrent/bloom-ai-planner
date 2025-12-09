@@ -40,6 +40,7 @@ import FloristProducts from "./pages/florist/FloristProducts";
 import FloristCampaigns from "./pages/florist/FloristCampaigns";
 import FloristCampaignDetail from "./pages/florist/FloristCampaignDetail";
 import FloristOrders from "./pages/florist/FloristOrders";
+import FloristOrderDetail from "./pages/florist/FloristOrderDetail";
 import FloristSettings from "./pages/florist/FloristSettings";
 
 const queryClient = new QueryClient();
@@ -244,6 +245,11 @@ const AppContent = () => (
     <Route path="/florist/orders" element={
       <BFProtectedRoute allowedRoles={["florist"]}>
         <FloristOrders />
+      </BFProtectedRoute>
+    } />
+    <Route path="/florist/orders/:id" element={
+      <BFProtectedRoute allowedRoles={["florist"]}>
+        <FloristOrderDetail />
       </BFProtectedRoute>
     } />
     <Route path="/florist/settings" element={
