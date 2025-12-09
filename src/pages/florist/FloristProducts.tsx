@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FloristLayout } from "@/components/bloomfundr/FloristLayout";
 import { AddProductDialog } from "@/components/bloomfundr/AddProductDialog";
+import { EditProductDialog } from "@/components/bloomfundr/EditProductDialog";
+import { ProductDetailSheet } from "@/components/bloomfundr/ProductDetailSheet";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,15 +25,18 @@ import {
   Edit, 
   Trash2, 
   ImageOff,
-  MoreVertical
+  MoreVertical,
+  AlertTriangle
 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useFloristProducts, useDeleteProduct, useToggleProductStatus } from "@/hooks/useFloristProducts";
+import { useFloristProducts, useToggleProductStatus } from "@/hooks/useFloristProducts";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { ProductCategory, BFProduct } from "@/types/bloomfundr";
 
@@ -51,26 +56,34 @@ const categoryLabels: Record<ProductCategory, string> = {
 
 export default function FloristProductsPage() {
   const [activeTab, setActiveTab] = useState<ProductCategory | "all">("all");
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [productToDelete, setProductToDelete] = useState<BFProduct | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<BFProduct | null>(null);
 
   const { data: products, isLoading } = useFloristProducts(activeTab);
   const queryClient = useQueryClient();
-  const deleteProductFn = useDeleteProduct();
   const toggleStatusFn = useToggleProductStatus();
 
-  const deleteMutation = useMutation({
-    mutationFn: (productId: string) => deleteProductFn(productId),
+  // Soft delete - just set is_active to false
+  const softDeleteMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      const { error } = await supabase
+        .from("bf_products")
+        .update({ is_active: false })
+        .eq("id", productId);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      toast.success("Product deleted successfully");
+      toast.success("Product deactivated successfully");
       queryClient.invalidateQueries({ queryKey: ["florist-products"] });
       queryClient.invalidateQueries({ queryKey: ["florist-stats"] });
       setDeleteDialogOpen(false);
-      setProductToDelete(null);
+      setSelectedProduct(null);
     },
     onError: () => {
-      toast.error("Failed to delete product");
+      toast.error("Failed to deactivate product");
     },
   });
 
@@ -87,14 +100,24 @@ export default function FloristProductsPage() {
     },
   });
 
+  const handleCardClick = (product: BFProduct) => {
+    setSelectedProduct(product);
+    setDetailSheetOpen(true);
+  };
+
+  const handleEdit = (product: BFProduct) => {
+    setSelectedProduct(product);
+    setEditDialogOpen(true);
+  };
+
   const handleDelete = (product: BFProduct) => {
-    setProductToDelete(product);
+    setSelectedProduct(product);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = () => {
-    if (productToDelete) {
-      deleteMutation.mutate(productToDelete.id);
+    if (selectedProduct) {
+      softDeleteMutation.mutate(selectedProduct.id);
     }
   };
 
@@ -110,7 +133,7 @@ export default function FloristProductsPage() {
             </p>
           </div>
           <Button 
-            onClick={() => setDialogOpen(true)}
+            onClick={() => setAddDialogOpen(true)}
             className="bg-bloomfundr-primary hover:bg-bloomfundr-primary-light"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -158,9 +181,10 @@ export default function FloristProductsPage() {
             {products.map((product) => (
               <Card 
                 key={product.id} 
-                className={`bg-bloomfundr-card border-bloomfundr-muted overflow-hidden transition-all hover:shadow-lg ${
+                className={`bg-bloomfundr-card border-bloomfundr-muted overflow-hidden transition-all hover:shadow-lg cursor-pointer group ${
                   !product.is_active ? "opacity-60" : ""
                 }`}
+                onClick={() => handleCardClick(product)}
               >
                 {/* Product Image */}
                 <div className="h-40 bg-muted/30 relative">
@@ -205,28 +229,38 @@ export default function FloristProductsPage() {
                     </div>
                     
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="shrink-0">
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(product);
+                          }}
+                        >
                           <Edit className="h-4 w-4 mr-2" />
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() =>
+                          onClick={(e) => {
+                            e.stopPropagation();
                             toggleStatusMutation.mutate({
                               id: product.id,
                               isActive: !product.is_active,
-                            })
-                          }
+                            });
+                          }}
                         >
                           {product.is_active ? "Deactivate" : "Activate"}
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          onClick={() => handleDelete(product)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(product);
+                          }}
                           className="text-destructive focus:text-destructive"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
@@ -254,17 +288,19 @@ export default function FloristProductsPage() {
           </div>
         ) : (
           <Card className="bg-bloomfundr-card border-bloomfundr-muted">
-            <CardContent className="py-12">
+            <CardContent className="py-16">
               <div className="text-center text-muted-foreground">
-                <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium">No products yet</p>
-                <p className="text-sm mt-1 mb-4">
+                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-bloomfundr-primary/10 flex items-center justify-center">
+                  <Package className="h-10 w-10 text-bloomfundr-primary" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-2">No products yet</h3>
+                <p className="text-sm max-w-sm mx-auto mb-6">
                   {activeTab === "all"
-                    ? "Add products to make them available for campaigns"
-                    : `No ${categoryLabels[activeTab as ProductCategory].toLowerCase()}s found`}
+                    ? "Add your first product to make it available for fundraising campaigns"
+                    : `No ${categoryLabels[activeTab as ProductCategory].toLowerCase()}s found in your catalog`}
                 </p>
                 <Button 
-                  onClick={() => setDialogOpen(true)}
+                  onClick={() => setAddDialogOpen(true)}
                   className="bg-bloomfundr-primary hover:bg-bloomfundr-primary-light"
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -277,15 +313,40 @@ export default function FloristProductsPage() {
       </div>
 
       {/* Add Product Dialog */}
-      <AddProductDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <AddProductDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
+
+      {/* Edit Product Dialog */}
+      <EditProductDialog 
+        product={selectedProduct} 
+        open={editDialogOpen} 
+        onOpenChange={setEditDialogOpen} 
+      />
+
+      {/* Product Detail Sheet */}
+      <ProductDetailSheet
+        product={selectedProduct}
+        open={detailSheetOpen}
+        onOpenChange={setDetailSheetOpen}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="bg-bloomfundr-card border-bloomfundr-muted">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Product</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "{productToDelete?.name}"? This action cannot be undone.
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete Product
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                Are you sure you want to delete <strong>"{selectedProduct?.name}"</strong>?
+              </p>
+              <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-700 text-sm">
+                <p className="font-medium">Note:</p>
+                <p>This product will be deactivated and hidden from new campaigns. Any existing campaigns using this product will not be affected.</p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -294,7 +355,7 @@ export default function FloristProductsPage() {
               onClick={confirmDelete}
               className="bg-destructive hover:bg-destructive/90"
             >
-              Delete
+              Delete Product
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
