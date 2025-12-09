@@ -149,6 +149,78 @@ export type Database = {
           },
         ]
       }
+      bf_florists: {
+        Row: {
+          business_address: string | null
+          business_name: string
+          business_phone: string | null
+          created_at: string | null
+          id: string
+          is_verified: boolean | null
+          stripe_account_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          business_address?: string | null
+          business_name: string
+          business_phone?: string | null
+          created_at?: string | null
+          id?: string
+          is_verified?: boolean | null
+          stripe_account_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          business_address?: string | null
+          business_name?: string
+          business_phone?: string | null
+          created_at?: string | null
+          id?: string
+          is_verified?: boolean | null
+          stripe_account_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      bf_organizations: {
+        Row: {
+          address: string | null
+          contact_phone: string | null
+          created_at: string | null
+          id: string
+          name: string
+          org_type: string
+          stripe_account_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          org_type: string
+          stripe_account_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          org_type?: string
+          stripe_account_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       bf_user_profiles: {
         Row: {
           created_at: string | null
