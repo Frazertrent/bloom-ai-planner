@@ -73,6 +73,9 @@ export default function FloristSettingsPage() {
         .eq("id", florist.id);
 
       if (error) throw error;
+      
+      // Refresh florist profile to update verification status display
+      queryClient.invalidateQueries({ queryKey: ["florist-profile"] });
       toast.success("Business details saved");
     } catch (error) {
       console.error("Error saving business details:", error);
