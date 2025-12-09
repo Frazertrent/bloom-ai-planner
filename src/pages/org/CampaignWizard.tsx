@@ -1,11 +1,16 @@
+import { useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { OrgLayout } from "@/components/bloomfundr/OrgLayout";
 import { StepIndicator, Step } from "@/components/bloomfundr/StepIndicator";
 import { Step1BasicInfo } from "@/components/bloomfundr/campaign-wizard/Step1BasicInfo";
+import { Step2Products } from "@/components/bloomfundr/campaign-wizard/Step2Products";
 import { useCampaignWizard } from "@/hooks/useCampaignWizard";
+import { supabase } from "@/integrations/supabase/client";
+import { BFCampaign } from "@/types/bloomfundr";
 
 const WIZARD_STEPS: Step[] = [
   { id: 1, name: "Basic Info" },
@@ -29,13 +34,48 @@ export default function CampaignWizard() {
     setCampaignId,
     updateWizardState,
     nextStep,
+    prevStep,
     setCurrentStep,
   } = useCampaignWizard(id);
 
+  // Fetch campaign data if editing
+  const { data: campaignData } = useQuery({
+    queryKey: ["bf-campaign-detail", id],
+    queryFn: async () => {
+      if (!id) return null;
+      const { data, error } = await supabase
+        .from("bf_campaigns")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (error) throw error;
+      return data as BFCampaign;
+    },
+    enabled: !!id,
+  });
+
+  // Populate wizard state from campaign data
+  useEffect(() => {
+    if (campaignData && !wizardState.name) {
+      updateWizardState({
+        name: campaignData.name,
+        description: campaignData.description || "",
+        floristId: campaignData.florist_id,
+        startDate: campaignData.start_date ? new Date(campaignData.start_date) : undefined,
+        endDate: campaignData.end_date ? new Date(campaignData.end_date) : undefined,
+        pickupDate: campaignData.pickup_date ? new Date(campaignData.pickup_date) : undefined,
+        pickupLocation: campaignData.pickup_location || "",
+      });
+      setCampaignId(campaignData.id);
+    }
+  }, [campaignData]);
+
   // Set initial step from URL
-  if (initialStep !== currentStep && initialStep >= 1 && initialStep <= 5) {
-    setCurrentStep(initialStep);
-  }
+  useEffect(() => {
+    if (initialStep !== currentStep && initialStep >= 1 && initialStep <= 5) {
+      setCurrentStep(initialStep);
+    }
+  }, [initialStep]);
 
   const handleSave = (savedCampaignId: string) => {
     setCampaignId(savedCampaignId);
@@ -54,6 +94,16 @@ export default function CampaignWizard() {
       setCurrentStep(step);
       navigate(`/org/campaigns/${campaignId}/edit?step=${step}`, { replace: true });
     }
+  };
+
+  const handleStep2Back = () => {
+    prevStep();
+    navigate(`/org/campaigns/${campaignId}/edit?step=1`, { replace: true });
+  };
+
+  const handleStep2Continue = () => {
+    nextStep();
+    navigate(`/org/campaigns/${campaignId}/edit?step=3`, { replace: true });
   };
 
   const getStepTitle = () => {
@@ -103,9 +153,16 @@ export default function CampaignWizard() {
           />
         );
       case 2:
-        return (
+        return campaignId && wizardState.floristId ? (
+          <Step2Products
+            campaignId={campaignId}
+            floristId={wizardState.floristId}
+            onBack={handleStep2Back}
+            onContinue={handleStep2Continue}
+          />
+        ) : (
           <div className="py-12 text-center text-muted-foreground">
-            Step 2: Products - Coming soon
+            Please complete Step 1 first.
           </div>
         );
       case 3:
