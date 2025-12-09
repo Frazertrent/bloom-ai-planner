@@ -38,6 +38,7 @@ import BFProtectedRoute from "./components/bloomfundr/ProtectedRoute";
 import FloristDashboard from "./pages/florist/FloristDashboard";
 import FloristProducts from "./pages/florist/FloristProducts";
 import FloristCampaigns from "./pages/florist/FloristCampaigns";
+import FloristCampaignDetail from "./pages/florist/FloristCampaignDetail";
 import FloristOrders from "./pages/florist/FloristOrders";
 import FloristSettings from "./pages/florist/FloristSettings";
 
@@ -233,6 +234,11 @@ const AppContent = () => (
     <Route path="/florist/campaigns" element={
       <BFProtectedRoute allowedRoles={["florist"]}>
         <FloristCampaigns />
+      </BFProtectedRoute>
+    } />
+    <Route path="/florist/campaigns/:id" element={
+      <BFProtectedRoute allowedRoles={["florist"]}>
+        <FloristCampaignDetail />
       </BFProtectedRoute>
     } />
     <Route path="/florist/orders" element={
