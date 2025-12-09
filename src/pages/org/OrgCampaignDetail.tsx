@@ -22,7 +22,11 @@ import {
 import { CampaignStatusBadge } from "@/components/bloomfundr/CampaignStatusBadge";
 import { CampaignLinksModal } from "@/components/bloomfundr/CampaignLinksModal";
 import { CampaignPaymentsTab } from "@/components/bloomfundr/CampaignPaymentsTab";
+import { PayoutBreakdownCard } from "@/components/bloomfundr/PayoutBreakdownCard";
+import { PayoutStatusCard } from "@/components/bloomfundr/PayoutStatusCard";
+import { PayoutDetailSheet } from "@/components/bloomfundr/PayoutDetailSheet";
 import { useOrgCampaignAnalytics, useOrgCampaignRealtime } from "@/hooks/useOrgCampaignAnalytics";
+import { useCampaignPayouts, useCreatePayouts } from "@/hooks/useCampaignPayouts";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -44,6 +48,7 @@ import {
   Trophy,
   ExternalLink,
   Bell,
+  Wallet,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -64,9 +69,12 @@ export default function OrgCampaignDetail() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showLinksModal, setShowLinksModal] = useState(false);
+  const [showPayoutDetail, setShowPayoutDetail] = useState(false);
   const [showAllStudents, setShowAllStudents] = useState(false);
 
   const { data: analytics, isLoading, refetch } = useOrgCampaignAnalytics(id);
+  const { data: payoutData, isLoading: payoutsLoading } = useCampaignPayouts(id);
+  const createPayouts = useCreatePayouts();
 
   // Real-time updates
   const handleRealtimeUpdate = useCallback(() => {
@@ -612,6 +620,34 @@ export default function OrgCampaignDetail() {
           </TabsContent>
         </Tabs>
 
+        {/* Payouts Section - Show when campaign is closed or fulfilled */}
+        {(campaign.status === "closed" || campaign.status === "fulfilled") && payoutData && (
+          <div className="space-y-6">
+            <PayoutBreakdownCard
+              breakdown={payoutData.breakdown}
+              floristMarginPercent={campaign.florist_margin_percent}
+              orgMarginPercent={campaign.organization_margin_percent}
+              platformFeePercent={campaign.platform_fee_percent || 10}
+            />
+            <PayoutStatusCard
+              campaignStatus={campaign.status}
+              floristPayout={payoutData.floristPayout}
+              orgPayout={payoutData.orgPayout}
+              floristTotal={payoutData.breakdown.floristTotal}
+              orgTotal={payoutData.breakdown.orgTotal}
+              onCreatePayouts={() => createPayouts.mutate({ campaignId: id! })}
+              isCreating={createPayouts.isPending}
+              isLoading={payoutsLoading}
+            />
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => setShowPayoutDetail(true)}>
+                <Wallet className="h-4 w-4 mr-2" />
+                View Payout Details
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Actions */}
         <Card className="bg-card border-border">
           <CardHeader>
@@ -664,6 +700,16 @@ export default function OrgCampaignDetail() {
             magicLinkCode: s.magicLinkCode,
             fullUrl: `${window.location.origin}/order/${s.magicLinkCode}`,
           }))}
+        />
+
+        {/* Payout Detail Sheet */}
+        <PayoutDetailSheet
+          open={showPayoutDetail}
+          onOpenChange={setShowPayoutDetail}
+          breakdown={payoutData?.breakdown || null}
+          viewType="organization"
+          floristMarginPercent={campaign.florist_margin_percent}
+          orgMarginPercent={campaign.organization_margin_percent}
         />
       </div>
     </OrgLayout>
