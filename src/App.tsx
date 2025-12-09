@@ -8,6 +8,9 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AuthProvider, useAuth } from "@/hooks/useProfile";
 import { OrderProvider } from "@/contexts/OrderContext";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { NetworkStatus } from "@/components/ui/network-status";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 // Pages
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -65,7 +68,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        <LoadingSpinner size="lg" message="Loading..." />
       </div>
     );
   }
@@ -98,7 +101,7 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        <LoadingSpinner size="lg" message="Loading..." />
       </div>
     );
   }
@@ -343,17 +346,20 @@ const AppContent = () => (
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AuthProvider>
-        <BloomFundrAuthProvider>
-          <OrderProvider>
-            <BrowserRouter>
-              <AppContent />
-            </BrowserRouter>
-          </OrderProvider>
-        </BloomFundrAuthProvider>
-      </AuthProvider>
+      <ErrorBoundary>
+        <Toaster />
+        <Sonner />
+        <NetworkStatus />
+        <AuthProvider>
+          <BloomFundrAuthProvider>
+            <OrderProvider>
+              <BrowserRouter>
+                <AppContent />
+              </BrowserRouter>
+            </OrderProvider>
+          </BloomFundrAuthProvider>
+        </AuthProvider>
+      </ErrorBoundary>
     </TooltipProvider>
   </QueryClientProvider>
 );
