@@ -200,8 +200,6 @@ const EventConsultation = ({ eventId }: EventConsultationProps) => {
 
       if (eventError) throw eventError;
 
-      console.log('Event data fetched:', eventData);
-
       // Fetch existing consultation data
       const { data: consultData, error: consultError } = await supabase
         .from('consultations')
@@ -215,7 +213,6 @@ const EventConsultation = ({ eventId }: EventConsultationProps) => {
 
       if (consultData) {
         // Use existing consultation data
-        console.log('Existing consultation found:', consultData);
         setConsultation({
           ...consultData,
           prep_checklist: (consultData.prep_checklist as unknown as ConsultationData['prep_checklist']) || DEFAULT_PREP_CHECKLIST,
@@ -232,7 +229,6 @@ const EventConsultation = ({ eventId }: EventConsultationProps) => {
         } as ConsultationData);
       } else {
         // Pre-populate from event data for new consultation
-        console.log('Creating new consultation with event data');
         const venues = eventData.venues || [];
         const firstVenue = venues[0];
         
@@ -252,7 +248,6 @@ const EventConsultation = ({ eventId }: EventConsultationProps) => {
           notes: eventData.special_instructions || undefined
         };
         
-        console.log('New consultation pre-populated:', newConsultation);
         setConsultation(newConsultation);
       }
     } catch (error) {

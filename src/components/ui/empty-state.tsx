@@ -31,15 +31,22 @@ export function EmptyState({
   compact = false,
 }: EmptyStateProps) {
   return (
-    <div className={cn(
-      "flex flex-col items-center justify-center text-center",
-      compact ? "py-8" : "py-12 md:py-16",
-      className
-    )}>
-      <div className={cn(
-        "rounded-full bg-muted flex items-center justify-center mb-4",
-        compact ? "w-12 h-12" : "w-16 h-16"
-      )}>
+    <div 
+      className={cn(
+        "flex flex-col items-center justify-center text-center",
+        compact ? "py-8" : "py-12 md:py-16",
+        className
+      )}
+      role="status"
+      aria-label={title}
+    >
+      <div 
+        className={cn(
+          "rounded-full bg-muted flex items-center justify-center mb-4",
+          compact ? "w-12 h-12" : "w-16 h-16"
+        )}
+        aria-hidden="true"
+      >
         <Icon className={cn(
           "text-muted-foreground",
           compact ? "h-6 w-6" : "h-8 w-8"

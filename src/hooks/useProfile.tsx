@@ -48,8 +48,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     try {
-      console.log('🔍 Fetching profile for user:', userId);
-      
       // Add timeout to prevent hanging
       const profilePromise = supabase
         .from('user_profiles')
@@ -68,7 +66,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (profileError) {
         if (profileError.code === 'PGRST116') {
-          console.log('⚠️ No profile found');
           setProfile(null);
           setOrganization(null);
           return;
@@ -76,12 +73,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw profileError;
       }
 
-      console.log('✅ Profile loaded:', profileData);
       setProfile(profileData);
 
       // Get organization
       if (profileData.organization_id) {
-        console.log('🏢 Fetching organization:', profileData.organization_id);
         
         const orgPromise = supabase
           .from('organizations')
@@ -99,10 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ]) as { data: Organization | null; error: { code: string; message: string } | null };
 
         if (orgError) {
-          console.error('❌ Organization fetch error:', orgError);
           setOrganization(null);
         } else {
-          console.log('✅ Organization loaded:', orgData);
           setOrganization(orgData);
         }
       }
@@ -130,9 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     getInitialSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔐 Auth state changed:', event);
-        
+      async (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         

@@ -509,9 +509,7 @@ const fetchCatalogData = async () => {
         .eq('organization_id', organization.id)
         .order('name')
     ]);
-console.log('Flowers:', flowersRes.data); // ADD THIS
-    console.log('Hard goods:', hardGoodsRes.data); // ADD THIS
-    console.log('Labor:', laborRes.data); // ADD THIS
+    
     setCatalogData({
       flowers: (flowersRes.data || []) as any,
       hardGoods: (hardGoodsRes.data || []) as any,

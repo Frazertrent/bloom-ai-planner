@@ -1,4 +1,5 @@
-// src/App.tsx - Updated with Authentication Provider and Route Protection
+// src/App.tsx - Main application with lazy loading and route protection
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,59 +12,69 @@ import { OrderProvider } from "@/contexts/OrderContext";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { NetworkStatus } from "@/components/ui/network-status";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-// Pages
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import { Dashboard } from "./pages/Dashboard";
-import Events from "./pages/Events";
-import Clients from "./pages/Clients";
-import ClientDetail from "./pages/ClientDetail";
-import Marketing from "./pages/Marketing";
-import Analytics from "./pages/Analytics";
-import NotFound from "./pages/NotFound";
-import Team from "./pages/Team";
-import PhotoGallery from "./pages/PhotoGallery";
-import Settings from "./pages/Settings";
-import NewEvent from "./pages/NewEvent";
-import NewClient from "./pages/NewClient";
-import EventDetail from "./pages/EventDetail";
-
-// BloomFundr Pages
-import BloomFundrLanding from "./pages/bloomfundr/Landing";
-import BloomFundrLogin from "./pages/bloomfundr/Login";
-import BloomFundrRegister from "./pages/bloomfundr/Register";
 import { BloomFundrAuthProvider } from "./contexts/BloomFundrAuthContext";
 import BFProtectedRoute from "./components/bloomfundr/ProtectedRoute";
-
-// Organization Pages
-import OrgDashboard from "./pages/org/OrgDashboard";
-import OrgCampaigns from "./pages/org/OrgCampaigns";
-import OrgCampaignDetail from "./pages/org/OrgCampaignDetail";
-import OrgStudents from "./pages/org/OrgStudents";
-import OrgReports from "./pages/org/OrgReports";
-import OrgSettings from "./pages/org/OrgSettings";
-import CampaignWizard from "./pages/org/CampaignWizard";
-import ManualOrderEntry from "./pages/org/ManualOrderEntry";
-
-// Florist Pages
-import FloristDashboard from "./pages/florist/FloristDashboard";
-import FloristProducts from "./pages/florist/FloristProducts";
-import FloristCampaigns from "./pages/florist/FloristCampaigns";
-import FloristCampaignDetail from "./pages/florist/FloristCampaignDetail";
-import FloristOrders from "./pages/florist/FloristOrders";
-import FloristOrderDetail from "./pages/florist/FloristOrderDetail";
-import FloristSettings from "./pages/florist/FloristSettings";
-import FloristReports from "./pages/florist/FloristReports";
 
 // Print styles
 import "./styles/print.css";
 
-// Public Order Pages
-import OrderPage from "./pages/order/OrderPage";
-import CheckoutPage from "./pages/order/CheckoutPage";
+// Eagerly loaded pages (critical path)
+import Index from "./pages/Index";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import NotFound from "./pages/NotFound";
+
+// Lazy loaded pages - AI Florist Platform
+const Dashboard = lazy(() => import("./pages/Dashboard").then(m => ({ default: m.Dashboard })));
+const Events = lazy(() => import("./pages/Events"));
+const Clients = lazy(() => import("./pages/Clients"));
+const ClientDetail = lazy(() => import("./pages/ClientDetail"));
+const Marketing = lazy(() => import("./pages/Marketing"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const Team = lazy(() => import("./pages/Team"));
+const PhotoGallery = lazy(() => import("./pages/PhotoGallery"));
+const Settings = lazy(() => import("./pages/Settings"));
+const NewEvent = lazy(() => import("./pages/NewEvent"));
+const NewClient = lazy(() => import("./pages/NewClient"));
+const EventDetail = lazy(() => import("./pages/EventDetail"));
+
+// Lazy loaded BloomFundr pages
+const BloomFundrLanding = lazy(() => import("./pages/bloomfundr/Landing"));
+const BloomFundrLogin = lazy(() => import("./pages/bloomfundr/Login"));
+const BloomFundrRegister = lazy(() => import("./pages/bloomfundr/Register"));
+
+// Lazy loaded Organization pages
+const OrgDashboard = lazy(() => import("./pages/org/OrgDashboard"));
+const OrgCampaigns = lazy(() => import("./pages/org/OrgCampaigns"));
+const OrgCampaignDetail = lazy(() => import("./pages/org/OrgCampaignDetail"));
+const OrgStudents = lazy(() => import("./pages/org/OrgStudents"));
+const OrgReports = lazy(() => import("./pages/org/OrgReports"));
+const OrgSettings = lazy(() => import("./pages/org/OrgSettings"));
+const CampaignWizard = lazy(() => import("./pages/org/CampaignWizard"));
+const ManualOrderEntry = lazy(() => import("./pages/org/ManualOrderEntry"));
+
+// Lazy loaded Florist pages
+const FloristDashboard = lazy(() => import("./pages/florist/FloristDashboard"));
+const FloristProducts = lazy(() => import("./pages/florist/FloristProducts"));
+const FloristCampaigns = lazy(() => import("./pages/florist/FloristCampaigns"));
+const FloristCampaignDetail = lazy(() => import("./pages/florist/FloristCampaignDetail"));
+const FloristOrders = lazy(() => import("./pages/florist/FloristOrders"));
+const FloristOrderDetail = lazy(() => import("./pages/florist/FloristOrderDetail"));
+const FloristSettings = lazy(() => import("./pages/florist/FloristSettings"));
+const FloristReports = lazy(() => import("./pages/florist/FloristReports"));
+
+// Lazy loaded Public Order pages
+const OrderPage = lazy(() => import("./pages/order/OrderPage"));
+const CheckoutPage = lazy(() => import("./pages/order/CheckoutPage"));
 
 const queryClient = new QueryClient();
+
+// Suspense fallback component
+const PageFallback = () => (
+  <div className="min-h-screen flex items-center justify-center" role="status" aria-label="Loading page">
+    <LoadingSpinner size="lg" message="Loading page..." />
+  </div>
+);
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -71,7 +82,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" role="status" aria-label="Authenticating">
         <LoadingSpinner size="lg" message="Loading..." />
       </div>
     );
@@ -89,9 +100,11 @@ const AuthenticatedLayout = ({ children }: { children: React.ReactNode }) => (
   <SidebarProvider>
     <div className="min-h-screen flex w-full">
       <AppSidebar />
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden" role="main">
         <div className="h-full p-6 overflow-y-auto">
-          {children}
+          <Suspense fallback={<PageFallback />}>
+            {children}
+          </Suspense>
         </div>
       </main>
     </div>
@@ -104,7 +117,7 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" role="status" aria-label="Loading">
         <LoadingSpinner size="lg" message="Loading..." />
       </div>
     );
@@ -152,55 +165,55 @@ const AppContent = () => (
       </ProtectedRoute>
     } />
     <Route path="/events/new" element={
-  <ProtectedRoute>
-    <AuthenticatedLayout>
-      <NewEvent />
-    </AuthenticatedLayout>
-  </ProtectedRoute>
-} />
-<Route path="/events/:id" element={
-  <ProtectedRoute>
-    <AuthenticatedLayout>
-      <EventDetail />
-    </AuthenticatedLayout>
-  </ProtectedRoute>
-} />
-<Route path="/events/:id/edit" element={
-  <ProtectedRoute>
-    <AuthenticatedLayout>
-      <NewEvent />
-    </AuthenticatedLayout>
-  </ProtectedRoute>
-} />
+      <ProtectedRoute>
+        <AuthenticatedLayout>
+          <NewEvent />
+        </AuthenticatedLayout>
+      </ProtectedRoute>
+    } />
+    <Route path="/events/:id" element={
+      <ProtectedRoute>
+        <AuthenticatedLayout>
+          <EventDetail />
+        </AuthenticatedLayout>
+      </ProtectedRoute>
+    } />
+    <Route path="/events/:id/edit" element={
+      <ProtectedRoute>
+        <AuthenticatedLayout>
+          <NewEvent />
+        </AuthenticatedLayout>
+      </ProtectedRoute>
+    } />
     <Route path="/clients" element={
-  <ProtectedRoute>
-    <AuthenticatedLayout>
-      <Clients />
-    </AuthenticatedLayout>
-  </ProtectedRoute>
-} />
-<Route path="/clients/new" element={
-  <ProtectedRoute>
-    <AuthenticatedLayout>
-      <NewClient />
-    </AuthenticatedLayout>
-  </ProtectedRoute>
-} />
-<Route path="/clients/:id" element={
-  <ProtectedRoute>
-    <AuthenticatedLayout>
-      <ClientDetail />
-    </AuthenticatedLayout>
-  </ProtectedRoute>
-} />
-<Route path="/clients/:id/edit" element={
-  <ProtectedRoute>
-    <AuthenticatedLayout>
-      <NewClient />
-    </AuthenticatedLayout>
-  </ProtectedRoute>
-} />
-<Route path="/marketing" element={
+      <ProtectedRoute>
+        <AuthenticatedLayout>
+          <Clients />
+        </AuthenticatedLayout>
+      </ProtectedRoute>
+    } />
+    <Route path="/clients/new" element={
+      <ProtectedRoute>
+        <AuthenticatedLayout>
+          <NewClient />
+        </AuthenticatedLayout>
+      </ProtectedRoute>
+    } />
+    <Route path="/clients/:id" element={
+      <ProtectedRoute>
+        <AuthenticatedLayout>
+          <ClientDetail />
+        </AuthenticatedLayout>
+      </ProtectedRoute>
+    } />
+    <Route path="/clients/:id/edit" element={
+      <ProtectedRoute>
+        <AuthenticatedLayout>
+          <NewClient />
+        </AuthenticatedLayout>
+      </ProtectedRoute>
+    } />
+    <Route path="/marketing" element={
       <ProtectedRoute>
         <AuthenticatedLayout>
           <Marketing />
@@ -237,96 +250,142 @@ const AppContent = () => (
     } />
     
     {/* BloomFundr Routes */}
-    <Route path="/fundraiser" element={<BloomFundrLanding />} />
-    <Route path="/fundraiser/login" element={<BloomFundrLogin />} />
-    <Route path="/fundraiser/register" element={<BloomFundrRegister />} />
+    <Route path="/fundraiser" element={
+      <Suspense fallback={<PageFallback />}>
+        <BloomFundrLanding />
+      </Suspense>
+    } />
+    <Route path="/fundraiser/login" element={
+      <Suspense fallback={<PageFallback />}>
+        <BloomFundrLogin />
+      </Suspense>
+    } />
+    <Route path="/fundraiser/register" element={
+      <Suspense fallback={<PageFallback />}>
+        <BloomFundrRegister />
+      </Suspense>
+    } />
     
     {/* Florist Portal Routes */}
     <Route path="/florist" element={
       <BFProtectedRoute allowedRoles={["florist"]}>
-        <FloristDashboard />
+        <Suspense fallback={<PageFallback />}>
+          <FloristDashboard />
+        </Suspense>
       </BFProtectedRoute>
     } />
     <Route path="/florist/products" element={
       <BFProtectedRoute allowedRoles={["florist"]}>
-        <FloristProducts />
+        <Suspense fallback={<PageFallback />}>
+          <FloristProducts />
+        </Suspense>
       </BFProtectedRoute>
     } />
     <Route path="/florist/campaigns" element={
       <BFProtectedRoute allowedRoles={["florist"]}>
-        <FloristCampaigns />
+        <Suspense fallback={<PageFallback />}>
+          <FloristCampaigns />
+        </Suspense>
       </BFProtectedRoute>
     } />
     <Route path="/florist/campaigns/:id" element={
       <BFProtectedRoute allowedRoles={["florist"]}>
-        <FloristCampaignDetail />
+        <Suspense fallback={<PageFallback />}>
+          <FloristCampaignDetail />
+        </Suspense>
       </BFProtectedRoute>
     } />
     <Route path="/florist/orders" element={
       <BFProtectedRoute allowedRoles={["florist"]}>
-        <FloristOrders />
+        <Suspense fallback={<PageFallback />}>
+          <FloristOrders />
+        </Suspense>
       </BFProtectedRoute>
     } />
     <Route path="/florist/orders/:id" element={
       <BFProtectedRoute allowedRoles={["florist"]}>
-        <FloristOrderDetail />
+        <Suspense fallback={<PageFallback />}>
+          <FloristOrderDetail />
+        </Suspense>
       </BFProtectedRoute>
     } />
     <Route path="/florist/settings" element={
       <BFProtectedRoute allowedRoles={["florist"]}>
-        <FloristSettings />
+        <Suspense fallback={<PageFallback />}>
+          <FloristSettings />
+        </Suspense>
       </BFProtectedRoute>
     } />
     <Route path="/florist/reports" element={
       <BFProtectedRoute allowedRoles={["florist"]}>
-        <FloristReports />
+        <Suspense fallback={<PageFallback />}>
+          <FloristReports />
+        </Suspense>
       </BFProtectedRoute>
     } />
     
     {/* Organization Portal Routes */}
     <Route path="/org" element={
       <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
-        <OrgDashboard />
+        <Suspense fallback={<PageFallback />}>
+          <OrgDashboard />
+        </Suspense>
       </BFProtectedRoute>
     } />
     <Route path="/org/campaigns" element={
       <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
-        <OrgCampaigns />
+        <Suspense fallback={<PageFallback />}>
+          <OrgCampaigns />
+        </Suspense>
       </BFProtectedRoute>
     } />
     <Route path="/org/campaigns/new" element={
       <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
-        <CampaignWizard />
+        <Suspense fallback={<PageFallback />}>
+          <CampaignWizard />
+        </Suspense>
       </BFProtectedRoute>
     } />
     <Route path="/org/campaigns/:id" element={
       <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
-        <OrgCampaignDetail />
+        <Suspense fallback={<PageFallback />}>
+          <OrgCampaignDetail />
+        </Suspense>
       </BFProtectedRoute>
     } />
     <Route path="/org/campaigns/:id/edit" element={
       <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
-        <CampaignWizard />
+        <Suspense fallback={<PageFallback />}>
+          <CampaignWizard />
+        </Suspense>
       </BFProtectedRoute>
     } />
     <Route path="/org/campaigns/:id/add-order" element={
       <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
-        <ManualOrderEntry />
+        <Suspense fallback={<PageFallback />}>
+          <ManualOrderEntry />
+        </Suspense>
       </BFProtectedRoute>
     } />
     <Route path="/org/students" element={
       <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
-        <OrgStudents />
+        <Suspense fallback={<PageFallback />}>
+          <OrgStudents />
+        </Suspense>
       </BFProtectedRoute>
     } />
     <Route path="/org/reports" element={
       <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
-        <OrgReports />
+        <Suspense fallback={<PageFallback />}>
+          <OrgReports />
+        </Suspense>
       </BFProtectedRoute>
     } />
     <Route path="/org/settings" element={
       <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
-        <OrgSettings />
+        <Suspense fallback={<PageFallback />}>
+          <OrgSettings />
+        </Suspense>
       </BFProtectedRoute>
     } />
     
@@ -334,18 +393,30 @@ const AppContent = () => (
     <Route path="/fundraiser/org" element={<Navigate to="/org" replace />} />
     <Route path="/fundraiser/dashboard" element={
       <BFProtectedRoute>
-        <FloristDashboard />
+        <Suspense fallback={<PageFallback />}>
+          <FloristDashboard />
+        </Suspense>
       </BFProtectedRoute>
     } />
     <Route path="/fundraiser/florist" element={
       <BFProtectedRoute allowedRoles={["florist"]}>
-        <FloristDashboard />
+        <Suspense fallback={<PageFallback />}>
+          <FloristDashboard />
+        </Suspense>
       </BFProtectedRoute>
     } />
     
     {/* Public Order Routes */}
-    <Route path="/order/:magicLinkCode" element={<OrderPage />} />
-    <Route path="/order/:magicLinkCode/checkout" element={<CheckoutPage />} />
+    <Route path="/order/:magicLinkCode" element={
+      <Suspense fallback={<PageFallback />}>
+        <OrderPage />
+      </Suspense>
+    } />
+    <Route path="/order/:magicLinkCode/checkout" element={
+      <Suspense fallback={<PageFallback />}>
+        <CheckoutPage />
+      </Suspense>
+    } />
     
     {/* Catch all route */}
     <Route path="*" element={<NotFound />} />

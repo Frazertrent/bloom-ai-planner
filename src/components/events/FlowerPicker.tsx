@@ -107,7 +107,7 @@ const FlowerPicker = ({
   }, [catalog, searchTerm, colorFilter, seasonalFilter, priceRange, sortBy, showOnlyMustHave, hideToAvoid]);
 
   const fetchCatalog = async () => {
-    // TODO: Replace with Supabase query
+    // Mock data - will be replaced with flower_catalog Supabase query
     const mockCatalog: FlowerCatalogItem[] = [
       {
         id: '1',

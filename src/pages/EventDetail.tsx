@@ -146,7 +146,6 @@ const EventDetail = () => {
   };
 
   const getPhaseBadge = () => {
-    console.log('getPhaseBadge called, phase:', event?.current_phase);
     if (!event?.current_phase) return null;
     
     const phaseColors: Record<EventPhase, string> = {
