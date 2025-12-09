@@ -39,6 +39,7 @@ import OrgCampaigns from "./pages/org/OrgCampaigns";
 import OrgStudents from "./pages/org/OrgStudents";
 import OrgReports from "./pages/org/OrgReports";
 import OrgSettings from "./pages/org/OrgSettings";
+import CampaignWizard from "./pages/org/CampaignWizard";
 
 // Florist Pages
 import FloristDashboard from "./pages/florist/FloristDashboard";
@@ -273,6 +274,16 @@ const AppContent = () => (
     <Route path="/org/campaigns" element={
       <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
         <OrgCampaigns />
+      </BFProtectedRoute>
+    } />
+    <Route path="/org/campaigns/new" element={
+      <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
+        <CampaignWizard />
+      </BFProtectedRoute>
+    } />
+    <Route path="/org/campaigns/:id/edit" element={
+      <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
+        <CampaignWizard />
       </BFProtectedRoute>
     } />
     <Route path="/org/students" element={
