@@ -204,6 +204,14 @@ export default function OrgCampaignDetail() {
                 </Link>
               </Button>
             )}
+            {(campaign.status === "active" || campaign.status === "closed") && (
+              <Button variant="outline" asChild>
+                <Link to={`/org/campaigns/${id}/add-order`}>
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Add Manual Order
+                </Link>
+              </Button>
+            )}
             <Button onClick={() => setShowLinksModal(true)}>
               <Share2 className="h-4 w-4 mr-2" />
               Share Links
