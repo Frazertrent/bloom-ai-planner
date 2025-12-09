@@ -26,7 +26,8 @@ import NewEvent from "./pages/NewEvent";
 import NewClient from "./pages/NewClient";
 import EventDetail from "./pages/EventDetail";
 
-
+// BloomFundr Pages
+import BloomFundrLanding from "./pages/bloomfundr/Landing";
 const queryClient = new QueryClient();
 
 // Protected Route Component
@@ -199,6 +200,9 @@ const AppContent = () => (
         </AuthenticatedLayout>
       </ProtectedRoute>
     } />
+    
+    {/* BloomFundr Routes (Public) */}
+    <Route path="/fundraiser" element={<BloomFundrLanding />} />
     
     {/* Catch all route */}
     <Route path="*" element={<NotFound />} />

@@ -73,6 +73,17 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				bloomfundr: {
+					primary: 'hsl(var(--bf-primary))',
+					'primary-foreground': 'hsl(var(--bf-primary-foreground))',
+					'primary-light': 'hsl(var(--bf-primary-light))',
+					secondary: 'hsl(var(--bf-secondary))',
+					'secondary-foreground': 'hsl(var(--bf-secondary-foreground))',
+					'secondary-light': 'hsl(var(--bf-secondary-light))',
+					background: 'hsl(var(--bf-background))',
+					card: 'hsl(var(--bf-card))',
+					muted: 'hsl(var(--bf-muted))'
 				}
 			},
 			borderRadius: {
