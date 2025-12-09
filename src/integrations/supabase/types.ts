@@ -365,6 +365,47 @@ export type Database = {
         }
         Relationships: []
       }
+      bf_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          link_url: string | null
+          message: string
+          notification_type: string
+          organization_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link_url?: string | null
+          message: string
+          notification_type?: string
+          organization_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link_url?: string | null
+          message?: string
+          notification_type?: string
+          organization_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bf_notifications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "bf_organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bf_order_items: {
         Row: {
           campaign_product_id: string
@@ -502,6 +543,10 @@ export type Database = {
           created_at: string | null
           id: string
           name: string
+          notification_campaign_alerts: boolean | null
+          notification_daily_summary: boolean | null
+          notification_email: string | null
+          notification_new_orders: boolean | null
           org_type: string
           stripe_account_id: string | null
           updated_at: string | null
@@ -513,6 +558,10 @@ export type Database = {
           created_at?: string | null
           id?: string
           name: string
+          notification_campaign_alerts?: boolean | null
+          notification_daily_summary?: boolean | null
+          notification_email?: string | null
+          notification_new_orders?: boolean | null
           org_type: string
           stripe_account_id?: string | null
           updated_at?: string | null
@@ -524,6 +573,10 @@ export type Database = {
           created_at?: string | null
           id?: string
           name?: string
+          notification_campaign_alerts?: boolean | null
+          notification_daily_summary?: boolean | null
+          notification_email?: string | null
+          notification_new_orders?: boolean | null
           org_type?: string
           stripe_account_id?: string | null
           updated_at?: string | null

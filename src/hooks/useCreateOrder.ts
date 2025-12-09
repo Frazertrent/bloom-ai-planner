@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { notifyNewOrder } from "@/lib/notifications";
 import type { CartItem } from "@/contexts/OrderContext";
 import type { CheckoutFormData } from "@/lib/checkoutValidation";
 import type { Json } from "@/integrations/supabase/types";
@@ -92,6 +93,32 @@ export function useCreateOrder() {
         .insert(orderItems);
 
       if (itemsError) throw itemsError;
+
+      // 4. Get campaign and student info for notification
+      const { data: campaign } = await supabase
+        .from("bf_campaigns")
+        .select("organization_id, name")
+        .eq("id", campaignId)
+        .single();
+
+      const { data: student } = await supabase
+        .from("bf_students")
+        .select("name")
+        .eq("id", studentId)
+        .single();
+
+      // 5. Create notification for organization
+      if (campaign) {
+        await notifyNewOrder({
+          organizationId: campaign.organization_id,
+          campaignId,
+          campaignName: campaign.name,
+          orderNumber: order.order_number,
+          customerName: customerData.fullName,
+          studentName: student?.name || "Unknown Student",
+          amount: total,
+        });
+      }
 
       return {
         orderId: order.id,

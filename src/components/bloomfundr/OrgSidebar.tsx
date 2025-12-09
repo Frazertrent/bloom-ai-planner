@@ -22,6 +22,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "./NotificationBell";
 
 const navItems = [
   { title: "Dashboard", url: "/org", icon: Home },
@@ -50,17 +51,20 @@ export function OrgSidebar() {
       collapsible="icon"
     >
       <SidebarHeader className="border-b border-border p-4">
-        <Link to="/org" className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500 text-white">
-            <Building2 className="h-5 w-5" />
-          </div>
-          {!collapsed && (
-            <div>
-              <span className="font-bold text-lg text-foreground">BloomFundr</span>
-              <p className="text-xs text-muted-foreground">Organization Portal</p>
+        <div className="flex items-center justify-between">
+          <Link to="/org" className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500 text-white">
+              <Building2 className="h-5 w-5" />
             </div>
-          )}
-        </Link>
+            {!collapsed && (
+              <div>
+                <span className="font-bold text-lg text-foreground">BloomFundr</span>
+                <p className="text-xs text-muted-foreground">Organization Portal</p>
+              </div>
+            )}
+          </Link>
+          {!collapsed && <NotificationBell />}
+        </div>
       </SidebarHeader>
 
       <SidebarContent>
