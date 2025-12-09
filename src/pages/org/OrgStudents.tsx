@@ -2,9 +2,10 @@ import { useState } from "react";
 import { OrgLayout } from "@/components/bloomfundr/OrgLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SearchInput } from "@/components/ui/search-input";
+import { FilterDropdown } from "@/components/ui/filter-dropdown";
 import {
   Select,
   SelectContent,
@@ -39,11 +40,11 @@ import {
   useDeleteStudent,
   useToggleStudentStatus
 } from "@/hooks/useOrgStudents";
+import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { 
   Users, 
   Plus, 
   Upload, 
-  Search, 
   Eye, 
   Pencil, 
   Trash2,
@@ -57,23 +58,46 @@ interface StudentWithSales extends BFStudent {
   order_count: number;
 }
 
+const statusOptions = [
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+];
+
 export default function OrgStudents() {
-  const [search, setSearch] = useState("");
-  const [teamFilter, setTeamFilter] = useState("all");
+  const { getFilter, getArrayFilter, setFilter, setArrayFilter } = useUrlFilters({
+    defaultValues: { team: "all" },
+  });
+
+  const search = getFilter("search");
+  const teamFilter = getFilter("team") || "all";
+  const statusFilter = getArrayFilter("status");
+
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editStudent, setEditStudent] = useState<BFStudent | null>(null);
   const [viewStudent, setViewStudent] = useState<StudentWithSales | null>(null);
-  const [deleteStudent, setDeleteStudent] = useState<BFStudent | null>(null);
+  const [deleteStudentState, setDeleteStudentState] = useState<BFStudent | null>(null);
 
-  const { data: students, isLoading } = useOrgStudentsList(search, teamFilter);
+  const { data: allStudents, isLoading } = useOrgStudentsList(search, teamFilter === "all" ? undefined : teamFilter);
   const { data: teamGroups } = useTeamGroups();
   const deleteStudentMutation = useDeleteStudent();
   const toggleStatus = useToggleStudentStatus();
 
+  // Apply client-side status filtering
+  const students = allStudents?.filter((student) => {
+    if (statusFilter.length > 0) {
+      const isActive = student.is_active;
+      const matchesStatus =
+        (statusFilter.includes("active") && isActive) ||
+        (statusFilter.includes("inactive") && !isActive);
+      if (!matchesStatus) return false;
+    }
+    return true;
+  });
+
   const handleDelete = () => {
-    if (!deleteStudent) return;
-    deleteStudentMutation.mutate(deleteStudent.id);
-    setDeleteStudent(null);
+    if (!deleteStudentState) return;
+    deleteStudentMutation.mutate(deleteStudentState.id);
+    setDeleteStudentState(null);
   };
 
   const handleToggleStatus = (student: BFStudent) => {
@@ -107,20 +131,17 @@ export default function OrgStudents() {
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, email, or phone..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Select value={teamFilter} onValueChange={setTeamFilter}>
+          <SearchInput
+            value={search}
+            onChange={(v) => setFilter("search", v)}
+            placeholder="Search by name, email, or phone..."
+            className="flex-1 max-w-sm"
+          />
+          <Select value={teamFilter} onValueChange={(v) => setFilter("team", v)}>
             <SelectTrigger className="w-full sm:w-[200px]">
               <SelectValue placeholder="All Teams" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-popover">
               <SelectItem value="all">All Teams</SelectItem>
               {teamGroups?.map((team) => (
                 <SelectItem key={team} value={team}>
@@ -129,6 +150,13 @@ export default function OrgStudents() {
               ))}
             </SelectContent>
           </Select>
+          <FilterDropdown
+            label="Status"
+            options={statusOptions}
+            value={statusFilter}
+            onChange={(v) => setArrayFilter("status", v)}
+            multiSelect
+          />
         </div>
 
         {/* Students Table */}
@@ -147,96 +175,108 @@ export default function OrgStudents() {
                 ))}
               </div>
             ) : students && students.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Grade</TableHead>
-                    <TableHead>Team/Group</TableHead>
-                    <TableHead className="text-right">Total Sales</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {students.map((student) => (
-                    <TableRow key={student.id}>
-                      <TableCell>
-                        <button
-                          onClick={() => setViewStudent(student)}
-                          className="font-medium text-primary hover:underline text-left"
-                        >
-                          {student.name}
-                        </button>
-                      </TableCell>
-                      <TableCell>{student.email || "—"}</TableCell>
-                      <TableCell>{student.phone || "—"}</TableCell>
-                      <TableCell>{student.grade || "—"}</TableCell>
-                      <TableCell>{student.team_group || "—"}</TableCell>
-                      <TableCell className="text-right font-medium text-emerald-600">
-                        ${student.total_sales.toFixed(2)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={student.is_active ? "default" : "secondary"}>
-                          {student.is_active ? "Active" : "Inactive"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setViewStudent(student)}
-                            title="View details"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setEditStudent(student)}
-                            title="Edit"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleToggleStatus(student)}
-                            title={student.is_active ? "Deactivate" : "Activate"}
-                          >
-                            {student.is_active ? (
-                              <ToggleRight className="h-4 w-4" />
-                            ) : (
-                              <ToggleLeft className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setDeleteStudent(student)}
-                            title="Delete"
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead className="hidden md:table-cell">Email</TableHead>
+                      <TableHead className="hidden lg:table-cell">Phone</TableHead>
+                      <TableHead className="hidden sm:table-cell">Grade</TableHead>
+                      <TableHead className="hidden md:table-cell">Team/Group</TableHead>
+                      <TableHead className="text-right">Total Sales</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {students.map((student) => (
+                      <TableRow key={student.id}>
+                        <TableCell>
+                          <button
+                            onClick={() => setViewStudent(student)}
+                            className="font-medium text-primary hover:underline text-left"
+                          >
+                            {student.name}
+                          </button>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">{student.email || "—"}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{student.phone || "—"}</TableCell>
+                        <TableCell className="hidden sm:table-cell">{student.grade || "—"}</TableCell>
+                        <TableCell className="hidden md:table-cell">{student.team_group || "—"}</TableCell>
+                        <TableCell className="text-right font-medium text-emerald-600">
+                          ${student.total_sales.toFixed(2)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={student.is_active ? "default" : "secondary"}>
+                            {student.is_active ? "Active" : "Inactive"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setViewStudent(student)}
+                              title="View details"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setEditStudent(student)}
+                              title="Edit"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleToggleStatus(student)}
+                              title={student.is_active ? "Deactivate" : "Activate"}
+                            >
+                              {student.is_active ? (
+                                <ToggleRight className="h-4 w-4" />
+                              ) : (
+                                <ToggleLeft className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setDeleteStudentState(student)}
+                              title="Delete"
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             ) : (
               <div className="text-center py-12 text-muted-foreground">
                 <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium">No students yet</p>
-                <p className="text-sm mt-1">Add students to participate in campaigns</p>
-                <Button className="mt-4" onClick={() => setAddDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Your First Student
-                </Button>
+                <p className="text-lg font-medium">
+                  {search || statusFilter.length > 0 || teamFilter !== "all"
+                    ? "No students match your filters"
+                    : "No students yet"}
+                </p>
+                <p className="text-sm mt-1">
+                  {search || statusFilter.length > 0 || teamFilter !== "all"
+                    ? "Try adjusting your search or filter criteria"
+                    : "Add students to participate in campaigns"}
+                </p>
+                {!search && statusFilter.length === 0 && teamFilter === "all" && (
+                  <Button className="mt-4" onClick={() => setAddDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Your First Student
+                  </Button>
+                )}
               </div>
             )}
           </CardContent>
@@ -264,13 +304,13 @@ export default function OrgStudents() {
       />
 
       {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteStudent} onOpenChange={(open) => !open && setDeleteStudent(null)}>
-        <AlertDialogContent>
+      <AlertDialog open={!!deleteStudentState} onOpenChange={(open) => !open && setDeleteStudentState(null)}>
+        <AlertDialogContent className="bg-card">
           <AlertDialogHeader>
             <AlertDialogTitle>Remove Student?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove <strong>{deleteStudent?.name}</strong>?
-              {deleteStudent && (students?.find(s => s.id === deleteStudent.id)?.total_sales || 0) > 0 && (
+              Are you sure you want to remove <strong>{deleteStudentState?.name}</strong>?
+              {deleteStudentState && (students?.find(s => s.id === deleteStudentState.id)?.total_sales || 0) > 0 && (
                 <span className="block mt-2 text-amber-600">
                   ⚠️ This student has sales history. They will be marked as inactive but their sales data will be preserved.
                 </span>

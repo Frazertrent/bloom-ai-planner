@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { FloristLayout } from "@/components/bloomfundr/FloristLayout";
@@ -6,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SearchInput } from "@/components/ui/search-input";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
 import {
   Table,
   TableBody,
@@ -17,8 +18,9 @@ import {
 import { CampaignStatusBadge } from "@/components/bloomfundr/CampaignStatusBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { useFloristProfile } from "@/hooks/useFloristData";
+import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { Calendar, Eye } from "lucide-react";
-import { format } from "date-fns";
+import { format, isWithinInterval } from "date-fns";
 import type { BFCampaign, BFOrganization, CampaignStatus } from "@/types/bloomfundr";
 
 interface CampaignWithOrg extends BFCampaign {
@@ -30,10 +32,17 @@ interface CampaignWithOrg extends BFCampaign {
 type FilterTab = "all" | "active" | "completed";
 
 export default function FloristCampaignsPage() {
-  const [activeTab, setActiveTab] = useState<FilterTab>("all");
+  const { getFilter, getDateRangeFilter, setFilter, setDateRangeFilter } = useUrlFilters({
+    defaultValues: { tab: "all" },
+  });
+
+  const search = getFilter("search");
+  const activeTab = (getFilter("tab") || "all") as FilterTab;
+  const dateRange = getDateRangeFilter("date");
+
   const { data: florist } = useFloristProfile();
 
-  const { data: campaigns, isLoading } = useQuery({
+  const { data: allCampaigns, isLoading } = useQuery({
     queryKey: ["florist-campaigns-with-orgs", florist?.id, activeTab],
     queryFn: async (): Promise<CampaignWithOrg[]> => {
       if (!florist?.id) return [];
@@ -109,6 +118,33 @@ export default function FloristCampaignsPage() {
     enabled: !!florist?.id,
   });
 
+  // Apply client-side filtering
+  const campaigns = allCampaigns?.filter((campaign) => {
+    // Search filter
+    if (search) {
+      const searchLower = search.toLowerCase();
+      const matchesSearch =
+        campaign.name.toLowerCase().includes(searchLower) ||
+        campaign.organization?.name?.toLowerCase().includes(searchLower);
+      if (!matchesSearch) return false;
+    }
+
+    // Date range filter
+    if (dateRange?.from) {
+      const campaignStart = new Date(campaign.start_date);
+      const campaignEnd = new Date(campaign.end_date);
+      const to = dateRange.to || dateRange.from;
+      // Check if campaign overlaps with date range
+      const overlaps =
+        isWithinInterval(campaignStart, { start: dateRange.from, end: to }) ||
+        isWithinInterval(campaignEnd, { start: dateRange.from, end: to }) ||
+        (campaignStart <= dateRange.from && campaignEnd >= to);
+      if (!overlaps) return false;
+    }
+
+    return true;
+  });
+
   return (
     <FloristLayout>
       <div className="space-y-6">
@@ -119,14 +155,31 @@ export default function FloristCampaignsPage() {
           </p>
         </div>
 
-        {/* Filter Tabs */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as FilterTab)}>
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="active">Active</TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* Filters */}
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <SearchInput
+              value={search}
+              onChange={(v) => setFilter("search", v)}
+              placeholder="Search by name or organization..."
+              className="flex-1 max-w-sm"
+            />
+            <DateRangeFilter
+              value={dateRange}
+              onChange={(v) => setDateRangeFilter("date", v)}
+              placeholder="Filter by date"
+              className="w-full sm:w-auto"
+            />
+          </div>
+
+          <Tabs value={activeTab} onValueChange={(v) => setFilter("tab", v)}>
+            <TabsList>
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="active">Active</TabsTrigger>
+              <TabsTrigger value="completed">Completed</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
 
         {/* Campaigns Table */}
         <Card className="bg-card border-border">
@@ -142,54 +195,62 @@ export default function FloristCampaignsPage() {
                 ))}
               </div>
             ) : campaigns && campaigns.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Campaign</TableHead>
-                    <TableHead>Organization</TableHead>
-                    <TableHead>Dates</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Orders</TableHead>
-                    <TableHead className="text-right">Your Revenue</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {campaigns.map((campaign) => (
-                    <TableRow key={campaign.id}>
-                      <TableCell className="font-medium">{campaign.name}</TableCell>
-                      <TableCell>{campaign.organization?.name || "Unknown"}</TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <span>{format(new Date(campaign.start_date), "MMM d")}</span>
-                          <span className="text-muted-foreground"> - </span>
-                          <span>{format(new Date(campaign.end_date), "MMM d, yyyy")}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <CampaignStatusBadge status={campaign.status} />
-                      </TableCell>
-                      <TableCell className="text-right">{campaign.order_count}</TableCell>
-                      <TableCell className="text-right font-medium text-emerald-600">
-                        ${campaign.total_revenue.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link to={`/florist/campaigns/${campaign.id}`}>
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Link>
-                        </Button>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Campaign</TableHead>
+                      <TableHead className="hidden md:table-cell">Organization</TableHead>
+                      <TableHead className="hidden lg:table-cell">Dates</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right hidden sm:table-cell">Orders</TableHead>
+                      <TableHead className="text-right">Your Revenue</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {campaigns.map((campaign) => (
+                      <TableRow key={campaign.id}>
+                        <TableCell className="font-medium">{campaign.name}</TableCell>
+                        <TableCell className="hidden md:table-cell">{campaign.organization?.name || "Unknown"}</TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <div className="text-sm">
+                            <span>{format(new Date(campaign.start_date), "MMM d")}</span>
+                            <span className="text-muted-foreground"> - </span>
+                            <span>{format(new Date(campaign.end_date), "MMM d, yyyy")}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <CampaignStatusBadge status={campaign.status} />
+                        </TableCell>
+                        <TableCell className="text-right hidden sm:table-cell">{campaign.order_count}</TableCell>
+                        <TableCell className="text-right font-medium text-emerald-600">
+                          ${campaign.total_revenue.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link to={`/florist/campaigns/${campaign.id}`}>
+                              <Eye className="h-4 w-4 mr-1" />
+                              View
+                            </Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             ) : (
               <div className="text-center py-12 text-muted-foreground">
                 <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium">No campaigns yet</p>
-                <p className="text-sm mt-1">Organizations will invite you to fulfill campaigns</p>
+                <p className="text-lg font-medium">
+                  {search || dateRange ? "No campaigns match your filters" : "No campaigns yet"}
+                </p>
+                <p className="text-sm mt-1">
+                  {search || dateRange
+                    ? "Try adjusting your search or date range"
+                    : "Organizations will invite you to fulfill campaigns"}
+                </p>
               </div>
             )}
           </CardContent>

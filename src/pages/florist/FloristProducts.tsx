@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SearchInput } from "@/components/ui/search-input";
+import { FilterDropdown } from "@/components/ui/filter-dropdown";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,6 +38,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useFloristProducts, useToggleProductStatus } from "@/hooks/useFloristProducts";
+import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { ProductCategory, BFProduct } from "@/types/bloomfundr";
@@ -54,17 +57,52 @@ const categoryLabels: Record<ProductCategory, string> = {
   custom: "Custom",
 };
 
+const statusOptions = [
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+];
+
 export default function FloristProductsPage() {
-  const [activeTab, setActiveTab] = useState<ProductCategory | "all">("all");
+  const { getFilter, getArrayFilter, setFilter, setArrayFilter } = useUrlFilters({
+    defaultValues: { category: "all" },
+  });
+
+  const search = getFilter("search");
+  const category = getFilter("category") || "all";
+  const statusFilter = getArrayFilter("status");
+
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<BFProduct | null>(null);
 
-  const { data: products, isLoading } = useFloristProducts(activeTab);
+  const { data: allProducts, isLoading } = useFloristProducts(category as ProductCategory | "all");
   const queryClient = useQueryClient();
   const toggleStatusFn = useToggleProductStatus();
+
+  // Apply client-side filtering for search and status
+  const products = allProducts?.filter((product) => {
+    // Search filter
+    if (search) {
+      const searchLower = search.toLowerCase();
+      const matchesSearch =
+        product.name.toLowerCase().includes(searchLower) ||
+        product.description?.toLowerCase().includes(searchLower);
+      if (!matchesSearch) return false;
+    }
+
+    // Status filter
+    if (statusFilter.length > 0) {
+      const isActive = product.is_active;
+      const matchesStatus =
+        (statusFilter.includes("active") && isActive) ||
+        (statusFilter.includes("inactive") && !isActive);
+      if (!matchesStatus) return false;
+    }
+
+    return true;
+  });
 
   // Soft delete - just set is_active to false
   const softDeleteMutation = useMutation({
@@ -141,8 +179,25 @@ export default function FloristProductsPage() {
           </Button>
         </div>
 
-        {/* Filter Tabs */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ProductCategory | "all")}>
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <SearchInput
+            value={search}
+            onChange={(v) => setFilter("search", v)}
+            placeholder="Search products..."
+            className="flex-1 max-w-sm"
+          />
+          <FilterDropdown
+            label="Status"
+            options={statusOptions}
+            value={statusFilter}
+            onChange={(v) => setArrayFilter("status", v)}
+            multiSelect
+          />
+        </div>
+
+        {/* Category Tabs */}
+        <Tabs value={category} onValueChange={(v) => setFilter("category", v)}>
           <TabsList className="bg-bloomfundr-card border border-bloomfundr-muted">
             <TabsTrigger value="all" className="data-[state=active]:bg-bloomfundr-primary data-[state=active]:text-bloomfundr-primary-foreground">
               All
@@ -234,7 +289,7 @@ export default function FloristProductsPage() {
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="bg-popover">
                         <DropdownMenuItem
                           onClick={(e) => {
                             e.stopPropagation();
@@ -293,19 +348,25 @@ export default function FloristProductsPage() {
                 <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-bloomfundr-primary/10 flex items-center justify-center">
                   <Package className="h-10 w-10 text-bloomfundr-primary" />
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">No products yet</h3>
+                <h3 className="text-xl font-semibold text-foreground mb-2">
+                  {search || statusFilter.length > 0 ? "No products match your filters" : "No products yet"}
+                </h3>
                 <p className="text-sm max-w-sm mx-auto mb-6">
-                  {activeTab === "all"
+                  {search || statusFilter.length > 0
+                    ? "Try adjusting your search or filter criteria"
+                    : category === "all"
                     ? "Add your first product to make it available for fundraising campaigns"
-                    : `No ${categoryLabels[activeTab as ProductCategory].toLowerCase()}s found in your catalog`}
+                    : `No ${categoryLabels[category as ProductCategory]?.toLowerCase()}s found in your catalog`}
                 </p>
-                <Button 
-                  onClick={() => setAddDialogOpen(true)}
-                  className="bg-bloomfundr-primary hover:bg-bloomfundr-primary-light"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Your First Product
-                </Button>
+                {!search && statusFilter.length === 0 && (
+                  <Button 
+                    onClick={() => setAddDialogOpen(true)}
+                    className="bg-bloomfundr-primary hover:bg-bloomfundr-primary-light"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Your First Product
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
