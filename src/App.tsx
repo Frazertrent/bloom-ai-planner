@@ -30,10 +30,16 @@ import EventDetail from "./pages/EventDetail";
 import BloomFundrLanding from "./pages/bloomfundr/Landing";
 import BloomFundrLogin from "./pages/bloomfundr/Login";
 import BloomFundrRegister from "./pages/bloomfundr/Register";
-import FloristDashboard from "./pages/bloomfundr/FloristDashboard";
 import OrgDashboard from "./pages/bloomfundr/OrgDashboard";
 import { BloomFundrAuthProvider } from "./contexts/BloomFundrAuthContext";
 import BFProtectedRoute from "./components/bloomfundr/ProtectedRoute";
+
+// Florist Pages
+import FloristDashboard from "./pages/florist/FloristDashboard";
+import FloristProducts from "./pages/florist/FloristProducts";
+import FloristCampaigns from "./pages/florist/FloristCampaigns";
+import FloristOrders from "./pages/florist/FloristOrders";
+import FloristSettings from "./pages/florist/FloristSettings";
 
 const queryClient = new QueryClient();
 
@@ -212,18 +218,49 @@ const AppContent = () => (
     <Route path="/fundraiser" element={<BloomFundrLanding />} />
     <Route path="/fundraiser/login" element={<BloomFundrLogin />} />
     <Route path="/fundraiser/register" element={<BloomFundrRegister />} />
-    <Route path="/fundraiser/florist" element={
+    
+    {/* Florist Portal Routes */}
+    <Route path="/florist" element={
       <BFProtectedRoute allowedRoles={["florist"]}>
         <FloristDashboard />
       </BFProtectedRoute>
     } />
+    <Route path="/florist/products" element={
+      <BFProtectedRoute allowedRoles={["florist"]}>
+        <FloristProducts />
+      </BFProtectedRoute>
+    } />
+    <Route path="/florist/campaigns" element={
+      <BFProtectedRoute allowedRoles={["florist"]}>
+        <FloristCampaigns />
+      </BFProtectedRoute>
+    } />
+    <Route path="/florist/orders" element={
+      <BFProtectedRoute allowedRoles={["florist"]}>
+        <FloristOrders />
+      </BFProtectedRoute>
+    } />
+    <Route path="/florist/settings" element={
+      <BFProtectedRoute allowedRoles={["florist"]}>
+        <FloristSettings />
+      </BFProtectedRoute>
+    } />
+    
+    {/* Organization Portal Routes */}
     <Route path="/fundraiser/org" element={
       <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
         <OrgDashboard />
       </BFProtectedRoute>
     } />
+    
+    {/* Legacy redirect */}
     <Route path="/fundraiser/dashboard" element={
       <BFProtectedRoute>
+        <FloristDashboard />
+      </BFProtectedRoute>
+    } />
+    <Route path="/fundraiser/florist" element={
+      <BFProtectedRoute allowedRoles={["florist"]}>
         <FloristDashboard />
       </BFProtectedRoute>
     } />
