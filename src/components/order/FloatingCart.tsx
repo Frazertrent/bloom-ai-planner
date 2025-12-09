@@ -33,17 +33,17 @@ export function FloatingCart({ magicLinkCode }: FloatingCartProps) {
 
   return (
     <>
-      {/* Floating button on mobile */}
-      <div className="fixed bottom-4 left-4 right-4 md:hidden z-50">
+      {/* Floating button on mobile - large touch target */}
+      <div className="fixed bottom-0 left-0 right-0 md:hidden z-50 p-3 bg-gradient-to-t from-background via-background to-transparent pt-8">
         <Button 
-          className="w-full shadow-lg py-6"
+          className="w-full shadow-xl py-7 text-base min-h-[56px] active:scale-[0.98] transition-transform"
           onClick={() => setIsCartOpen(true)}
         >
-          <ShoppingCart className="h-5 w-5 mr-2" />
+          <ShoppingCart className="h-5 w-5 mr-3" />
           <span className="flex-1 text-left">
             {cartItemCount > 0 ? `${cartItemCount} item${cartItemCount !== 1 ? "s" : ""}` : "View Cart"}
           </span>
-          <span className="font-bold">${cartTotal.toFixed(2)}</span>
+          <span className="font-bold text-lg">${cartTotal.toFixed(2)}</span>
         </Button>
       </div>
 
@@ -75,19 +75,22 @@ export function FloatingCart({ magicLinkCode }: FloatingCartProps) {
                   </div>
                 </ScrollArea>
                 
-                <div className="border-t mt-4 pt-4 space-y-4">
+                <div className="border-t mt-4 pt-4 space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Subtotal</span>
                     <span className="text-xl font-bold">${cartTotal.toFixed(2)}</span>
                   </div>
                   
-                  <Button className="w-full py-6" onClick={handleCheckout}>
+                  <Button 
+                    className="w-full py-7 text-base min-h-[56px] active:scale-[0.98] transition-transform" 
+                    onClick={handleCheckout}
+                  >
                     Proceed to Checkout
                   </Button>
                   
                   <Button 
                     variant="outline" 
-                    className="w-full"
+                    className="w-full min-h-[48px] active:scale-[0.98] transition-transform"
                     onClick={handleContinueShopping}
                   >
                     <ArrowLeft className="h-4 w-4 mr-2" />
@@ -215,37 +218,37 @@ function CartItemRow({ item, onUpdateQuantity, onRemove }: CartItemRowProps) {
         
         <p className="text-sm font-medium mt-1">${item.price.toFixed(2)} each</p>
         
-        {/* Quantity controls */}
+        {/* Quantity controls - larger for touch */}
         <div className="flex items-center justify-between mt-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Button 
               variant="outline" 
               size="icon" 
-              className="h-7 w-7"
+              className="h-9 w-9 min-h-[44px] min-w-[44px] active:scale-95 transition-transform"
               onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
             >
-              <Minus className="h-3 w-3" />
+              <Minus className="h-4 w-4" />
             </Button>
-            <span className="w-8 text-center font-medium">{item.quantity}</span>
+            <span className="w-10 text-center font-medium text-lg">{item.quantity}</span>
             <Button 
               variant="outline" 
               size="icon" 
-              className="h-7 w-7"
+              className="h-9 w-9 min-h-[44px] min-w-[44px] active:scale-95 transition-transform"
               onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
             >
-              <Plus className="h-3 w-3" />
+              <Plus className="h-4 w-4" />
             </Button>
           </div>
           
           <div className="flex items-center gap-3">
-            <span className="font-semibold">${lineTotal.toFixed(2)}</span>
+            <span className="font-semibold text-lg">${lineTotal.toFixed(2)}</span>
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-7 w-7 text-destructive hover:text-destructive"
+              className="h-9 w-9 min-h-[44px] min-w-[44px] text-destructive hover:text-destructive active:scale-95 transition-transform"
               onClick={() => onRemove(item.id)}
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-5 w-5" />
             </Button>
           </div>
         </div>

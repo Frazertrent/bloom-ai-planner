@@ -20,18 +20,18 @@ const Landing = () => {
       <Header />
       
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 relative overflow-hidden">
+      <section className="pt-20 md:pt-32 pb-12 md:pb-20 px-4 relative overflow-hidden">
         {/* Background decorations */}
-        <div className="absolute top-20 left-10 w-72 h-72 bg-bloomfundr-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 right-10 w-96 h-96 bg-bloomfundr-secondary/10 rounded-full blur-3xl" />
+        <div className="absolute top-20 left-10 w-48 md:w-72 h-48 md:h-72 bg-bloomfundr-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 right-10 w-64 md:w-96 h-64 md:h-96 bg-bloomfundr-secondary/10 rounded-full blur-3xl" />
         
         <div className="container mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-bloomfundr-muted text-bloomfundr-primary text-sm font-medium mb-6">
-            <Flower2 className="w-4 h-4" />
+          <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-bloomfundr-muted text-bloomfundr-primary text-xs md:text-sm font-medium mb-4 md:mb-6">
+            <Flower2 className="w-3 h-3 md:w-4 md:h-4" />
             <span>The Future of Floral Fundraising</span>
           </div>
           
-          <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
+          <h1 className="text-3xl md:text-6xl font-bold text-foreground mb-4 md:mb-6 leading-tight">
             Floral Fundraising
             <br />
             <span className="bg-gradient-to-r from-bloomfundr-primary to-bloomfundr-secondary bg-clip-text text-transparent">
@@ -39,18 +39,18 @@ const Landing = () => {
             </span>
           </h1>
           
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
+          <p className="text-base md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 md:mb-10 px-4">
             Connect florists, schools, and supporters for beautiful fundraising campaigns. 
             Automate payments, track sales, and maximize profits.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col gap-3 sm:flex-row sm:gap-4 justify-center px-4">
             <Button
               size="lg"
               asChild
-              className="bg-bloomfundr-primary hover:bg-bloomfundr-primary-light text-bloomfundr-primary-foreground shadow-lg hover:shadow-xl transition-all group"
+              className="bg-bloomfundr-primary hover:bg-bloomfundr-primary-light text-bloomfundr-primary-foreground shadow-lg hover:shadow-xl transition-all group min-h-[48px] w-full sm:w-auto"
             >
-              <Link to="/fundraiser/register?role=florist" className="flex items-center gap-2">
+              <Link to="/fundraiser/register?role=florist" className="flex items-center justify-center gap-2">
                 <Flower2 className="w-5 h-5" />
                 I'm a Florist
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -60,9 +60,9 @@ const Landing = () => {
               size="lg"
               variant="outline"
               asChild
-              className="border-bloomfundr-secondary text-bloomfundr-secondary hover:bg-bloomfundr-secondary hover:text-bloomfundr-secondary-foreground shadow-lg hover:shadow-xl transition-all group"
+              className="border-bloomfundr-secondary text-bloomfundr-secondary hover:bg-bloomfundr-secondary hover:text-bloomfundr-secondary-foreground shadow-lg hover:shadow-xl transition-all group min-h-[48px] w-full sm:w-auto"
             >
-              <Link to="/fundraiser/register?role=organization" className="flex items-center gap-2">
+              <Link to="/fundraiser/register?role=organization" className="flex items-center justify-center gap-2">
                 <Building2 className="w-5 h-5" />
                 I'm an Organization
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

@@ -187,19 +187,19 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-6">
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-30">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" asChild>
+        <div className="max-w-4xl mx-auto px-3 md:px-4 py-3 md:py-4">
+          <div className="flex items-center gap-2 md:gap-3">
+            <Button variant="ghost" size="icon" asChild className="min-h-[44px] min-w-[44px]">
               <Link to={`/order/${magicLinkCode}`}>
                 <ArrowLeft className="h-5 w-5" />
               </Link>
             </Button>
             <div className="flex-1">
-              <h1 className="font-bold">Checkout</h1>
-              <p className="text-sm text-muted-foreground">
+              <h1 className="font-bold text-base md:text-lg">Checkout</h1>
+              <p className="text-xs md:text-sm text-muted-foreground truncate">
                 {pageData?.organization.name} Fundraiser
               </p>
             </div>
@@ -207,10 +207,10 @@ export default function CheckoutPage() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-6">
-        <div className="grid gap-8 lg:grid-cols-5">
+      <main className="max-w-4xl mx-auto px-3 md:px-4 py-4 md:py-6">
+        <div className="grid gap-6 lg:grid-cols-5">
           {/* Customer Form */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 order-2 lg:order-1">
             <Card className="bg-card border-border">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -300,7 +300,7 @@ export default function CheckoutPage() {
                   {/* Submit Button */}
                   <Button 
                     type="submit" 
-                    className="w-full py-6 text-lg"
+                    className="w-full py-7 text-base md:text-lg min-h-[56px] active:scale-[0.98] transition-transform"
                     disabled={isSubmitting || createOrderMutation.isPending}
                   >
                     {(isSubmitting || createOrderMutation.isPending) ? (
@@ -324,8 +324,8 @@ export default function CheckoutPage() {
           </div>
 
           {/* Order Summary */}
-          <div className="lg:col-span-2">
-            {/* Mobile: Collapsible */}
+          <div className="lg:col-span-2 order-1 lg:order-2">
+            {/* Mobile: Collapsible at top */}
             <div className="lg:hidden">
               <Collapsible open={summaryOpen} onOpenChange={setSummaryOpen}>
                 <Card className="bg-card border-border">
