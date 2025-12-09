@@ -218,10 +218,10 @@ const EventConsultation = ({ eventId }: EventConsultationProps) => {
         console.log('Existing consultation found:', consultData);
         setConsultation({
           ...consultData,
-          prep_checklist: consultData.prep_checklist || DEFAULT_PREP_CHECKLIST,
-          color_palette: consultData.color_palette || { primary: [], accent: [], avoid: [] },
-          bridal_party_size: consultData.bridal_party_size || {},
-          pieces_needed: consultData.pieces_needed || {},
+          prep_checklist: (consultData.prep_checklist as unknown as ConsultationData['prep_checklist']) || DEFAULT_PREP_CHECKLIST,
+          color_palette: (consultData.color_palette as unknown as ConsultationData['color_palette']) || { primary: [], accent: [], avoid: [] },
+          bridal_party_size: (consultData.bridal_party_size as unknown as ConsultationData['bridal_party_size']) || {},
+          pieces_needed: (consultData.pieces_needed as unknown as ConsultationData['pieces_needed']) || {},
           // Convert timestamps to datetime-local format
           consultation_date: consultData.consultation_date 
             ? new Date(consultData.consultation_date).toISOString().slice(0, 16)
@@ -229,7 +229,7 @@ const EventConsultation = ({ eventId }: EventConsultationProps) => {
           next_meeting_date: consultData.next_meeting_date
             ? new Date(consultData.next_meeting_date).toISOString().slice(0, 16)
             : undefined
-        });
+        } as ConsultationData);
       } else {
         // Pre-populate from event data for new consultation
         console.log('Creating new consultation with event data');

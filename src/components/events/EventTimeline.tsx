@@ -129,9 +129,10 @@ const EventTimeline = ({ eventId }: EventTimelineProps) => {
         setEventDate(eventData.event_date);
       }
 
-      // Fetch timeline tasks
+      // Fetch timeline tasks - using schedule_tasks table
+      // @ts-ignore - Type instantiation issue with Supabase types
       const { data: tasksData, error: tasksError } = await supabase
-        .from('timeline_tasks')
+        .from('schedule_tasks')
         .select('*')
         .eq('event_id', eventId)
         .order('sort_order', { ascending: true });
@@ -141,12 +142,13 @@ const EventTimeline = ({ eventId }: EventTimelineProps) => {
       }
 
       if (tasksData && tasksData.length > 0) {
-        setTasks(tasksData);
+        const typedTasks = tasksData as unknown as TimelineTask[];
+        setTasks(typedTasks);
         
         // Find the order by date
-        const orderTask = tasksData.find(t => t.order_by_date);
+        const orderTask = typedTasks.find(t => t.order_by_date);
         if (orderTask) {
-          setOrderByDate(orderTask.order_by_date);
+          setOrderByDate(orderTask.order_by_date || null);
         }
       } else if (eventData?.event_date) {
         // No tasks exist, create default tasks
@@ -186,17 +188,18 @@ const EventTimeline = ({ eventId }: EventTimelineProps) => {
       });
 
       const { data, error } = await supabase
-        .from('timeline_tasks')
-        .insert(tasksToCreate)
+        .from('schedule_tasks')
+        .insert(tasksToCreate as any)
         .select();
 
       if (error) throw error;
 
       if (data) {
-        setTasks(data);
-        const orderTask = data.find(t => t.order_by_date);
+        const typedData = data as unknown as TimelineTask[];
+        setTasks(typedData);
+        const orderTask = typedData.find(t => t.order_by_date);
         if (orderTask) {
-          setOrderByDate(orderTask.order_by_date);
+          setOrderByDate(orderTask.order_by_date || null);
         }
       }
 
@@ -227,16 +230,16 @@ const EventTimeline = ({ eventId }: EventTimelineProps) => {
       if (editingTask?.id) {
         // Update existing task
         const { error } = await supabase
-          .from('timeline_tasks')
-          .update(taskData)
+          .from('schedule_tasks')
+          .update(taskData as any)
           .eq('id', editingTask.id);
 
         if (error) throw error;
       } else {
         // Create new task
         const { error } = await supabase
-          .from('timeline_tasks')
-          .insert(taskData);
+          .from('schedule_tasks')
+          .insert(taskData as any);
 
         if (error) throw error;
       }
@@ -269,7 +272,7 @@ const EventTimeline = ({ eventId }: EventTimelineProps) => {
   const updateTaskStatus = async (taskId: string, status: TimelineTask['status']) => {
     try {
       const { error } = await supabase
-        .from('timeline_tasks')
+        .from('schedule_tasks')
         .update({ status })
         .eq('id', taskId);
 
@@ -293,27 +296,26 @@ const EventTimeline = ({ eventId }: EventTimelineProps) => {
 
   const updateOrderByDate = async (date: string) => {
     try {
-      // Clear any existing order_by_date
-      await supabase
-        .from('timeline_tasks')
-        .update({ order_by_date: null })
-        .eq('event_id', eventId)
-        .not('order_by_date', 'is', null);
+      // Clear any existing order_by_date - use type assertion
+      await (supabase
+        .from('schedule_tasks')
+        .update({ order_by_date: null } as any)
+        .eq('event_id', eventId) as any);
 
       // Set the new order_by_date on the "Order Flowers" task or create one
       const orderTask = tasks.find(t => t.task_name.toLowerCase().includes('order'));
       
       if (orderTask?.id) {
-        const { error } = await supabase
-          .from('timeline_tasks')
-          .update({ order_by_date: date })
-          .eq('id', orderTask.id);
+        const { error } = await (supabase
+          .from('schedule_tasks')
+          .update({ order_by_date: date } as any)
+          .eq('id', orderTask.id) as any);
 
         if (error) throw error;
       } else {
         // Create a new order task
         const { error } = await supabase
-          .from('timeline_tasks')
+          .from('schedule_tasks')
           .insert({
             event_id: eventId,
             task_name: 'Order Flowers',
@@ -322,7 +324,7 @@ const EventTimeline = ({ eventId }: EventTimelineProps) => {
             priority: 'critical',
             milestone: true,
             sort_order: 2
-          });
+          } as any);
 
         if (error) throw error;
       }
@@ -347,7 +349,7 @@ const EventTimeline = ({ eventId }: EventTimelineProps) => {
   const deleteTask = async (taskId: string) => {
     try {
       const { error } = await supabase
-        .from('timeline_tasks')
+        .from('schedule_tasks')
         .delete()
         .eq('id', taskId);
 

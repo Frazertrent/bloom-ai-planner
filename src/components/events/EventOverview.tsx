@@ -120,7 +120,7 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
       }
 
       if (consultData) {
-        setConsultation(consultData);
+        setConsultation(consultData as unknown as Consultation);
         setNotes(consultData.notes || '');
         setDurationMinutes(consultData.duration_minutes || '');
       }
@@ -137,8 +137,9 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
       }
 
       if (designData) {
-        setEventDesign(designData);
-        setTempDesign(designData);
+        const design = designData as unknown as EventDesign;
+        setEventDesign(design);
+        setTempDesign(design);
       }
 
       // Fetch event data including phase
@@ -150,7 +151,7 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
 
       if (eventError) throw eventError;
 
-      setEventData(eventInfo);
+      setEventData(eventInfo as unknown as EventData);
 
     } catch (error) {
       console.error('Error fetching overview data:', error);
@@ -205,7 +206,7 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
           .single();
 
         if (error) throw error;
-        setConsultation(data);
+        setConsultation(data as unknown as Consultation);
       }
 
       setIsEditingNotes(false);
@@ -244,8 +245,9 @@ const EventOverview = ({ eventId }: EventOverviewProps) => {
           .single();
 
         if (error) throw error;
-        setEventDesign(data);
-        setTempDesign(data);
+        const design = data as unknown as EventDesign;
+        setEventDesign(design);
+        setTempDesign(design);
       }
 
       setIsEditingDesign(false);
