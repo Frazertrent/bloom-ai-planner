@@ -11,6 +11,8 @@ export interface CampaignAnalytics {
     totalRevenue: number;
     orgEarnings: number;
     avgOrderValue: number;
+    paidOrders: number;
+    pendingOrders: number;
   };
   products: Array<{
     id: string;
@@ -34,6 +36,18 @@ export interface CampaignAnalytics {
     total: number;
     fulfillmentStatus: string;
     createdAt: string;
+  }>;
+  allOrders: Array<{
+    id: string;
+    orderNumber: string;
+    customerName: string;
+    studentName: string | null;
+    total: number;
+    subtotal: number;
+    paymentStatus: string;
+    entryMethod: string;
+    createdAt: string;
+    notes: string | null;
   }>;
   salesByDay: Array<{
     date: string;
@@ -64,8 +78,8 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
         .eq("id", campaign.florist_id)
         .single();
 
-      // Fetch orders with customer and student info
-      const { data: orders } = await supabase
+      // Fetch ALL orders (for payments reconciliation)
+      const { data: allOrdersData } = await supabase
         .from("bf_orders")
         .select(`
           id,
@@ -73,13 +87,18 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
           total,
           subtotal,
           fulfillment_status,
+          payment_status,
+          entry_method,
+          notes,
           created_at,
           attributed_student_id,
           customer:bf_customers(full_name)
         `)
         .eq("campaign_id", campaignId)
-        .eq("payment_status", "paid")
         .order("created_at", { ascending: false });
+
+      // Filter paid orders for stats
+      const orders = (allOrdersData || []).filter((o) => o.payment_status === "paid");
 
       // Fetch students for this campaign
       const { data: campaignStudents } = await supabase
@@ -134,6 +153,8 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
       const totalRevenue = orders?.reduce((sum, o) => sum + Number(o.subtotal), 0) || 0;
       const orgEarnings = totalRevenue * (campaign.organization_margin_percent / 100);
       const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+      const paidOrders = (allOrdersData || []).filter(o => o.payment_status === "paid").length;
+      const pendingOrders = (allOrdersData || []).filter(o => o.payment_status === "pending").length;
 
       // Transform products
       const products = (campaignProducts || []).map(cp => ({
@@ -179,6 +200,20 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
         .map(([date, data]) => ({ date, ...data }))
         .sort((a, b) => a.date.localeCompare(b.date));
 
+      // Transform all orders for payments tab
+      const allOrders = (allOrdersData || []).map(o => ({
+        id: o.id,
+        orderNumber: o.order_number,
+        customerName: (o.customer as any)?.full_name || "Unknown",
+        studentName: o.attributed_student_id ? studentNameMap[o.attributed_student_id] || null : null,
+        total: Number(o.total),
+        subtotal: Number(o.subtotal),
+        paymentStatus: o.payment_status,
+        entryMethod: o.entry_method,
+        createdAt: o.created_at || "",
+        notes: o.notes,
+      }));
+
       return {
         campaign: { ...campaign, status: campaign.status as CampaignStatus } as BFCampaign,
         florist: florist as BFFlorist | null,
@@ -187,10 +222,13 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
           totalRevenue,
           orgEarnings,
           avgOrderValue,
+          paidOrders,
+          pendingOrders,
         },
         products,
         students,
         orders: transformedOrders,
+        allOrders,
         salesByDay,
       };
     },
