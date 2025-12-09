@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { FloristNotificationBell } from "./FloristNotificationBell";
 
 const navItems = [
   { title: "Dashboard", url: "/florist", icon: Home },
@@ -54,17 +55,20 @@ export function FloristSidebar() {
       collapsible="icon"
     >
       <SidebarHeader className="border-b border-bloomfundr-muted p-4">
-        <Link to="/florist" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-bloomfundr-primary to-bloomfundr-primary-light flex items-center justify-center shadow-lg shrink-0">
-            <Flower2 className="w-6 h-6 text-bloomfundr-primary-foreground" />
-          </div>
-          {!collapsed && (
-            <div className="flex flex-col">
-              <span className="font-bold text-foreground">BloomFundr</span>
-              <span className="text-xs text-muted-foreground">Florist Portal</span>
+        <div className="flex items-center justify-between">
+          <Link to="/florist" className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-bloomfundr-primary to-bloomfundr-primary-light flex items-center justify-center shadow-lg shrink-0">
+              <Flower2 className="w-6 h-6 text-bloomfundr-primary-foreground" />
             </div>
-          )}
-        </Link>
+            {!collapsed && (
+              <div className="flex flex-col">
+                <span className="font-bold text-foreground">BloomFundr</span>
+                <span className="text-xs text-muted-foreground">Florist Portal</span>
+              </div>
+            )}
+          </Link>
+          {!collapsed && <FloristNotificationBell />}
+        </div>
       </SidebarHeader>
 
       <SidebarContent className="py-4">

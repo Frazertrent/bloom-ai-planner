@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { notifyNewOrder } from "@/lib/notifications";
+import { notifyNewOrder, notifyFloristNewOrder } from "@/lib/notifications";
 import type { Json } from "@/integrations/supabase/types";
 
 export interface ManualOrderItem {
@@ -174,7 +174,7 @@ export function useCreateManualOrder() {
       // 5. Get campaign and student info for notification
       const { data: campaign } = await supabase
         .from("bf_campaigns")
-        .select("organization_id, name")
+        .select("organization_id, florist_id, name")
         .eq("id", campaignId)
         .single();
 
@@ -184,8 +184,9 @@ export function useCreateManualOrder() {
         .eq("id", studentId)
         .single();
 
-      // 6. Create notification for organization
+      // 6. Create notifications for organization and florist
       if (campaign) {
+        // Notify organization
         await notifyNewOrder({
           organizationId: campaign.organization_id,
           campaignId,
@@ -194,6 +195,18 @@ export function useCreateManualOrder() {
           customerName,
           studentName: student?.name || "Unknown Student",
           amount: total,
+        });
+
+        // Notify florist
+        const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+        await notifyFloristNewOrder({
+          floristId: campaign.florist_id,
+          campaignId,
+          campaignName: campaign.name,
+          orderNumber: order.order_number,
+          customerName,
+          amount: total,
+          itemCount: totalItems,
         });
       }
 

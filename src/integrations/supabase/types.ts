@@ -329,6 +329,47 @@ export type Database = {
         }
         Relationships: []
       }
+      bf_florist_notifications: {
+        Row: {
+          created_at: string
+          florist_id: string
+          id: string
+          is_read: boolean
+          link_url: string | null
+          message: string
+          notification_type: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          florist_id: string
+          id?: string
+          is_read?: boolean
+          link_url?: string | null
+          message: string
+          notification_type?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          florist_id?: string
+          id?: string
+          is_read?: boolean
+          link_url?: string | null
+          message?: string
+          notification_type?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bf_florist_notifications_florist_id_fkey"
+            columns: ["florist_id"]
+            isOneToOne: false
+            referencedRelation: "bf_florists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bf_florists: {
         Row: {
           business_address: string | null
@@ -337,6 +378,9 @@ export type Database = {
           created_at: string | null
           id: string
           is_verified: boolean | null
+          notification_email: string | null
+          notification_fulfillment_reminders: boolean | null
+          notification_new_orders: boolean | null
           stripe_account_id: string | null
           updated_at: string | null
           user_id: string
@@ -348,6 +392,9 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_verified?: boolean | null
+          notification_email?: string | null
+          notification_fulfillment_reminders?: boolean | null
+          notification_new_orders?: boolean | null
           stripe_account_id?: string | null
           updated_at?: string | null
           user_id: string
@@ -359,6 +406,9 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_verified?: boolean | null
+          notification_email?: string | null
+          notification_fulfillment_reminders?: boolean | null
+          notification_new_orders?: boolean | null
           stripe_account_id?: string | null
           updated_at?: string | null
           user_id?: string

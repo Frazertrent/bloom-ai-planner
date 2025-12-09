@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { BFCampaign, BFFlorist } from "@/types/bloomfundr";
+import { notifyFloristCampaignInvitation } from "@/lib/notifications";
+import { format } from "date-fns";
 
 export interface CampaignReviewData {
   campaign: BFCampaign;
@@ -104,19 +106,36 @@ export function useLaunchCampaign() {
 
   return useMutation({
     mutationFn: async (campaignId: string) => {
+      // Update campaign status
       const { data, error } = await supabase
         .from("bf_campaigns")
         .update({ status: "active" })
         .eq("id", campaignId)
-        .select()
+        .select("*, organization:bf_organizations(name)")
         .single();
 
       if (error) throw error;
+
+      // Notify florist about the new campaign
+      if (data) {
+        const orgName = (data as any).organization?.name || "An organization";
+        await notifyFloristCampaignInvitation({
+          floristId: data.florist_id,
+          campaignId: data.id,
+          campaignName: data.name,
+          organizationName: orgName,
+          startDate: format(new Date(data.start_date), "MMM d"),
+          endDate: format(new Date(data.end_date), "MMM d"),
+        });
+      }
+
       return data;
     },
     onSuccess: (_, campaignId) => {
       queryClient.invalidateQueries({ queryKey: ["bf-campaign-review", campaignId] });
       queryClient.invalidateQueries({ queryKey: ["bf-org-campaigns"] });
+      queryClient.invalidateQueries({ queryKey: ["florist-notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["florist-notification-count"] });
       toast({
         title: "Campaign launched!",
         description: "Your campaign is now live and ready for orders.",
