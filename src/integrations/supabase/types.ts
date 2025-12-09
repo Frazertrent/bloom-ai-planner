@@ -149,6 +149,162 @@ export type Database = {
           },
         ]
       }
+      bf_campaign_products: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          id: string
+          max_quantity: number | null
+          product_id: string
+          retail_price: number
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          id?: string
+          max_quantity?: number | null
+          product_id: string
+          retail_price: number
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          id?: string
+          max_quantity?: number | null
+          product_id?: string
+          retail_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bf_campaign_products_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "bf_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bf_campaign_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "bf_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bf_campaign_students: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          id: string
+          magic_link_code: string
+          order_count: number | null
+          student_id: string
+          total_sales: number | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          id?: string
+          magic_link_code: string
+          order_count?: number | null
+          student_id: string
+          total_sales?: number | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          id?: string
+          magic_link_code?: string
+          order_count?: number | null
+          student_id?: string
+          total_sales?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bf_campaign_students_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "bf_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bf_campaign_students_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "bf_students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bf_campaigns: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          end_date: string
+          florist_id: string
+          florist_margin_percent: number
+          id: string
+          name: string
+          organization_id: string
+          organization_margin_percent: number
+          pickup_date: string | null
+          pickup_location: string | null
+          platform_fee_percent: number | null
+          start_date: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          end_date: string
+          florist_id: string
+          florist_margin_percent: number
+          id?: string
+          name: string
+          organization_id: string
+          organization_margin_percent: number
+          pickup_date?: string | null
+          pickup_location?: string | null
+          platform_fee_percent?: number | null
+          start_date: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          end_date?: string
+          florist_id?: string
+          florist_margin_percent?: number
+          id?: string
+          name?: string
+          organization_id?: string
+          organization_margin_percent?: number
+          pickup_date?: string | null
+          pickup_location?: string | null
+          platform_fee_percent?: number | null
+          start_date?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bf_campaigns_florist_id_fkey"
+            columns: ["florist_id"]
+            isOneToOne: false
+            referencedRelation: "bf_florists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bf_campaigns_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "bf_organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bf_florists: {
         Row: {
           business_address: string | null
@@ -220,6 +376,106 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      bf_products: {
+        Row: {
+          base_cost: number
+          category: string
+          created_at: string | null
+          customization_options: Json | null
+          description: string | null
+          florist_id: string
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          base_cost: number
+          category: string
+          created_at?: string | null
+          customization_options?: Json | null
+          description?: string | null
+          florist_id: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          base_cost?: number
+          category?: string
+          created_at?: string | null
+          customization_options?: Json | null
+          description?: string | null
+          florist_id?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bf_products_florist_id_fkey"
+            columns: ["florist_id"]
+            isOneToOne: false
+            referencedRelation: "bf_florists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bf_students: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          grade: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          organization_id: string
+          phone: string | null
+          team_group: string | null
+          unique_code: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          grade?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          organization_id: string
+          phone?: string | null
+          team_group?: string | null
+          unique_code: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          grade?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          organization_id?: string
+          phone?: string | null
+          team_group?: string | null
+          unique_code?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bf_students_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "bf_organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bf_user_profiles: {
         Row: {
@@ -4501,6 +4757,8 @@ export type Database = {
       }
     }
     Functions: {
+      bf_get_user_florist_id: { Args: never; Returns: string }
+      bf_get_user_organization_id: { Args: never; Returns: string }
       bf_get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["bf_user_role"]
