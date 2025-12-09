@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/collapsible";
 import { CampaignStatusBadge } from "@/components/bloomfundr/CampaignStatusBadge";
 import { CampaignLinksModal } from "@/components/bloomfundr/CampaignLinksModal";
+import { CampaignPaymentsTab } from "@/components/bloomfundr/CampaignPaymentsTab";
 import { useOrgCampaignAnalytics, useOrgCampaignRealtime } from "@/hooks/useOrgCampaignAnalytics";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -168,7 +169,7 @@ export default function OrgCampaignDetail() {
     );
   }
 
-  const { campaign, florist, stats, products, students, orders, salesByDay } = analytics;
+  const { campaign, florist, stats, products, students, orders, allOrders, salesByDay } = analytics;
   const top3Students = students.slice(0, 3);
   const displayStudents = showAllStudents ? students : students.slice(0, 5);
 
@@ -474,6 +475,14 @@ export default function OrgCampaignDetail() {
         <Tabs defaultValue="orders">
           <TabsList>
             <TabsTrigger value="orders">Recent Orders</TabsTrigger>
+            <TabsTrigger value="payments">
+              Payments
+              {stats.pendingOrders > 0 && (
+                <span className="ml-1.5 px-1.5 py-0.5 text-xs bg-amber-500/10 text-amber-600 rounded-full">
+                  {stats.pendingOrders}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="links">Student Links</TabsTrigger>
           </TabsList>
 
@@ -530,6 +539,14 @@ export default function OrgCampaignDetail() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="payments" className="mt-4">
+            <CampaignPaymentsTab
+              campaignId={id!}
+              orders={allOrders}
+              orgMarginPercent={campaign.organization_margin_percent}
+            />
           </TabsContent>
 
           <TabsContent value="links" className="mt-4">
