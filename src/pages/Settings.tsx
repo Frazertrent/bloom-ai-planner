@@ -513,9 +513,9 @@ console.log('Flowers:', flowersRes.data); // ADD THIS
     console.log('Hard goods:', hardGoodsRes.data); // ADD THIS
     console.log('Labor:', laborRes.data); // ADD THIS
     setCatalogData({
-      flowers: flowersRes.data || [],
-      hardGoods: hardGoodsRes.data || [],
-      laborRates: laborRes.data || []
+      flowers: (flowersRes.data || []) as any,
+      hardGoods: (hardGoodsRes.data || []) as any,
+      laborRates: (laborRes.data || []) as any
     });
 
 const allItems: CatalogItem[] = [
@@ -699,7 +699,7 @@ const saveCatalogItem = async () => {
           .insert({
             organization_id: organization.id,
             ...editingCatalogItem
-          });
+          } as any);
 
         if (error) throw error;
       }
@@ -727,7 +727,7 @@ const saveCatalogItem = async () => {
           .insert({
             organization_id: organization.id,
             ...editingCatalogItem
-          });
+          } as any);
 
         if (error) throw error;
       }
@@ -753,7 +753,7 @@ const saveCatalogItem = async () => {
           .insert({
             organization_id: organization.id,
             ...editingCatalogItem
-          });
+          } as any);
 
         if (error) throw error;
       }
