@@ -8,6 +8,7 @@ import { OrgLayout } from "@/components/bloomfundr/OrgLayout";
 import { StepIndicator, Step } from "@/components/bloomfundr/StepIndicator";
 import { Step1BasicInfo } from "@/components/bloomfundr/campaign-wizard/Step1BasicInfo";
 import { Step2Products } from "@/components/bloomfundr/campaign-wizard/Step2Products";
+import { Step3Pricing } from "@/components/bloomfundr/campaign-wizard/Step3Pricing";
 import { useCampaignWizard } from "@/hooks/useCampaignWizard";
 import { supabase } from "@/integrations/supabase/client";
 import { BFCampaign } from "@/types/bloomfundr";
@@ -106,6 +107,16 @@ export default function CampaignWizard() {
     navigate(`/org/campaigns/${campaignId}/edit?step=3`, { replace: true });
   };
 
+  const handleStep3Back = () => {
+    prevStep();
+    navigate(`/org/campaigns/${campaignId}/edit?step=2`, { replace: true });
+  };
+
+  const handleStep3Continue = () => {
+    nextStep();
+    navigate(`/org/campaigns/${campaignId}/edit?step=4`, { replace: true });
+  };
+
   const getStepTitle = () => {
     switch (currentStep) {
       case 1:
@@ -166,9 +177,15 @@ export default function CampaignWizard() {
           </div>
         );
       case 3:
-        return (
+        return campaignId ? (
+          <Step3Pricing
+            campaignId={campaignId}
+            onBack={handleStep3Back}
+            onContinue={handleStep3Continue}
+          />
+        ) : (
           <div className="py-12 text-center text-muted-foreground">
-            Step 3: Pricing - Coming soon
+            Please complete previous steps first.
           </div>
         );
       case 4:
