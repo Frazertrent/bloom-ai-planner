@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { notifyNewOrder } from "@/lib/notifications";
 import type { Json } from "@/integrations/supabase/types";
 
 export interface ManualOrderItem {
@@ -170,9 +171,37 @@ export function useCreateManualOrder() {
           .eq("id", studentRecord.id);
       }
 
+      // 5. Get campaign and student info for notification
+      const { data: campaign } = await supabase
+        .from("bf_campaigns")
+        .select("organization_id, name")
+        .eq("id", campaignId)
+        .single();
+
+      const { data: student } = await supabase
+        .from("bf_students")
+        .select("name")
+        .eq("id", studentId)
+        .single();
+
+      // 6. Create notification for organization
+      if (campaign) {
+        await notifyNewOrder({
+          organizationId: campaign.organization_id,
+          campaignId,
+          campaignName: campaign.name,
+          orderNumber: order.order_number,
+          customerName,
+          studentName: student?.name || "Unknown Student",
+          amount: total,
+        });
+      }
+
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ["org-campaign-analytics", campaignId] });
       queryClient.invalidateQueries({ queryKey: ["bf-campaign-students", campaignId] });
+      queryClient.invalidateQueries({ queryKey: ["org-notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["org-notification-count"] });
 
       return {
         orderId: order.id,

@@ -59,8 +59,24 @@ export interface BFOrganization {
   address: string | null;
   contact_phone: string | null;
   stripe_account_id: string | null;
+  notification_new_orders: boolean;
+  notification_daily_summary: boolean;
+  notification_campaign_alerts: boolean;
+  notification_email: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// Notification
+export interface BFNotification {
+  id: string;
+  organization_id: string;
+  title: string;
+  message: string;
+  notification_type: string;
+  link_url: string | null;
+  is_read: boolean;
+  created_at: string;
 }
 
 // Product
