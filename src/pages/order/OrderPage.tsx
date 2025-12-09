@@ -1,17 +1,19 @@
-import { useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { useOrderPageData } from "@/hooks/useOrderPage";
 import { useOrder } from "@/contexts/OrderContext";
 import { ProductCard } from "@/components/order/ProductCard";
+import { ProductDetailModal } from "@/components/order/ProductDetailModal";
 import { FloatingCart } from "@/components/order/FloatingCart";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Clock, AlertCircle, Flower } from "lucide-react";
 import { format } from "date-fns";
+import type { BFCampaignProductWithProduct } from "@/types/bloomfundr";
 
 export default function OrderPage() {
   const { magicLinkCode } = useParams<{ magicLinkCode: string }>();
-  const { setCampaignContext, studentName: contextStudentName } = useOrder();
+  const { setCampaignContext } = useOrder();
+  const [selectedProduct, setSelectedProduct] = useState<BFCampaignProductWithProduct | null>(null);
   
   const { data, isLoading, error } = useOrderPageData(magicLinkCode);
 
@@ -154,7 +156,11 @@ export default function OrderPage() {
           {products.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {products.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard 
+                  key={product.id} 
+                  product={product}
+                  onClick={() => setSelectedProduct(product)}
+                />
               ))}
             </div>
           ) : (
@@ -164,6 +170,13 @@ export default function OrderPage() {
           )}
         </section>
       </main>
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        product={selectedProduct}
+        isOpen={!!selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+      />
 
       {/* Floating Cart */}
       <FloatingCart magicLinkCode={magicLinkCode!} />
