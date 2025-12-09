@@ -7,7 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AuthProvider, useAuth } from "@/hooks/useProfile";
-
+import { OrderProvider } from "@/contexts/OrderContext";
 // Pages
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -50,6 +50,9 @@ import FloristCampaignDetail from "./pages/florist/FloristCampaignDetail";
 import FloristOrders from "./pages/florist/FloristOrders";
 import FloristOrderDetail from "./pages/florist/FloristOrderDetail";
 import FloristSettings from "./pages/florist/FloristSettings";
+
+// Public Order Pages
+import OrderPage from "./pages/order/OrderPage";
 
 const queryClient = new QueryClient();
 
@@ -321,6 +324,9 @@ const AppContent = () => (
       </BFProtectedRoute>
     } />
     
+    {/* Public Order Routes */}
+    <Route path="/order/:magicLinkCode" element={<OrderPage />} />
+    
     {/* Catch all route */}
     <Route path="*" element={<NotFound />} />
   </Routes>
@@ -333,9 +339,11 @@ const App = () => (
       <Sonner />
       <AuthProvider>
         <BloomFundrAuthProvider>
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
+          <OrderProvider>
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
+          </OrderProvider>
         </BloomFundrAuthProvider>
       </AuthProvider>
     </TooltipProvider>
