@@ -53,6 +53,7 @@ import FloristSettings from "./pages/florist/FloristSettings";
 
 // Public Order Pages
 import OrderPage from "./pages/order/OrderPage";
+import CheckoutPage from "./pages/order/CheckoutPage";
 
 const queryClient = new QueryClient();
 
@@ -326,6 +327,7 @@ const AppContent = () => (
     
     {/* Public Order Routes */}
     <Route path="/order/:magicLinkCode" element={<OrderPage />} />
+    <Route path="/order/:magicLinkCode/checkout" element={<CheckoutPage />} />
     
     {/* Catch all route */}
     <Route path="*" element={<NotFound />} />
