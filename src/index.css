@@ -78,6 +78,17 @@
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    /* BloomFundr Colors */
+    --bf-primary: 160 84% 39%;
+    --bf-primary-foreground: 0 0% 100%;
+    --bf-primary-light: 160 70% 50%;
+    --bf-secondary: 350 89% 60%;
+    --bf-secondary-foreground: 0 0% 100%;
+    --bf-secondary-light: 350 80% 70%;
+    --bf-background: 150 20% 98%;
+    --bf-card: 0 0% 100%;
+    --bf-muted: 150 15% 95%;
   }
 
   .dark {
