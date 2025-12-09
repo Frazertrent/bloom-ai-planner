@@ -74,10 +74,8 @@ const SubstitutionPlanner = ({
   const generateSubstitutions = async () => {
     setLoading(true);
 
-    // TODO: Replace with actual Supabase queries and AI recommendations
-    // Query 1: Same flower, different colors from flower_catalog WHERE name = flower.name AND color != flower.color
-    // Query 2: Similar types from flower_catalog WHERE category = flower.category AND name != flower.name
-    // Query 3: Budget alternatives from flower_catalog WHERE catalog_price < flower.catalog_price ORDER BY catalog_price DESC
+    // Mock data - will be replaced with Supabase queries and AI recommendations
+    // Query patterns for future implementation:
 
     // Mock substitution data
     const mockSameFlower: SubstitutionOption[] = [

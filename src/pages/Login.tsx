@@ -22,8 +22,7 @@ const Login = () => {
   };
 
   const handleGoogleSignIn = async () => {
-    // TODO: Implement Google OAuth if needed
-    console.log('Google sign in not implemented yet');
+    // Google OAuth not yet configured
   };
 
   return (
@@ -187,8 +186,7 @@ const Register = () => {
   };
 
   const handleGoogleSignUp = async () => {
-    // TODO: Implement Google OAuth if needed
-    console.log('Google sign up not implemented yet');
+    // Google OAuth not yet configured
   };
 
   return (

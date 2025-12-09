@@ -114,7 +114,7 @@ const RecipeSelector = ({
   }, [filterCategory]);
 
   const fetchRecipes = async () => {
-    // TODO: Replace with actual Supabase query
+    // Mock data - will be replaced with design_recipes Supabase query
     const mockRecipes: Recipe[] = [
       {
         id: '1',
@@ -313,8 +313,7 @@ const RecipeSelector = ({
   };
 
   const handleCreateRecipe = () => {
-    // TODO: Save to Supabase
-    console.log('Creating recipe:', newRecipe);
+    // Recipe creation placeholder
     setIsCreateDialogOpen(false);
     // Reset form
     setNewRecipe({

@@ -90,8 +90,6 @@ const Register = () => {
     setIsLoading(true);
     
     try {
-      console.log('🚀 Starting registration process...');
-      
       // Step 1: Create user in Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
@@ -116,24 +114,15 @@ const Register = () => {
         return;
       }
 
-      console.log('✅ User created in auth:', authData.user.id);
-
       // Step 2: Create organization
-      console.log('🏢 Creating organization...');
       const organization = await createOrganization(formData.email);
-      console.log('✅ Organization created:', organization.id);
 
       // Step 3: Create user profile
-      console.log('👤 Creating user profile...');
-      const profile = await createUserProfile(
+      await createUserProfile(
         authData.user.id, 
         formData.email, 
         organization.id
       );
-      console.log('✅ User profile created:', profile.id);
-
-      // Success!
-      console.log('🎉 Registration completed successfully!');
       
       if (authData.session) {
         // User is automatically signed in

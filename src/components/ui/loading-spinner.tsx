@@ -21,8 +21,8 @@ export function LoadingSpinner({
   };
 
   const spinner = (
-    <div className={cn("flex flex-col items-center justify-center gap-3", className)}>
-      <Loader2 className={cn("animate-spin text-primary", sizeClasses[size])} />
+    <div className={cn("flex flex-col items-center justify-center gap-3", className)} role="status" aria-label={message || "Loading"}>
+      <Loader2 className={cn("animate-spin text-primary", sizeClasses[size])} aria-hidden="true" />
       {message && (
         <p className="text-sm text-muted-foreground animate-pulse">{message}</p>
       )}
@@ -54,7 +54,7 @@ export function PageLoading({ message = "Loading..." }: PageLoadingProps) {
 
 export function InlineLoading({ message }: { message?: string }) {
   return (
-    <div className="flex items-center gap-2 text-muted-foreground">
+    <div className="flex items-center gap-2 text-muted-foreground" role="status" aria-label={message || "Loading"}>
       <LoadingSpinner size="sm" />
       {message && <span className="text-sm">{message}</span>}
     </div>
