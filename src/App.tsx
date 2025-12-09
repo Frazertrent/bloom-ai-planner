@@ -28,6 +28,13 @@ import EventDetail from "./pages/EventDetail";
 
 // BloomFundr Pages
 import BloomFundrLanding from "./pages/bloomfundr/Landing";
+import BloomFundrLogin from "./pages/bloomfundr/Login";
+import BloomFundrRegister from "./pages/bloomfundr/Register";
+import FloristDashboard from "./pages/bloomfundr/FloristDashboard";
+import OrgDashboard from "./pages/bloomfundr/OrgDashboard";
+import { BloomFundrAuthProvider } from "./contexts/BloomFundrAuthContext";
+import BFProtectedRoute from "./components/bloomfundr/ProtectedRoute";
+
 const queryClient = new QueryClient();
 
 // Protected Route Component
@@ -201,8 +208,25 @@ const AppContent = () => (
       </ProtectedRoute>
     } />
     
-    {/* BloomFundr Routes (Public) */}
+    {/* BloomFundr Routes */}
     <Route path="/fundraiser" element={<BloomFundrLanding />} />
+    <Route path="/fundraiser/login" element={<BloomFundrLogin />} />
+    <Route path="/fundraiser/register" element={<BloomFundrRegister />} />
+    <Route path="/fundraiser/florist" element={
+      <BFProtectedRoute allowedRoles={["florist"]}>
+        <FloristDashboard />
+      </BFProtectedRoute>
+    } />
+    <Route path="/fundraiser/org" element={
+      <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
+        <OrgDashboard />
+      </BFProtectedRoute>
+    } />
+    <Route path="/fundraiser/dashboard" element={
+      <BFProtectedRoute>
+        <FloristDashboard />
+      </BFProtectedRoute>
+    } />
     
     {/* Catch all route */}
     <Route path="*" element={<NotFound />} />
@@ -215,9 +239,11 @@ const App = () => (
       <Toaster />
       <Sonner />
       <AuthProvider>
-        <BrowserRouter>
-          <AppContent />
-        </BrowserRouter>
+        <BloomFundrAuthProvider>
+          <BrowserRouter>
+            <AppContent />
+          </BrowserRouter>
+        </BloomFundrAuthProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

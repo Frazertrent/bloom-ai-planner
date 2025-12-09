@@ -149,6 +149,65 @@ export type Database = {
           },
         ]
       }
+      bf_user_profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          organization_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name: string
+          id?: string
+          organization_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          organization_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bf_user_profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bf_user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["bf_user_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["bf_user_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["bf_user_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       budget_items: {
         Row: {
           actual_total: number | null
@@ -4370,6 +4429,17 @@ export type Database = {
       }
     }
     Functions: {
+      bf_get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["bf_user_role"]
+      }
+      bf_has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["bf_user_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       calculate_event_progress: {
         Args: { event_uuid: string }
         Returns: number
@@ -4383,7 +4453,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      bf_user_role: "florist" | "org_admin" | "org_member" | "customer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4510,6 +4580,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      bf_user_role: ["florist", "org_admin", "org_member", "customer"],
+    },
   },
 } as const
