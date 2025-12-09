@@ -1,6 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useBloomFundrAuth } from "@/contexts/BloomFundrAuthContext";
-import { Loader2 } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 type AllowedRole = "florist" | "org_admin" | "org_member" | "customer";
 
@@ -15,10 +15,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-bloomfundr-background">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-12 h-12 animate-spin text-bloomfundr-primary" />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
+        <LoadingSpinner size="lg" message="Loading..." />
       </div>
     );
   }
