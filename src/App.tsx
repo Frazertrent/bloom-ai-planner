@@ -30,9 +30,15 @@ import EventDetail from "./pages/EventDetail";
 import BloomFundrLanding from "./pages/bloomfundr/Landing";
 import BloomFundrLogin from "./pages/bloomfundr/Login";
 import BloomFundrRegister from "./pages/bloomfundr/Register";
-import OrgDashboard from "./pages/bloomfundr/OrgDashboard";
 import { BloomFundrAuthProvider } from "./contexts/BloomFundrAuthContext";
 import BFProtectedRoute from "./components/bloomfundr/ProtectedRoute";
+
+// Organization Pages
+import OrgDashboard from "./pages/org/OrgDashboard";
+import OrgCampaigns from "./pages/org/OrgCampaigns";
+import OrgStudents from "./pages/org/OrgStudents";
+import OrgReports from "./pages/org/OrgReports";
+import OrgSettings from "./pages/org/OrgSettings";
 
 // Florist Pages
 import FloristDashboard from "./pages/florist/FloristDashboard";
@@ -259,13 +265,34 @@ const AppContent = () => (
     } />
     
     {/* Organization Portal Routes */}
-    <Route path="/fundraiser/org" element={
+    <Route path="/org" element={
       <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
         <OrgDashboard />
       </BFProtectedRoute>
     } />
+    <Route path="/org/campaigns" element={
+      <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
+        <OrgCampaigns />
+      </BFProtectedRoute>
+    } />
+    <Route path="/org/students" element={
+      <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
+        <OrgStudents />
+      </BFProtectedRoute>
+    } />
+    <Route path="/org/reports" element={
+      <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
+        <OrgReports />
+      </BFProtectedRoute>
+    } />
+    <Route path="/org/settings" element={
+      <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
+        <OrgSettings />
+      </BFProtectedRoute>
+    } />
     
-    {/* Legacy redirect */}
+    {/* Legacy redirects */}
+    <Route path="/fundraiser/org" element={<Navigate to="/org" replace />} />
     <Route path="/fundraiser/dashboard" element={
       <BFProtectedRoute>
         <FloristDashboard />
