@@ -36,6 +36,7 @@ import BFProtectedRoute from "./components/bloomfundr/ProtectedRoute";
 // Organization Pages
 import OrgDashboard from "./pages/org/OrgDashboard";
 import OrgCampaigns from "./pages/org/OrgCampaigns";
+import OrgCampaignDetail from "./pages/org/OrgCampaignDetail";
 import OrgStudents from "./pages/org/OrgStudents";
 import OrgReports from "./pages/org/OrgReports";
 import OrgSettings from "./pages/org/OrgSettings";
@@ -279,6 +280,11 @@ const AppContent = () => (
     <Route path="/org/campaigns/new" element={
       <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
         <CampaignWizard />
+      </BFProtectedRoute>
+    } />
+    <Route path="/org/campaigns/:id" element={
+      <BFProtectedRoute allowedRoles={["org_admin", "org_member"]}>
+        <OrgCampaignDetail />
       </BFProtectedRoute>
     } />
     <Route path="/org/campaigns/:id/edit" element={
