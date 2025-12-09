@@ -98,16 +98,16 @@ export default function OrderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24 md:pb-8">
+    <div className="min-h-screen bg-background pb-32 md:pb-8">
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-30">
-        <div className="max-w-6xl mx-auto px-4 py-4 md:py-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <Flower className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+        <div className="max-w-6xl mx-auto px-3 md:px-4 py-3 md:py-6">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-9 h-9 md:w-12 md:h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <Flower className="h-4 w-4 md:h-6 md:w-6 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="font-bold text-base md:text-lg truncate">
+              <h1 className="font-bold text-sm md:text-lg truncate">
                 {organization.name} Fundraiser
               </h1>
               <p className="text-xs md:text-sm text-muted-foreground">
@@ -118,32 +118,32 @@ export default function OrderPage() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-6 md:pr-96">
+      <main className="max-w-6xl mx-auto px-3 md:px-4 py-4 md:py-6 md:pr-96">
         {/* Campaign Info Banner */}
-        <div className="bg-gradient-to-r from-primary/10 to-rose-500/10 rounded-xl p-4 md:p-6 mb-8">
-          <h2 className="text-xl md:text-2xl font-bold mb-3">{campaign.name}</h2>
+        <div className="bg-gradient-to-r from-primary/10 to-rose-500/10 rounded-xl p-4 md:p-6 mb-6 md:mb-8">
+          <h2 className="text-lg md:text-2xl font-bold mb-2 md:mb-3">{campaign.name}</h2>
           
           {campaign.description && (
-            <p className="text-muted-foreground mb-4">{campaign.description}</p>
+            <p className="text-muted-foreground text-sm md:text-base mb-3 md:mb-4">{campaign.description}</p>
           )}
 
-          <div className="flex flex-wrap gap-4 text-sm">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 md:gap-4 text-xs md:text-sm">
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              <span>Order by {format(new Date(campaign.end_date), "MMMM d, yyyy")}</span>
+              <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
+              <span>Order by {format(new Date(campaign.end_date), "MMM d, yyyy")}</span>
             </div>
             
             {campaign.pickup_date && (
               <div className="flex items-center gap-2 text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                <span>Pickup: {format(new Date(campaign.pickup_date), "MMMM d, yyyy")}</span>
+                <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
+                <span>Pickup: {format(new Date(campaign.pickup_date), "MMM d, yyyy")}</span>
               </div>
             )}
             
             {campaign.pickup_location && (
               <div className="flex items-center gap-2 text-muted-foreground">
-                <MapPin className="h-4 w-4" />
-                <span>{campaign.pickup_location}</span>
+                <MapPin className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
+                <span className="truncate">{campaign.pickup_location}</span>
               </div>
             )}
           </div>
@@ -151,10 +151,10 @@ export default function OrderPage() {
 
         {/* Products Section */}
         <section>
-          <h3 className="text-lg font-semibold mb-4">Select Your Flowers</h3>
+          <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4">Select Your Flowers</h3>
           
           {products.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {products.map((product) => (
                 <ProductCard 
                   key={product.id} 

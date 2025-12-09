@@ -57,12 +57,12 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-bloomfundr-background flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-bloomfundr-background flex items-center justify-center px-4 py-8 md:py-12">
       {/* Background decorations */}
-      <div className="absolute top-20 left-10 w-72 h-72 bg-bloomfundr-primary/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-10 right-10 w-96 h-96 bg-bloomfundr-secondary/10 rounded-full blur-3xl" />
+      <div className="absolute top-20 left-10 w-48 md:w-72 h-48 md:h-72 bg-bloomfundr-primary/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-10 right-10 w-64 md:w-96 h-64 md:h-96 bg-bloomfundr-secondary/10 rounded-full blur-3xl" />
 
-      <Card className="w-full max-w-md relative z-10 bg-bloomfundr-card border-bloomfundr-muted shadow-xl">
+      <Card className="w-full max-w-md relative z-10 bg-bloomfundr-card border-bloomfundr-muted shadow-xl mx-4">
         <CardHeader className="text-center">
           <Link to="/fundraiser" className="flex items-center justify-center gap-2 mb-4">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-bloomfundr-primary to-bloomfundr-primary-light flex items-center justify-center shadow-lg">
@@ -117,7 +117,7 @@ const Login = () => {
 
               <Button
                 type="submit"
-                className="w-full bg-bloomfundr-primary hover:bg-bloomfundr-primary-light text-bloomfundr-primary-foreground"
+                className="w-full bg-bloomfundr-primary hover:bg-bloomfundr-primary-light text-bloomfundr-primary-foreground min-h-[48px]"
                 disabled={isLoading}
               >
                 {isLoading ? (

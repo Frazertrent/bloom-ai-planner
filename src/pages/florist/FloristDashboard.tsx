@@ -45,27 +45,27 @@ export default function FloristDashboardPage() {
     <FloristLayout>
       <div className="space-y-6">
         {/* Welcome Section */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
               {floristLoading ? (
-                <Skeleton className="h-9 w-64" />
+                <Skeleton className="h-8 w-48 md:w-64" />
               ) : (
                 <>Welcome, {florist?.business_name || "Florist"}!</>
               )}
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-sm md:text-base text-muted-foreground mt-1">
               Manage your campaigns and orders from your dashboard.
             </p>
           </div>
-          <div className="flex gap-3">
-            <Button asChild variant="outline" className="border-bloomfundr-muted">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button asChild variant="outline" className="border-bloomfundr-muted min-h-[44px] flex-1 sm:flex-none">
               <Link to="/florist/products">
                 <Package className="h-4 w-4 mr-2" />
                 Manage Products
               </Link>
             </Button>
-            <Button asChild className="bg-bloomfundr-primary hover:bg-bloomfundr-primary-light">
+            <Button asChild className="bg-bloomfundr-primary hover:bg-bloomfundr-primary-light min-h-[44px] flex-1 sm:flex-none">
               <Link to="/florist/products/new">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Product
@@ -74,20 +74,20 @@ export default function FloristDashboardPage() {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Stats Cards - 2x2 grid on mobile */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           <Card className="bg-bloomfundr-card border-bloomfundr-muted">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Products
+            <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 md:px-6 pt-3 md:pt-6">
+              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
+                Products
               </CardTitle>
-              <Package className="h-5 w-5 text-bloomfundr-primary" />
+              <Package className="h-4 w-4 md:h-5 md:w-5 text-bloomfundr-primary" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
               {isLoading ? (
-                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-7 w-12" />
               ) : (
-                <div className="text-2xl font-bold text-foreground">
+                <div className="text-xl md:text-2xl font-bold text-foreground">
                   {stats?.total_products || 0}
                 </div>
               )}
@@ -95,17 +95,17 @@ export default function FloristDashboardPage() {
           </Card>
 
           <Card className="bg-bloomfundr-card border-bloomfundr-muted">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Active Campaigns
+            <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 md:px-6 pt-3 md:pt-6">
+              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
+                Active
               </CardTitle>
-              <Calendar className="h-5 w-5 text-bloomfundr-secondary" />
+              <Calendar className="h-4 w-4 md:h-5 md:w-5 text-bloomfundr-secondary" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
               {isLoading ? (
-                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-7 w-12" />
               ) : (
-                <div className="text-2xl font-bold text-foreground">
+                <div className="text-xl md:text-2xl font-bold text-foreground">
                   {stats?.active_campaigns || 0}
                 </div>
               )}
@@ -113,17 +113,17 @@ export default function FloristDashboardPage() {
           </Card>
 
           <Card className="bg-bloomfundr-card border-bloomfundr-muted">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Pending Orders
+            <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 md:px-6 pt-3 md:pt-6">
+              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
+                Pending
               </CardTitle>
-              <ShoppingCart className="h-5 w-5 text-orange-500" />
+              <ShoppingCart className="h-4 w-4 md:h-5 md:w-5 text-orange-500" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
               {isLoading ? (
-                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-7 w-12" />
               ) : (
-                <div className="text-2xl font-bold text-foreground">
+                <div className="text-xl md:text-2xl font-bold text-foreground">
                   {stats?.pending_orders || 0}
                 </div>
               )}
@@ -131,18 +131,18 @@ export default function FloristDashboardPage() {
           </Card>
 
           <Card className="bg-bloomfundr-card border-bloomfundr-muted">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Earnings
+            <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 md:px-6 pt-3 md:pt-6">
+              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
+                Earnings
               </CardTitle>
-              <DollarSign className="h-5 w-5 text-green-500" />
+              <DollarSign className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
               {isLoading ? (
-                <Skeleton className="h-8 w-24" />
+                <Skeleton className="h-7 w-20" />
               ) : (
-                <div className="text-2xl font-bold text-foreground">
-                  ${(stats?.total_earnings || 0).toFixed(2)}
+                <div className="text-xl md:text-2xl font-bold text-foreground">
+                  ${(stats?.total_earnings || 0).toFixed(0)}
                 </div>
               )}
             </CardContent>
@@ -150,7 +150,7 @@ export default function FloristDashboardPage() {
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid lg:grid-cols-2 gap-6">
+        <div className="grid lg:grid-cols-2 gap-4 md:gap-6">
           {/* Recent Orders */}
           <Card className="bg-bloomfundr-card border-bloomfundr-muted">
             <CardHeader className="flex flex-row items-center justify-between">

@@ -35,29 +35,29 @@ export default function OrgDashboard() {
     <OrgLayout>
       <div className="space-y-6">
         {/* Welcome Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col gap-4">
           <div>
             {orgLoading ? (
-              <Skeleton className="h-9 w-64" />
+              <Skeleton className="h-8 w-48 md:w-64" />
             ) : (
               <>
-                <h1 className="text-3xl font-bold text-foreground">
+                <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                   Welcome, {org?.name || "Organization"}!
                 </h1>
-                <p className="text-muted-foreground mt-1">
+                <p className="text-sm md:text-base text-muted-foreground mt-1">
                   Manage your fundraising campaigns and track progress.
                 </p>
               </>
             )}
           </div>
-          <div className="flex gap-2">
-            <Button asChild>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button asChild className="min-h-[44px] flex-1 sm:flex-none">
               <Link to="/org/campaigns/new">
                 <Plus className="h-4 w-4 mr-2" />
                 New Campaign
               </Link>
             </Button>
-            <Button variant="outline" asChild>
+            <Button variant="outline" asChild className="min-h-[44px] flex-1 sm:flex-none">
               <Link to="/org/students">
                 <UserPlus className="h-4 w-4 mr-2" />
                 Add Students
@@ -66,38 +66,38 @@ export default function OrgDashboard() {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Stats Cards - 2x2 grid on mobile */}
+        <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
           <Card className="bg-card border-border">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 md:px-6 pt-3 md:pt-6">
+              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
                 Total Raised
               </CardTitle>
-              <DollarSign className="h-5 w-5 text-emerald-500" />
+              <DollarSign className="h-4 w-4 md:h-5 md:w-5 text-emerald-500" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
               {statsLoading ? (
-                <Skeleton className="h-8 w-24" />
+                <Skeleton className="h-7 w-20" />
               ) : (
-                <div className="text-2xl font-bold text-foreground">
-                  ${(stats?.total_raised || 0).toFixed(2)}
+                <div className="text-xl md:text-2xl font-bold text-foreground">
+                  ${(stats?.total_raised || 0).toFixed(0)}
                 </div>
               )}
             </CardContent>
           </Card>
 
           <Card className="bg-card border-border">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Active Campaigns
+            <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 md:px-6 pt-3 md:pt-6">
+              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
+                Active
               </CardTitle>
-              <Calendar className="h-5 w-5 text-blue-500" />
+              <Calendar className="h-4 w-4 md:h-5 md:w-5 text-blue-500" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
               {statsLoading ? (
-                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-7 w-12" />
               ) : (
-                <div className="text-2xl font-bold text-foreground">
+                <div className="text-xl md:text-2xl font-bold text-foreground">
                   {stats?.active_campaigns || 0}
                 </div>
               )}
@@ -105,17 +105,17 @@ export default function OrgDashboard() {
           </Card>
 
           <Card className="bg-card border-border">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Students
+            <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 md:px-6 pt-3 md:pt-6">
+              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
+                Students
               </CardTitle>
-              <Users className="h-5 w-5 text-purple-500" />
+              <Users className="h-4 w-4 md:h-5 md:w-5 text-purple-500" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
               {statsLoading ? (
-                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-7 w-12" />
               ) : (
-                <div className="text-2xl font-bold text-foreground">
+                <div className="text-xl md:text-2xl font-bold text-foreground">
                   {stats?.total_students || 0}
                 </div>
               )}
@@ -123,17 +123,17 @@ export default function OrgDashboard() {
           </Card>
 
           <Card className="bg-card border-border">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Orders
+            <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 md:px-6 pt-3 md:pt-6">
+              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
+                Orders
               </CardTitle>
-              <TrendingUp className="h-5 w-5 text-rose-500" />
+              <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-rose-500" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
               {statsLoading ? (
-                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-7 w-12" />
               ) : (
-                <div className="text-2xl font-bold text-foreground">
+                <div className="text-xl md:text-2xl font-bold text-foreground">
                   {stats?.total_orders || 0}
                 </div>
               )}
@@ -141,7 +141,7 @@ export default function OrgDashboard() {
           </Card>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
           {/* Active Campaigns */}
           <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between">
