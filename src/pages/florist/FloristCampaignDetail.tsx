@@ -1,4 +1,5 @@
 import { useParams, Link } from "react-router-dom";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FloristLayout } from "@/components/bloomfundr/FloristLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -13,13 +14,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CampaignStatusBadge } from "@/components/bloomfundr/CampaignStatusBadge";
+import { PayoutBreakdownCard } from "@/components/bloomfundr/PayoutBreakdownCard";
+import { PayoutStatusCard } from "@/components/bloomfundr/PayoutStatusCard";
+import { PayoutDetailSheet } from "@/components/bloomfundr/PayoutDetailSheet";
+import { useCampaignPayouts, useCreatePayouts } from "@/hooks/useCampaignPayouts";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Building2, Calendar, MapPin, Package, DollarSign } from "lucide-react";
+import { ArrowLeft, Building2, Calendar, MapPin, Package, DollarSign, Wallet } from "lucide-react";
 import { format } from "date-fns";
 import type { BFCampaignWithRelations, BFOrganization, CampaignStatus } from "@/types/bloomfundr";
 
 export default function FloristCampaignDetail() {
   const { id } = useParams<{ id: string }>();
+  const [showPayoutDetail, setShowPayoutDetail] = useState(false);
+
+  const { data: payoutData, isLoading: payoutsLoading } = useCampaignPayouts(id);
+  const createPayouts = useCreatePayouts();
 
   const { data: campaign, isLoading } = useQuery({
     queryKey: ["florist-campaign-detail", id],
@@ -261,6 +270,34 @@ export default function FloristCampaignDetail() {
           </CardContent>
         </Card>
 
+        {/* Payouts Section - Show when campaign is closed or fulfilled */}
+        {(campaign.status === "closed" || campaign.status === "fulfilled") && payoutData && (
+          <div className="space-y-6">
+            <PayoutBreakdownCard
+              breakdown={payoutData.breakdown}
+              floristMarginPercent={campaign.florist_margin_percent}
+              orgMarginPercent={campaign.organization_margin_percent}
+              platformFeePercent={campaign.platform_fee_percent || 10}
+            />
+            <PayoutStatusCard
+              campaignStatus={campaign.status}
+              floristPayout={payoutData.floristPayout}
+              orgPayout={payoutData.orgPayout}
+              floristTotal={payoutData.breakdown.floristTotal}
+              orgTotal={payoutData.breakdown.orgTotal}
+              onCreatePayouts={() => createPayouts.mutate({ campaignId: id! })}
+              isCreating={createPayouts.isPending}
+              isLoading={payoutsLoading}
+            />
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => setShowPayoutDetail(true)}>
+                <Wallet className="h-4 w-4 mr-2" />
+                View Payout Details
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Orders Link */}
         <Card className="bg-card border-border">
           <CardContent className="flex items-center justify-between py-6">
@@ -275,6 +312,16 @@ export default function FloristCampaignDetail() {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Payout Detail Sheet */}
+        <PayoutDetailSheet
+          open={showPayoutDetail}
+          onOpenChange={setShowPayoutDetail}
+          breakdown={payoutData?.breakdown || null}
+          viewType="florist"
+          floristMarginPercent={campaign.florist_margin_percent}
+          orgMarginPercent={campaign.organization_margin_percent}
+        />
       </div>
     </FloristLayout>
   );
