@@ -54,6 +54,10 @@ import FloristCampaignDetail from "./pages/florist/FloristCampaignDetail";
 import FloristOrders from "./pages/florist/FloristOrders";
 import FloristOrderDetail from "./pages/florist/FloristOrderDetail";
 import FloristSettings from "./pages/florist/FloristSettings";
+import FloristReports from "./pages/florist/FloristReports";
+
+// Print styles
+import "./styles/print.css";
 
 // Public Order Pages
 import OrderPage from "./pages/order/OrderPage";
@@ -271,6 +275,11 @@ const AppContent = () => (
     <Route path="/florist/settings" element={
       <BFProtectedRoute allowedRoles={["florist"]}>
         <FloristSettings />
+      </BFProtectedRoute>
+    } />
+    <Route path="/florist/reports" element={
+      <BFProtectedRoute allowedRoles={["florist"]}>
+        <FloristReports />
       </BFProtectedRoute>
     } />
     
