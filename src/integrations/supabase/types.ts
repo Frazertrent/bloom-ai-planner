@@ -305,6 +305,30 @@ export type Database = {
           },
         ]
       }
+      bf_customers: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name: string
+          id?: string
+          phone?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+        }
+        Relationships: []
+      }
       bf_florists: {
         Row: {
           business_address: string | null
@@ -341,6 +365,136 @@ export type Database = {
         }
         Relationships: []
       }
+      bf_order_items: {
+        Row: {
+          campaign_product_id: string
+          created_at: string | null
+          customizations: Json | null
+          id: string
+          order_id: string
+          quantity: number
+          recipient_name: string | null
+          unit_price: number
+        }
+        Insert: {
+          campaign_product_id: string
+          created_at?: string | null
+          customizations?: Json | null
+          id?: string
+          order_id: string
+          quantity?: number
+          recipient_name?: string | null
+          unit_price: number
+        }
+        Update: {
+          campaign_product_id?: string
+          created_at?: string | null
+          customizations?: Json | null
+          id?: string
+          order_id?: string
+          quantity?: number
+          recipient_name?: string | null
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bf_order_items_campaign_product_id_fkey"
+            columns: ["campaign_product_id"]
+            isOneToOne: false
+            referencedRelation: "bf_campaign_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bf_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "bf_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bf_orders: {
+        Row: {
+          attributed_student_id: string | null
+          campaign_id: string
+          created_at: string | null
+          customer_id: string
+          entry_method: string
+          fulfillment_status: string
+          id: string
+          notes: string | null
+          order_number: string
+          paid_at: string | null
+          payment_status: string
+          platform_fee: number
+          processing_fee: number
+          stripe_payment_intent_id: string | null
+          subtotal: number
+          total: number
+          updated_at: string | null
+        }
+        Insert: {
+          attributed_student_id?: string | null
+          campaign_id: string
+          created_at?: string | null
+          customer_id: string
+          entry_method?: string
+          fulfillment_status?: string
+          id?: string
+          notes?: string | null
+          order_number?: string
+          paid_at?: string | null
+          payment_status?: string
+          platform_fee?: number
+          processing_fee?: number
+          stripe_payment_intent_id?: string | null
+          subtotal: number
+          total: number
+          updated_at?: string | null
+        }
+        Update: {
+          attributed_student_id?: string | null
+          campaign_id?: string
+          created_at?: string | null
+          customer_id?: string
+          entry_method?: string
+          fulfillment_status?: string
+          id?: string
+          notes?: string | null
+          order_number?: string
+          paid_at?: string | null
+          payment_status?: string
+          platform_fee?: number
+          processing_fee?: number
+          stripe_payment_intent_id?: string | null
+          subtotal?: number
+          total?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bf_orders_attributed_student_id_fkey"
+            columns: ["attributed_student_id"]
+            isOneToOne: false
+            referencedRelation: "bf_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bf_orders_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "bf_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bf_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "bf_customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bf_organizations: {
         Row: {
           address: string | null
@@ -376,6 +530,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      bf_payouts: {
+        Row: {
+          amount: number
+          campaign_id: string
+          created_at: string | null
+          id: string
+          processed_at: string | null
+          recipient_id: string
+          recipient_type: string
+          status: string
+          stripe_transfer_id: string | null
+        }
+        Insert: {
+          amount: number
+          campaign_id: string
+          created_at?: string | null
+          id?: string
+          processed_at?: string | null
+          recipient_id: string
+          recipient_type: string
+          status?: string
+          stripe_transfer_id?: string | null
+        }
+        Update: {
+          amount?: number
+          campaign_id?: string
+          created_at?: string | null
+          id?: string
+          processed_at?: string | null
+          recipient_id?: string
+          recipient_type?: string
+          status?: string
+          stripe_transfer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bf_payouts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "bf_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bf_products: {
         Row: {
@@ -4757,6 +4955,7 @@ export type Database = {
       }
     }
     Functions: {
+      bf_generate_order_number: { Args: never; Returns: string }
       bf_get_user_florist_id: { Args: never; Returns: string }
       bf_get_user_organization_id: { Args: never; Returns: string }
       bf_get_user_role: {
@@ -4768,6 +4967,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["bf_user_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      bf_user_can_access_campaign: {
+        Args: { campaign_uuid: string }
         Returns: boolean
       }
       calculate_event_progress: {
