@@ -37,12 +37,12 @@ export function useAvailableFlorists() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bf_florists")
-        .select("id, business_name, business_address, business_phone, is_verified")
+        .select("id, business_name, business_address, business_phone, is_verified, city, state")
         .eq("is_verified", true)
         .order("business_name");
 
       if (error) throw error;
-      return data as BFFlorist[];
+      return data as (BFFlorist & { city?: string; state?: string })[];
     },
   });
 }

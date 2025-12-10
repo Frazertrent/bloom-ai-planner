@@ -238,18 +238,20 @@ export function Step1BasicInfo({
                         Loading florists...
                       </SelectItem>
                     ) : florists && florists.length > 0 ? (
-                      florists.map((florist) => (
-                        <SelectItem key={florist.id} value={florist.id}>
-                          <div className="flex flex-col">
-                            <span>{florist.business_name}</span>
-                            {florist.business_address && (
-                              <span className="text-xs text-muted-foreground">
-                                {florist.business_address}
-                              </span>
-                            )}
-                          </div>
-                        </SelectItem>
-                      ))
+                      florists.map((florist) => {
+                        const locationParts = [florist.city, florist.state].filter(Boolean);
+                        const locationString = locationParts.length > 0 ? ` - ${locationParts.join(", ")}` : "";
+                        return (
+                          <SelectItem key={florist.id} value={florist.id}>
+                            <span>
+                              {florist.business_name}
+                              {locationString && (
+                                <span className="text-muted-foreground">{locationString}</span>
+                              )}
+                            </span>
+                          </SelectItem>
+                        );
+                      })
                     ) : (
                       <SelectItem value="none" disabled>
                         No verified florists available
