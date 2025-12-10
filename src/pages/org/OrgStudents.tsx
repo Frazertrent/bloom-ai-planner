@@ -49,7 +49,8 @@ import {
   Pencil, 
   Trash2,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Info
 } from "lucide-react";
 import type { BFStudent } from "@/types/bloomfundr";
 
@@ -112,9 +113,9 @@ export default function OrgStudents() {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Students & Sellers</h1>
+            <h1 className="text-3xl font-bold text-foreground">Sellers</h1>
             <p className="text-muted-foreground mt-1">
-              Manage students participating in your fundraisers
+              Manage sellers participating in your fundraisers
             </p>
           </div>
           <div className="flex gap-2">
@@ -124,9 +125,17 @@ export default function OrgStudents() {
             </Button>
             <Button onClick={() => setAddDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Student
+              Add Seller
             </Button>
           </div>
+        </div>
+
+        {/* Helper Tip */}
+        <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/50">
+          <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+          <p className="text-sm text-blue-800 dark:text-blue-300">
+            <span className="font-medium">Tip:</span> You don't need to add sellers here first. When creating a campaign, you can choose self-registration and let sellers sign themselves up.
+          </p>
         </div>
 
         {/* Filters */}
@@ -159,12 +168,12 @@ export default function OrgStudents() {
           />
         </div>
 
-        {/* Students Table */}
+        {/* Sellers Table */}
         <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle>All Students</CardTitle>
+            <CardTitle>All Sellers</CardTitle>
             <CardDescription>
-              {students?.length || 0} students in your organization
+              {students?.length || 0} sellers in your organization
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -263,18 +272,18 @@ export default function OrgStudents() {
                 <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p className="text-lg font-medium">
                   {search || statusFilter.length > 0 || teamFilter !== "all"
-                    ? "No students match your filters"
-                    : "No students yet"}
+                    ? "No sellers match your filters"
+                    : "No sellers yet"}
                 </p>
-                <p className="text-sm mt-1">
+                <p className="text-sm mt-1 max-w-md mx-auto">
                   {search || statusFilter.length > 0 || teamFilter !== "all"
                     ? "Try adjusting your search or filter criteria"
-                    : "Add students to participate in campaigns"}
+                    : "Sellers will appear here as they participate in campaigns. You can also pre-add sellers if you want to assign them to campaigns manually."}
                 </p>
                 {!search && statusFilter.length === 0 && teamFilter === "all" && (
                   <Button className="mt-4" onClick={() => setAddDialogOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Your First Student
+                    Add Seller
                   </Button>
                 )}
               </div>
@@ -307,12 +316,12 @@ export default function OrgStudents() {
       <AlertDialog open={!!deleteStudentState} onOpenChange={(open) => !open && setDeleteStudentState(null)}>
         <AlertDialogContent className="bg-card">
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove Student?</AlertDialogTitle>
+            <AlertDialogTitle>Remove Seller?</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to remove <strong>{deleteStudentState?.name}</strong>?
               {deleteStudentState && (students?.find(s => s.id === deleteStudentState.id)?.total_sales || 0) > 0 && (
                 <span className="block mt-2 text-amber-600">
-                  ⚠️ This student has sales history. They will be marked as inactive but their sales data will be preserved.
+                  ⚠️ This seller has sales history. They will be marked as inactive but their sales data will be preserved.
                 </span>
               )}
             </AlertDialogDescription>
@@ -323,7 +332,7 @@ export default function OrgStudents() {
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Remove Student
+              Remove Seller
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
