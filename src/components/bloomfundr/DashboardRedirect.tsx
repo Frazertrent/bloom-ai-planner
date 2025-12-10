@@ -3,9 +3,10 @@ import { useBloomFundrAuth } from "@/contexts/BloomFundrAuthContext";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 const DashboardRedirect = () => {
-  const { role, loading } = useBloomFundrAuth();
+  const { role, loading, user } = useBloomFundrAuth();
 
-  if (loading) {
+  // Wait for loading OR if user exists but role hasn't loaded yet
+  if (loading || (user && !role)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <LoadingSpinner size="lg" message="Loading..." />
@@ -15,7 +16,7 @@ const DashboardRedirect = () => {
 
   // Redirect based on role
   if (role === "florist") {
-    return <Navigate to="/florist" replace />;
+    return <Navigate to="/fundraiser/florist" replace />;
   }
   
   if (role === "org_admin" || role === "org_member") {

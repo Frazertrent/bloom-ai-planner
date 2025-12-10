@@ -60,6 +60,11 @@ export const BloomFundrAuthProvider = ({ children }: { children: React.ReactNode
     }
   };
 
+  const initializeAuth = async (userId: string) => {
+    await fetchUserData(userId);
+    setLoading(false);
+  };
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -70,13 +75,13 @@ export const BloomFundrAuthProvider = ({ children }: { children: React.ReactNode
         // Defer data fetching to avoid deadlock
         if (session?.user) {
           setTimeout(() => {
-            fetchUserData(session.user.id);
+            initializeAuth(session.user.id);
           }, 0);
         } else {
           setProfile(null);
           setRole(null);
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 
@@ -85,9 +90,10 @@ export const BloomFundrAuthProvider = ({ children }: { children: React.ReactNode
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchUserData(session.user.id);
+        initializeAuth(session.user.id);
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
