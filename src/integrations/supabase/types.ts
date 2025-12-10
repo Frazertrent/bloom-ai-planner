@@ -238,6 +238,7 @@ export type Database = {
       }
       bf_campaigns: {
         Row: {
+          campaign_link_code: string | null
           created_at: string | null
           description: string | null
           end_date: string
@@ -250,11 +251,15 @@ export type Database = {
           pickup_date: string | null
           pickup_location: string | null
           platform_fee_percent: number | null
+          self_register_code: string | null
+          self_registration_open: boolean | null
           start_date: string
           status: string
+          tracking_mode: string | null
           updated_at: string | null
         }
         Insert: {
+          campaign_link_code?: string | null
           created_at?: string | null
           description?: string | null
           end_date: string
@@ -267,11 +272,15 @@ export type Database = {
           pickup_date?: string | null
           pickup_location?: string | null
           platform_fee_percent?: number | null
+          self_register_code?: string | null
+          self_registration_open?: boolean | null
           start_date: string
           status?: string
+          tracking_mode?: string | null
           updated_at?: string | null
         }
         Update: {
+          campaign_link_code?: string | null
           created_at?: string | null
           description?: string | null
           end_date?: string
@@ -284,8 +293,11 @@ export type Database = {
           pickup_date?: string | null
           pickup_location?: string | null
           platform_fee_percent?: number | null
+          self_register_code?: string | null
+          self_registration_open?: boolean | null
           start_date?: string
           status?: string
+          tracking_mode?: string | null
           updated_at?: string | null
         }
         Relationships: [

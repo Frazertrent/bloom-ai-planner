@@ -2,7 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Link, Loader2, UserPlus, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -35,6 +35,32 @@ import {
   useOrgForCampaign,
   useSaveCampaignDraft,
 } from "@/hooks/useCampaignWizard";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+
+const trackingModeOptions = [
+  {
+    value: "none" as const,
+    title: "Campaign Total Only",
+    description: "One shared link for everyone. No individual seller tracking.",
+    hint: "Best for simple fundraisers",
+    icon: Link,
+  },
+  {
+    value: "individual" as const,
+    title: "Individual Sellers",
+    description: "You add sellers manually. Each gets a unique link.",
+    hint: "Best when you need accountability",
+    icon: Users,
+  },
+  {
+    value: "self_register" as const,
+    title: "Self-Registration",
+    description: "Sellers sign themselves up and get unique links automatically.",
+    hint: "Best for large groups",
+    icon: UserPlus,
+  },
+];
 
 const step1Schema = z.object({
   name: z.string().min(1, "Campaign name is required"),
@@ -45,6 +71,7 @@ const step1Schema = z.object({
   pickupDate: z.date().optional(),
   pickupLocation: z.string().optional(),
   floristId: z.string().min(1, "Please select a florist partner"),
+  trackingMode: z.enum(["none", "individual", "self_register"]),
 }).refine((data) => data.endDate > data.startDate, {
   message: "End date must be after start date",
   path: ["endDate"],
@@ -82,6 +109,7 @@ export function Step1BasicInfo({
       pickupDate: wizardState.pickupDate,
       pickupLocation: wizardState.pickupLocation,
       floristId: wizardState.floristId,
+      trackingMode: wizardState.trackingMode,
     },
   });
 
@@ -381,6 +409,74 @@ export function Step1BasicInfo({
                 <FormDescription>
                   Where customers will pick up their orders
                 </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* Tracking Mode Selection */}
+        <div className="space-y-4 pt-6 border-t">
+          <div>
+            <Label className="text-base font-semibold">How do you want to track sales?</Label>
+            <p className="text-sm text-muted-foreground mt-1">
+              Choose how sellers will be assigned and tracked for this campaign.
+            </p>
+          </div>
+          
+          <FormField
+            control={form.control}
+            name="trackingMode"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {trackingModeOptions.map((option) => {
+                      const Icon = option.icon;
+                      const isSelected = field.value === option.value;
+                      return (
+                        <Card
+                          key={option.value}
+                          className={cn(
+                            "cursor-pointer transition-all hover:border-primary/50",
+                            isSelected && "border-primary ring-2 ring-primary/20 bg-primary/5"
+                          )}
+                          onClick={() => field.onChange(option.value)}
+                        >
+                          <CardHeader className="p-4 space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className={cn(
+                                "p-2 rounded-md",
+                                isSelected ? "bg-primary text-primary-foreground" : "bg-muted"
+                              )}>
+                                <Icon className="h-5 w-5" />
+                              </div>
+                              <div className={cn(
+                                "h-4 w-4 rounded-full border-2 flex items-center justify-center",
+                                isSelected ? "border-primary" : "border-muted-foreground/30"
+                              )}>
+                                {isSelected && (
+                                  <div className="h-2 w-2 rounded-full bg-primary" />
+                                )}
+                              </div>
+                            </div>
+                            <div>
+                              <CardTitle className="text-sm font-medium">
+                                {option.title}
+                              </CardTitle>
+                              <CardDescription className="text-xs mt-1">
+                                {option.description}
+                              </CardDescription>
+                              <p className="text-xs text-primary mt-2 font-medium">
+                                {option.hint}
+                              </p>
+                            </div>
+                          </CardHeader>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}

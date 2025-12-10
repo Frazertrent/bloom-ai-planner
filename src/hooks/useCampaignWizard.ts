@@ -16,6 +16,7 @@ export interface CampaignWizardState {
   pickupDate: Date | undefined;
   pickupLocation: string;
   floristId: string;
+  trackingMode: 'none' | 'individual' | 'self_register';
 }
 
 const initialState: CampaignWizardState = {
@@ -27,6 +28,7 @@ const initialState: CampaignWizardState = {
   pickupDate: undefined,
   pickupLocation: "",
   floristId: "",
+  trackingMode: "individual",
 };
 
 export function useAvailableFlorists() {
@@ -80,6 +82,9 @@ export function useSaveCampaignDraft() {
       organizationId: string;
       data: CampaignWizardState;
     }) => {
+      // Generate unique codes based on tracking mode
+      const generateCode = () => Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
+      
       const campaignData = {
         organization_id: organizationId,
         florist_id: data.floristId,
@@ -93,6 +98,11 @@ export function useSaveCampaignDraft() {
         florist_margin_percent: 40,
         organization_margin_percent: 20,
         platform_fee_percent: 10,
+        tracking_mode: data.trackingMode,
+        // Generate codes based on tracking mode
+        campaign_link_code: data.trackingMode === 'none' ? generateCode() : null,
+        self_register_code: data.trackingMode === 'self_register' ? generateCode() : null,
+        self_registration_open: data.trackingMode === 'self_register',
       };
 
       if (campaignId) {
