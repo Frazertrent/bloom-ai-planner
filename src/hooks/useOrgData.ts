@@ -132,6 +132,7 @@ export function useOrgCampaigns(status?: CampaignStatus | "all") {
       return (data || []).map((c) => ({
         ...c,
         status: c.status as CampaignStatus,
+        tracking_mode: c.tracking_mode as 'none' | 'individual' | 'self_register',
       }));
     },
     enabled: !!org?.id,

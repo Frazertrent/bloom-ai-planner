@@ -70,6 +70,7 @@ export default function FloristCampaignDetail() {
       return {
         ...campaignData,
         status: campaignData.status as CampaignStatus,
+        tracking_mode: campaignData.tracking_mode as 'none' | 'individual' | 'self_register',
         organization: orgData as BFOrganization || undefined,
         campaign_products: (campaignProducts || []) as unknown as BFCampaignWithRelations["campaign_products"],
         orders: (orders || []) as unknown as BFCampaignWithRelations["orders"],

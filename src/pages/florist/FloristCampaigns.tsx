@@ -109,6 +109,7 @@ export default function FloristCampaignsPage() {
         return {
           ...campaign,
           status: campaign.status as CampaignStatus,
+          tracking_mode: campaign.tracking_mode as 'none' | 'individual' | 'self_register',
           organization: orgsMap.get(campaign.organization_id) as BFOrganization | undefined,
           order_count: stats.count,
           total_revenue: floristRevenue,

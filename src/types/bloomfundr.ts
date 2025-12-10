@@ -18,6 +18,8 @@ export type PayoutStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
 export type RecipientType = 'florist' | 'organization';
 
+export type TrackingMode = 'none' | 'individual' | 'self_register';
+
 // User Profile
 export interface BFUserProfile {
   id: string;
@@ -130,6 +132,10 @@ export interface BFCampaign {
   florist_margin_percent: number;
   organization_margin_percent: number;
   platform_fee_percent: number;
+  tracking_mode: 'none' | 'individual' | 'self_register';
+  self_register_code: string | null;
+  campaign_link_code: string | null;
+  self_registration_open: boolean;
   created_at: string;
   updated_at: string;
 }
