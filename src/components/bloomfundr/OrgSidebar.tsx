@@ -27,7 +27,7 @@ import { NotificationBell } from "./NotificationBell";
 const navItems = [
   { title: "Dashboard", url: "/org", icon: Home },
   { title: "Campaigns", url: "/org/campaigns", icon: Calendar },
-  { title: "Students", url: "/org/students", icon: Users },
+  { title: "Sellers", url: "/org/students", icon: Users },
   { title: "Reports", url: "/org/reports", icon: BarChart3 },
   { title: "Settings", url: "/org/settings", icon: Settings },
 ];

@@ -75,7 +75,7 @@ export function AddStudentDialog({ open, onOpenChange }: AddStudentDialogProps) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add New Student</DialogTitle>
+          <DialogTitle>Add New Seller</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -87,7 +87,7 @@ export function AddStudentDialog({ open, onOpenChange }: AddStudentDialogProps) 
                 <FormItem>
                   <FormLabel>Name *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Student name" {...field} />
+                    <Input placeholder="Seller name" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -167,7 +167,7 @@ export function AddStudentDialog({ open, onOpenChange }: AddStudentDialogProps) 
               </Button>
               <Button type="submit" disabled={addStudent.isPending}>
                 {addStudent.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Add Student
+                Add Seller
               </Button>
             </div>
           </form>
