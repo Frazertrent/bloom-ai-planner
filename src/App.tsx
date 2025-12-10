@@ -63,6 +63,9 @@ const FloristOrderDetail = lazy(() => import("./pages/florist/FloristOrderDetail
 const FloristSettings = lazy(() => import("./pages/florist/FloristSettings"));
 const FloristReports = lazy(() => import("./pages/florist/FloristReports"));
 
+// Dashboard redirect component for role-based routing
+const DashboardRedirect = lazy(() => import("./components/bloomfundr/DashboardRedirect"));
+
 // Lazy loaded Public Order pages
 const OrderPage = lazy(() => import("./pages/order/OrderPage"));
 const CheckoutPage = lazy(() => import("./pages/order/CheckoutPage"));
@@ -394,7 +397,7 @@ const AppContent = () => (
     <Route path="/fundraiser/dashboard" element={
       <BFProtectedRoute>
         <Suspense fallback={<PageFallback />}>
-          <FloristDashboard />
+          <DashboardRedirect />
         </Suspense>
       </BFProtectedRoute>
     } />
