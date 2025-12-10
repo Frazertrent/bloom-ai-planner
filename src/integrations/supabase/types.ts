@@ -387,12 +387,14 @@ export type Database = {
           business_address: string | null
           business_name: string
           business_phone: string | null
+          city: string | null
           created_at: string | null
           id: string
           is_verified: boolean | null
           notification_email: string | null
           notification_fulfillment_reminders: boolean | null
           notification_new_orders: boolean | null
+          state: string | null
           stripe_account_id: string | null
           updated_at: string | null
           user_id: string
@@ -401,12 +403,14 @@ export type Database = {
           business_address?: string | null
           business_name: string
           business_phone?: string | null
+          city?: string | null
           created_at?: string | null
           id?: string
           is_verified?: boolean | null
           notification_email?: string | null
           notification_fulfillment_reminders?: boolean | null
           notification_new_orders?: boolean | null
+          state?: string | null
           stripe_account_id?: string | null
           updated_at?: string | null
           user_id: string
@@ -415,12 +419,14 @@ export type Database = {
           business_address?: string | null
           business_name?: string
           business_phone?: string | null
+          city?: string | null
           created_at?: string | null
           id?: string
           is_verified?: boolean | null
           notification_email?: string | null
           notification_fulfillment_reminders?: boolean | null
           notification_new_orders?: boolean | null
+          state?: string | null
           stripe_account_id?: string | null
           updated_at?: string | null
           user_id?: string

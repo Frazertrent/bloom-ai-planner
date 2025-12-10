@@ -149,6 +149,21 @@ export const BloomFundrAuthProvider = ({ children }: { children: React.ReactNode
         if (roleError) {
           console.error("Role creation error:", roleError);
         }
+
+        // Create organization for org_admin users
+        if (userRole === "org_admin") {
+          const { error: orgError } = await supabase
+            .from("bf_organizations")
+            .insert({
+              user_id: data.user.id,
+              name: `${fullName}'s Organization`,
+              org_type: "school", // Default type, can be changed in settings
+            });
+
+          if (orgError) {
+            console.error("Organization creation error:", orgError);
+          }
+        }
       }
 
       return { error: null };

@@ -28,6 +28,8 @@ export default function FloristSettingsPage() {
     business_name: "",
     business_address: "",
     business_phone: "",
+    city: "",
+    state: "",
   });
 
   // Notification preferences state
@@ -44,6 +46,8 @@ export default function FloristSettingsPage() {
         business_name: florist.business_name || "",
         business_address: florist.business_address || "",
         business_phone: florist.business_phone || "",
+        city: (florist as any).city || "",
+        state: (florist as any).state || "",
       });
     }
   }, [florist]);
@@ -69,6 +73,8 @@ export default function FloristSettingsPage() {
           business_name: businessForm.business_name,
           business_address: businessForm.business_address,
           business_phone: businessForm.business_phone,
+          city: businessForm.city || null,
+          state: businessForm.state || null,
         })
         .eq("id", florist.id);
 
@@ -251,6 +257,30 @@ export default function FloristSettingsPage() {
                     placeholder="(555) 123-4567"
                     className="bg-bloomfundr-background border-bloomfundr-muted"
                   />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City</Label>
+                    <Input
+                      id="city"
+                      value={businessForm.city}
+                      onChange={(e) => setBusinessForm({ ...businessForm, city: e.target.value })}
+                      placeholder="Denver"
+                      className="bg-bloomfundr-background border-bloomfundr-muted"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="state">State</Label>
+                    <Input
+                      id="state"
+                      value={businessForm.state}
+                      onChange={(e) => setBusinessForm({ ...businessForm, state: e.target.value.toUpperCase() })}
+                      placeholder="CO"
+                      maxLength={2}
+                      className="bg-bloomfundr-background border-bloomfundr-muted uppercase"
+                    />
+                    <p className="text-xs text-muted-foreground">Two-letter code</p>
+                  </div>
                 </div>
                 <Button 
                   onClick={handleSaveBusinessDetails}
