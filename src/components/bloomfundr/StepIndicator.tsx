@@ -21,21 +21,21 @@ export function StepIndicator({
   allowNavigation = false,
 }: StepIndicatorProps) {
   return (
-    <nav aria-label="Progress" className="w-full overflow-x-auto">
-      <ol className="flex items-center justify-between min-w-max md:min-w-0 px-2 md:px-0">
+    <nav aria-label="Progress" className="w-full">
+      <ol className="flex items-center justify-between px-0">
         {steps.map((step, index) => {
           const isCompleted = step.id < currentStep;
           const isCurrent = step.id === currentStep;
           const isClickable = allowNavigation && (isCompleted || isCurrent);
 
           return (
-            <li key={step.id} className="relative flex-1 min-w-[60px] md:min-w-0">
+            <li key={step.id} className="relative flex-1">
               <div className="flex items-center">
                 {/* Connector line */}
                 {index > 0 && (
                   <div
                     className={cn(
-                      "absolute left-0 top-4 md:top-5 -translate-y-1/2 w-full h-0.5 -translate-x-1/2",
+                      "absolute left-0 top-5 -translate-y-1/2 w-full h-0.5 -translate-x-1/2",
                       isCompleted || isCurrent
                         ? "bg-primary"
                         : "bg-muted"
@@ -52,7 +52,7 @@ export function StepIndicator({
                     disabled={!isClickable}
                     className={cn(
                       "relative z-10 flex items-center justify-center rounded-full border-2 text-sm font-semibold transition-colors",
-                      "h-8 w-8 md:h-10 md:w-10 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0",
+                      "h-10 w-10",
                       isCompleted && "bg-primary border-primary text-primary-foreground",
                       isCurrent && "border-primary bg-background text-primary",
                       !isCompleted && !isCurrent && "border-muted bg-background text-muted-foreground",
@@ -67,7 +67,7 @@ export function StepIndicator({
                   </button>
                   <span
                     className={cn(
-                      "mt-1 md:mt-2 text-[10px] md:text-xs font-medium text-center max-w-[50px] md:max-w-none leading-tight",
+                      "mt-1 md:mt-2 text-[10px] md:text-xs font-medium text-center leading-tight truncate w-full",
                       isCurrent && "text-primary",
                       !isCurrent && "text-muted-foreground"
                     )}
