@@ -378,8 +378,6 @@ export function Step3Pricing({ campaignId, onBack, onContinue }: Step3PricingPro
             <TableHeader>
               <TableRow>
                 <TableHead>Sales Volume</TableHead>
-                <TableHead className="text-right">Total Revenue</TableHead>
-                <TableHead className="text-right">Florist Earnings</TableHead>
                 <TableHead className="text-right">Your Earnings</TableHead>
               </TableRow>
             </TableHeader>
@@ -387,13 +385,7 @@ export function Step3Pricing({ campaignId, onBack, onContinue }: Step3PricingPro
               {projections.map((proj) => (
                 <TableRow key={proj.volume}>
                   <TableCell className="font-medium">{proj.volume} orders</TableCell>
-                  <TableCell className="text-right">
-                    ${proj.totalRevenue.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-right text-emerald-600">
-                    ${proj.floristRevenue.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-right text-rose-600 font-semibold">
+                  <TableCell className="text-right text-emerald-600 text-xl font-bold">
                     ${proj.orgRevenue.toFixed(2)}
                   </TableCell>
                 </TableRow>
