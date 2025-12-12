@@ -241,7 +241,7 @@ export default function CampaignWizard() {
 
   return (
     <OrgLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button
