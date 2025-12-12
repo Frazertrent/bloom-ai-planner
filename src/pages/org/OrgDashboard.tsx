@@ -16,7 +16,7 @@ import {
   Users, 
   TrendingUp,
   Plus,
-  UserPlus,
+  
   Trophy,
   Share2,
   Eye
@@ -50,20 +50,12 @@ export default function OrgDashboard() {
               </>
             )}
           </div>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button asChild className="min-h-[44px] flex-1 sm:flex-none">
-              <Link to="/org/campaigns/new">
-                <Plus className="h-4 w-4 mr-2" />
-                New Campaign
-              </Link>
-            </Button>
-            <Button variant="outline" asChild className="min-h-[44px] flex-1 sm:flex-none">
-              <Link to="/org/students">
-                <UserPlus className="h-4 w-4 mr-2" />
-                Add Students
-              </Link>
-            </Button>
-          </div>
+          <Button asChild className="min-h-[44px]">
+            <Link to="/org/campaigns/new">
+              <Plus className="h-4 w-4 mr-2" />
+              New Campaign
+            </Link>
+          </Button>
         </div>
 
         {/* Stats Cards - 2x2 grid on mobile */}
@@ -107,7 +99,7 @@ export default function OrgDashboard() {
           <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 md:px-6 pt-3 md:pt-6">
               <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
-                Students
+                Sellers
               </CardTitle>
               <Users className="h-4 w-4 md:h-5 md:w-5 text-purple-500" />
             </CardHeader>
@@ -219,7 +211,7 @@ export default function OrgDashboard() {
                   <Trophy className="h-5 w-5 text-amber-500" />
                   Top Sellers
                 </CardTitle>
-                <CardDescription>Your best performing students</CardDescription>
+                <CardDescription>Your best performing sellers</CardDescription>
               </div>
               <Button variant="outline" size="sm" asChild>
                 <Link to="/org/reports">View All</Link>
