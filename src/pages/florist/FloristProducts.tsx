@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { FloristLayout } from "@/components/bloomfundr/FloristLayout";
 import { AddProductDialog } from "@/components/bloomfundr/AddProductDialog";
 import { EditProductDialog } from "@/components/bloomfundr/EditProductDialog";
@@ -63,6 +64,7 @@ const statusOptions = [
 ];
 
 export default function FloristProductsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { getFilter, getArrayFilter, setFilter, setArrayFilter } = useUrlFilters({
     defaultValues: { category: "all" },
   });
@@ -72,6 +74,16 @@ export default function FloristProductsPage() {
   const statusFilter = getArrayFilter("status");
 
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  // Auto-open add dialog when ?addProduct=true is in URL
+  useEffect(() => {
+    if (searchParams.get("addProduct") === "true") {
+      setAddDialogOpen(true);
+      // Remove the param from URL
+      searchParams.delete("addProduct");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);

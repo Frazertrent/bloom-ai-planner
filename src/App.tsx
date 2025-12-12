@@ -284,6 +284,9 @@ const AppContent = () => (
         </Suspense>
       </BFProtectedRoute>
     } />
+    <Route path="/florist/products/new" element={
+      <Navigate to="/florist/products?addProduct=true" replace />
+    } />
     <Route path="/florist/campaigns" element={
       <BFProtectedRoute allowedRoles={["florist"]}>
         <Suspense fallback={<PageFallback />}>
