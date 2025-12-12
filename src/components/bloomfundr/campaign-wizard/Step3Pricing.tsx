@@ -78,9 +78,10 @@ function ProductPricingCard({
   return (
     <Card>
       <CardContent className="p-4">
-        <div className="flex gap-4">
-          {/* Product Image */}
-          <div className="w-20 h-20 shrink-0 rounded-lg bg-muted overflow-hidden">
+        {/* Mobile: Stack vertically, Desktop: Side by side */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          {/* Product Image - centered on mobile */}
+          <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-lg bg-muted overflow-hidden mx-auto sm:mx-0">
             {product.image_url ? (
               <img
                 src={product.image_url}
@@ -89,16 +90,17 @@ function ProductPricingCard({
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                <Package className="h-8 w-8 text-muted-foreground/50" />
+                <Package className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground/50" />
               </div>
             )}
           </div>
 
           {/* Product Info & Pricing */}
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold truncate mb-2">{product.name}</h3>
+            <h3 className="font-semibold text-center sm:text-left truncate mb-3">{product.name}</h3>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+            {/* Pricing inputs - 2 columns on mobile */}
+            <div className="grid grid-cols-2 gap-3 text-sm">
               {/* Florist Price (fixed, from their product) */}
               <div>
                 <Label className="text-xs text-muted-foreground">Florist Price</Label>
@@ -135,18 +137,18 @@ function ProductPricingCard({
                   className="h-8 w-20"
                 />
               </div>
+            </div>
 
-              {/* Platform & Processing (read-only) */}
-              <div>
-                <Label className="text-xs text-muted-foreground">Platform + Processing</Label>
-                <p className="font-medium text-muted-foreground">10% + ~3%</p>
-              </div>
+            {/* Platform & Processing - full width on mobile */}
+            <div className="mt-3 text-sm">
+              <Label className="text-xs text-muted-foreground">Platform + Processing</Label>
+              <p className="font-medium text-muted-foreground">10% + ~3%</p>
             </div>
 
             <Separator className="my-3" />
 
-            {/* Calculated Breakdown */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm mb-3">
+            {/* Calculated Breakdown - 2x2 grid on mobile, 5 cols on desktop */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm mb-3">
               <div>
                 <span className="text-xs text-muted-foreground">Florist Receives</span>
                 <p className="font-medium text-emerald-600">${pricing.floristPrice.toFixed(2)}</p>
@@ -169,14 +171,16 @@ function ProductPricingCard({
                   ${(actualBreakdown?.processingFee ?? breakdown.processingFee).toFixed(2)}
                 </p>
               </div>
-              <div>
-                <span className="text-xs text-muted-foreground font-medium">Selling Price</span>
-                <p className="font-bold text-primary">${effectivePrice.toFixed(2)}</p>
-              </div>
+            </div>
+
+            {/* Selling Price - prominent */}
+            <div className="bg-muted/50 rounded-lg p-3 mb-3">
+              <span className="text-xs text-muted-foreground font-medium">Selling Price</span>
+              <p className="font-bold text-lg text-primary">${effectivePrice.toFixed(2)}</p>
             </div>
 
             {/* Custom Price Override */}
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="flex items-center gap-2">
                 <Checkbox
                   id={`custom-${product.id}`}
