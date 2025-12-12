@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { ArrowLeft, Loader2, Package, Check } from "lucide-react";
+import { ArrowLeft, Loader2, Package, Check, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -174,16 +174,26 @@ export function Step2Products({
 
   if (!products || products.length === 0) {
     return (
-      <div className="text-center py-12">
-        <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <h3 className="text-lg font-medium mb-2">No Products Available</h3>
-        <p className="text-muted-foreground mb-4">
-          The selected florist hasn't added any products yet.
+      <div className="text-center py-12 max-w-md mx-auto">
+        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+          <Package className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <h3 className="text-lg font-semibold mb-2">No Products Available Yet</h3>
+        <p className="text-muted-foreground mb-6">
+          This florist hasn't added any products to their catalog yet. 
+          Florists manage their own products through their dashboard.
         </p>
-        <Button variant="outline" onClick={onBack}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Go Back
-        </Button>
+        
+        <div className="space-y-3">
+          <Button onClick={onBack} className="w-full">
+            <Users className="mr-2 h-4 w-4" />
+            Choose a Different Florist
+          </Button>
+        </div>
+        
+        <p className="text-xs text-muted-foreground mt-6 px-4">
+          Want to work with this florist? Reach out to them directly and ask them to add products to their catalog.
+        </p>
       </div>
     );
   }
