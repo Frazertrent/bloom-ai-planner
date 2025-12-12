@@ -17,7 +17,7 @@ export function OrgLayout({ children }: OrgLayoutProps) {
     <SidebarProvider defaultOpen={!isMobile}>
       <div className="min-h-screen flex w-full bg-background">
         <OrgSidebar />
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0 w-full max-w-full">
           {/* Header */}
           <header className="h-14 md:h-16 border-b border-border flex items-center px-3 md:px-4 gap-3 bg-background">
             <SidebarTrigger className="min-h-[44px] min-w-[44px] flex items-center justify-center" />
@@ -32,7 +32,7 @@ export function OrgLayout({ children }: OrgLayoutProps) {
           </header>
           
           {/* Main Content */}
-          <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 pb-20 md:pb-6">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 pb-20 md:pb-6 w-full max-w-full box-border">
             {children}
           </main>
         </div>
