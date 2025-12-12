@@ -107,7 +107,7 @@ export function ProductDetailSheet({
               <p className="text-2xl font-bold text-foreground">
                 ${Number(product.base_cost).toFixed(2)}
               </p>
-              <p className="text-sm text-muted-foreground">Base cost to make</p>
+              <p className="text-sm text-muted-foreground">Your price point per sale</p>
             </div>
           </div>
 
