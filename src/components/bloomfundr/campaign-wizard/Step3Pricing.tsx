@@ -77,11 +77,10 @@ function ProductPricingCard({
 
   return (
     <Card>
-      <CardContent className="p-4">
-        {/* Mobile: Stack vertically, Desktop: Side by side */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          {/* Product Image - centered on mobile */}
-          <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-lg bg-muted overflow-hidden mx-auto sm:mx-0">
+      <CardContent className="p-3 sm:p-4">
+        {/* Header: Image + Name on same row */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 shrink-0 rounded-lg bg-muted overflow-hidden">
             {product.image_url ? (
               <img
                 src={product.image_url}
@@ -90,142 +89,116 @@ function ProductPricingCard({
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                <Package className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground/50" />
+                <Package className="h-5 w-5 text-muted-foreground/50" />
               </div>
             )}
           </div>
+          <h3 className="font-semibold text-base sm:text-lg truncate">{product.name}</h3>
+        </div>
 
-          {/* Product Info & Pricing */}
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-center sm:text-left truncate mb-3">{product.name}</h3>
+        {/* Pricing inputs - 2 columns */}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          {/* Florist Price (fixed) */}
+          <div>
+            <Label className="text-xs text-muted-foreground">Florist Price</Label>
+            <p className="font-semibold text-lg">${pricing.floristPrice.toFixed(2)}</p>
+          </div>
 
-            {/* Pricing inputs - 2 columns on mobile */}
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              {/* Florist Price (fixed, from their product) */}
-              <div>
-                <Label className="text-xs text-muted-foreground">Florist Price</Label>
-                <p className="font-medium text-emerald-600">${pricing.floristPrice.toFixed(2)}</p>
-                <p className="text-xs text-muted-foreground">What they receive</p>
-              </div>
-
-              {/* Org Profit % */}
-              <div>
-                <Label htmlFor={`org-${product.id}`} className="text-xs text-muted-foreground flex items-center gap-1">
-                  Your Profit %
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="h-3 w-3" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="max-w-xs text-xs">
-                          This is the percentage of the selling price that goes to your organization.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </Label>
-                <Input
-                  id={`org-${product.id}`}
-                  type="number"
-                  min={0}
-                  max={50}
-                  value={pricing.orgProfitPercent}
-                  onChange={(e) =>
-                    onUpdate({ orgProfitPercent: parseFloat(e.target.value) || 0 })
-                  }
-                  className="h-8 w-20"
-                />
-              </div>
+          {/* Org Profit % */}
+          <div>
+            <Label htmlFor={`org-${product.id}`} className="text-xs text-muted-foreground">
+              Your Profit %
+            </Label>
+            <div className="flex items-center gap-1">
+              <Input
+                id={`org-${product.id}`}
+                type="number"
+                min={0}
+                max={50}
+                value={pricing.orgProfitPercent}
+                onChange={(e) =>
+                  onUpdate({ orgProfitPercent: parseFloat(e.target.value) || 0 })
+                }
+                className="h-10 w-20 text-lg font-semibold"
+              />
+              <span className="text-muted-foreground">%</span>
             </div>
-
-            {/* Platform & Processing - full width on mobile */}
-            <div className="mt-3 text-sm">
-              <Label className="text-xs text-muted-foreground">Platform + Processing</Label>
-              <p className="font-medium text-muted-foreground">10% + ~3%</p>
-            </div>
-
-            <Separator className="my-3" />
-
-            {/* Calculated Breakdown - 2x2 grid on mobile, 5 cols on desktop */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm mb-3">
-              <div>
-                <span className="text-xs text-muted-foreground">Florist Receives</span>
-                <p className="font-medium text-emerald-600">${pricing.floristPrice.toFixed(2)}</p>
-              </div>
-              <div>
-                <span className="text-xs text-muted-foreground">Your Profit</span>
-                <p className="font-medium text-rose-600">
-                  ${(actualBreakdown?.orgProfit ?? breakdown.orgProfit).toFixed(2)}
-                </p>
-              </div>
-              <div>
-                <span className="text-xs text-muted-foreground">Platform Fee</span>
-                <p className="font-medium">
-                  ${(actualBreakdown?.platformFee ?? breakdown.platformFee).toFixed(2)}
-                </p>
-              </div>
-              <div>
-                <span className="text-xs text-muted-foreground">Processing Fee</span>
-                <p className="font-medium">
-                  ${(actualBreakdown?.processingFee ?? breakdown.processingFee).toFixed(2)}
-                </p>
-              </div>
-            </div>
-
-            {/* Selling Price - prominent */}
-            <div className="bg-muted/50 rounded-lg p-3 mb-3">
-              <span className="text-xs text-muted-foreground font-medium">Selling Price</span>
-              <p className="font-bold text-lg text-primary">${effectivePrice.toFixed(2)}</p>
-            </div>
-
-            {/* Custom Price Override */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id={`custom-${product.id}`}
-                  checked={pricing.isCustomPrice}
-                  onCheckedChange={(checked) =>
-                    onUpdate({
-                      isCustomPrice: !!checked,
-                      retailPrice: checked ? breakdown.suggestedRetailPrice : 0,
-                    })
-                  }
-                />
-                <Label htmlFor={`custom-${product.id}`} className="text-sm cursor-pointer">
-                  Set custom selling price
-                </Label>
-              </div>
-
-              {pricing.isCustomPrice && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">$</span>
-                  <Input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={pricing.retailPrice}
-                    onChange={(e) =>
-                      onUpdate({ retailPrice: parseFloat(e.target.value) || 0 })
-                    }
-                    className="h-8 w-24"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Warning if below minimum */}
-            {isPriceBelowMinimum && (
-              <Alert variant="destructive" className="mt-3">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  Price is below minimum (${breakdown.minimumRetailPrice.toFixed(2)}). 
-                  The florist won't receive their full price point.
-                </AlertDescription>
-              </Alert>
-            )}
           </div>
         </div>
+
+        {/* Selling Price - prominent, full width */}
+        <div className="bg-primary/10 rounded-xl p-4 text-center mb-4">
+          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Selling Price</span>
+          <p className="font-bold text-2xl sm:text-3xl text-primary">${effectivePrice.toFixed(2)}</p>
+          <p className="text-sm font-medium text-rose-600 mt-1">
+            You earn ${(actualBreakdown?.orgProfit ?? breakdown.orgProfit).toFixed(2)} per sale
+          </p>
+        </div>
+
+        {/* Detailed breakdown - hidden on mobile, visible on desktop */}
+        <div className="hidden sm:grid grid-cols-4 gap-3 text-sm mb-4 text-center">
+          <div className="p-2 bg-muted/50 rounded-lg">
+            <span className="text-xs text-muted-foreground block">Florist</span>
+            <p className="font-medium">${pricing.floristPrice.toFixed(2)}</p>
+          </div>
+          <div className="p-2 bg-muted/50 rounded-lg">
+            <span className="text-xs text-muted-foreground block">Your Profit</span>
+            <p className="font-medium text-rose-600">${(actualBreakdown?.orgProfit ?? breakdown.orgProfit).toFixed(2)}</p>
+          </div>
+          <div className="p-2 bg-muted/50 rounded-lg">
+            <span className="text-xs text-muted-foreground block">Platform</span>
+            <p className="font-medium">${(actualBreakdown?.platformFee ?? breakdown.platformFee).toFixed(2)}</p>
+          </div>
+          <div className="p-2 bg-muted/50 rounded-lg">
+            <span className="text-xs text-muted-foreground block">Processing</span>
+            <p className="font-medium">${(actualBreakdown?.processingFee ?? breakdown.processingFee).toFixed(2)}</p>
+          </div>
+        </div>
+
+        {/* Custom Price Override */}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id={`custom-${product.id}`}
+              checked={pricing.isCustomPrice}
+              onCheckedChange={(checked) =>
+                onUpdate({
+                  isCustomPrice: !!checked,
+                  retailPrice: checked ? breakdown.suggestedRetailPrice : 0,
+                })
+              }
+            />
+            <Label htmlFor={`custom-${product.id}`} className="text-sm cursor-pointer">
+              Set custom selling price
+            </Label>
+          </div>
+
+          {pricing.isCustomPrice && (
+            <div className="flex items-center gap-2 pl-6">
+              <span className="text-sm font-medium">$</span>
+              <Input
+                type="number"
+                min={0}
+                step={0.01}
+                value={pricing.retailPrice}
+                onChange={(e) =>
+                  onUpdate({ retailPrice: parseFloat(e.target.value) || 0 })
+                }
+                className="h-10 w-28 text-lg"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Warning if below minimum */}
+        {isPriceBelowMinimum && (
+          <Alert variant="destructive" className="mt-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="text-sm">
+              Price below minimum (${breakdown.minimumRetailPrice.toFixed(2)})
+            </AlertDescription>
+          </Alert>
+        )}
       </CardContent>
     </Card>
   );
@@ -321,24 +294,20 @@ export function Step3Pricing({ campaignId, onBack, onContinue }: Step3PricingPro
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Helper Text for Organizations */}
       <Alert className="bg-rose-50 border-rose-200">
-        <DollarSign className="h-4 w-4 text-rose-600" />
-        <AlertDescription className="text-rose-800">
-          <strong>Set your profit percentage</strong> — This is the money YOUR organization 
-          will earn on every sale. The florist has already set their price; you just decide 
-          how much to add for your fundraiser.
+        <DollarSign className="h-4 w-4 text-rose-600 shrink-0" />
+        <AlertDescription className="text-rose-800 text-sm">
+          <strong>Set your profit %</strong> — the amount YOUR organization earns on every sale.
         </AlertDescription>
       </Alert>
 
-      {/* Apply to All Button */}
-      <div className="flex justify-end">
-        <Button variant="outline" onClick={handleApplyToAll}>
-          <Copy className="mr-2 h-4 w-4" />
-          Apply First Product's Profit % to All
-        </Button>
-      </div>
+      {/* Apply to All Button - full width on mobile */}
+      <Button variant="outline" onClick={handleApplyToAll} className="w-full sm:w-auto sm:ml-auto sm:flex">
+        <Copy className="mr-2 h-4 w-4" />
+        Apply to All Products
+      </Button>
 
       {/* Product Pricing Cards */}
       <div className="space-y-4">
