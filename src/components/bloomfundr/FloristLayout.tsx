@@ -17,7 +17,7 @@ export function FloristLayout({ children }: FloristLayoutProps) {
     <SidebarProvider defaultOpen={!isMobile}>
       <div className="min-h-screen flex w-full bg-bloomfundr-background">
         <FloristSidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0 w-full max-w-full">
           {/* Header */}
           <header className="h-14 md:h-16 border-b border-bloomfundr-muted bg-bloomfundr-card flex items-center px-3 md:px-4 gap-3">
             <SidebarTrigger className="text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center" />
@@ -32,7 +32,7 @@ export function FloristLayout({ children }: FloristLayoutProps) {
           </header>
 
           {/* Main Content */}
-          <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-20 md:pb-6">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 pb-20 md:pb-6 w-full max-w-full box-border">
             {children}
           </main>
         </div>
