@@ -23,6 +23,7 @@ export default function OrgSettings() {
   // Organization form state
   const [orgForm, setOrgForm] = useState({
     name: "",
+    org_type: "",
     contact_phone: "",
     address: "",
   });
@@ -40,6 +41,7 @@ export default function OrgSettings() {
     if (org) {
       setOrgForm({
         name: org.name || "",
+        org_type: org.org_type || "",
         contact_phone: org.contact_phone || "",
         address: org.address || "",
       });
@@ -66,6 +68,7 @@ export default function OrgSettings() {
         .from("bf_organizations")
         .update({
           name: orgForm.name,
+          org_type: orgForm.org_type,
           contact_phone: orgForm.contact_phone,
           address: orgForm.address,
         })
@@ -135,9 +138,9 @@ export default function OrgSettings() {
                   <Label htmlFor="type">Organization Type</Label>
                   <Input 
                     id="type" 
-                    defaultValue={org?.org_type || ""} 
+                    value={orgForm.org_type}
+                    onChange={(e) => setOrgForm({ ...orgForm, org_type: e.target.value })}
                     placeholder="e.g., School, Sports Team"
-                    disabled
                   />
                 </div>
                 <div className="space-y-2">
