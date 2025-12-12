@@ -11,7 +11,17 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Building2, Phone, MapPin, Bell, Mail, ShoppingCart, Calendar, AlertTriangle, Info } from "lucide-react";
+
+const ORG_TYPE_OPTIONS = [
+  { value: "school", label: "School" },
+  { value: "sports", label: "Sports Team" },
+  { value: "dance", label: "Dance Team" },
+  { value: "cheer", label: "Cheer Squad" },
+  { value: "church", label: "Church/Religious Organization" },
+  { value: "other", label: "Other" },
+];
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,16 +81,26 @@ export default function OrgSettings() {
       return;
     }
 
+    if (!orgForm.name.trim()) {
+      toast.error("Organization name is required");
+      return;
+    }
+
+    if (!orgForm.org_type) {
+      toast.error("Please select an organization type");
+      return;
+    }
+
     try {
       if (org?.id) {
         // UPDATE existing organization
         const { error } = await supabase
           .from("bf_organizations")
           .update({
-            name: orgForm.name,
+            name: orgForm.name.trim(),
             org_type: orgForm.org_type,
-            contact_phone: orgForm.contact_phone,
-            address: orgForm.address,
+            contact_phone: orgForm.contact_phone || null,
+            address: orgForm.address || null,
           })
           .eq("id", org.id);
 
@@ -91,10 +111,10 @@ export default function OrgSettings() {
           .from("bf_organizations")
           .insert({
             user_id: user.id,
-            name: orgForm.name || "My Organization",
-            org_type: orgForm.org_type || "Other",
-            contact_phone: orgForm.contact_phone,
-            address: orgForm.address,
+            name: orgForm.name.trim(),
+            org_type: orgForm.org_type,
+            contact_phone: orgForm.contact_phone || null,
+            address: orgForm.address || null,
           });
 
         if (error) throw error;
@@ -172,12 +192,21 @@ export default function OrgSettings() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="type">Organization Type</Label>
-                  <Input 
-                    id="type" 
+                  <Select
                     value={orgForm.org_type}
-                    onChange={(e) => setOrgForm({ ...orgForm, org_type: e.target.value })}
-                    placeholder="e.g., School, Sports Team"
-                  />
+                    onValueChange={(value) => setOrgForm({ ...orgForm, org_type: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select organization type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ORG_TYPE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone" className="flex items-center gap-2">
@@ -223,7 +252,14 @@ export default function OrgSettings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {prefsLoading ? (
+            {!org?.id ? (
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Save your organization details above first to configure notification preferences.
+                </AlertDescription>
+              </Alert>
+            ) : prefsLoading ? (
               <div className="space-y-4">
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
