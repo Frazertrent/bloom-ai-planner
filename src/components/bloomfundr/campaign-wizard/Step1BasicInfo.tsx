@@ -2,7 +2,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, Link, Loader2, UserPlus, Users } from "lucide-react";
+import { AlertTriangle, CalendarIcon, Link, Loader2, UserPlus, Users } from "lucide-react";
+import { Link as RouterLink } from "react-router-dom";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -159,6 +161,21 @@ export function Step1BasicInfo({
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
+    );
+  }
+
+  if (!org?.id) {
+    return (
+      <Alert variant="destructive" className="max-w-lg mx-auto">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Organization Required</AlertTitle>
+        <AlertDescription className="space-y-3">
+          <p>Please add your organization details in Settings before creating a campaign.</p>
+          <Button asChild size="sm">
+            <RouterLink to="/org/settings">Go to Settings</RouterLink>
+          </Button>
+        </AlertDescription>
+      </Alert>
     );
   }
 
