@@ -38,7 +38,7 @@ export function useCampaignMargins(campaignId: string | undefined) {
 
       const { data, error } = await supabase
         .from("bf_campaigns")
-        .select("florist_margin_percent, organization_margin_percent, platform_fee_percent")
+        .select("organization_margin_percent, platform_fee_percent")
         .eq("id", campaignId)
         .single();
 
@@ -57,20 +57,19 @@ export function useSaveCampaignPricing() {
     mutationFn: async ({
       campaignId,
       productPricing,
-      floristMarginPercent,
-      orgMarginPercent,
+      orgProfitPercent,
     }: {
       campaignId: string;
       productPricing: ProductPricing[];
-      floristMarginPercent: number;
-      orgMarginPercent: number;
+      orgProfitPercent: number;
     }) => {
-      // Update campaign margins
+      // Update campaign org margin only (florist margin is no longer used)
       const { error: campaignError } = await supabase
         .from("bf_campaigns")
         .update({
-          florist_margin_percent: floristMarginPercent,
-          organization_margin_percent: orgMarginPercent,
+          organization_margin_percent: orgProfitPercent,
+          // Set florist margin to 0 since we're not using it anymore
+          florist_margin_percent: 0,
         })
         .eq("id", campaignId);
 
@@ -117,17 +116,15 @@ export function usePricingState(campaignId: string | undefined) {
   const { data: campaignMargins } = useCampaignMargins(campaignId);
   
   const [productPricing, setProductPricing] = useState<ProductPricing[]>([]);
-  const [defaultFloristMargin, setDefaultFloristMargin] = useState(30);
-  const [defaultOrgMargin, setDefaultOrgMargin] = useState(40);
+  const [defaultOrgProfit, setDefaultOrgProfit] = useState(25);
 
   // Initialize pricing state from campaign data
   useEffect(() => {
     if (campaignProducts && campaignProducts.length > 0) {
       const initialPricing = campaignProducts.map((cp) => ({
         productId: cp.product_id,
-        baseCost: cp.product?.base_cost || 0,
-        floristMarginPercent: campaignMargins?.florist_margin_percent || 30,
-        orgMarginPercent: campaignMargins?.organization_margin_percent || 40,
+        floristPrice: cp.product?.base_cost || 0,  // base_cost is now the florist's price point
+        orgProfitPercent: campaignMargins?.organization_margin_percent || 25,
         retailPrice: cp.retail_price || 0,
         isCustomPrice: cp.retail_price > 0,
       }));
@@ -135,8 +132,7 @@ export function usePricingState(campaignId: string | undefined) {
     }
 
     if (campaignMargins) {
-      setDefaultFloristMargin(campaignMargins.florist_margin_percent);
-      setDefaultOrgMargin(campaignMargins.organization_margin_percent);
+      setDefaultOrgProfit(campaignMargins.organization_margin_percent);
     }
   }, [campaignProducts, campaignMargins]);
 
@@ -151,26 +147,22 @@ export function usePricingState(campaignId: string | undefined) {
     );
   };
 
-  const applyMarginsToAll = (floristMargin: number, orgMargin: number) => {
+  const applyOrgProfitToAll = (orgProfitPercent: number) => {
     setProductPricing((prev) =>
       prev.map((p) => ({
         ...p,
-        floristMarginPercent: floristMargin,
-        orgMarginPercent: orgMargin,
+        orgProfitPercent,
       }))
     );
-    setDefaultFloristMargin(floristMargin);
-    setDefaultOrgMargin(orgMargin);
+    setDefaultOrgProfit(orgProfitPercent);
   };
 
   return {
     productPricing,
-    defaultFloristMargin,
-    defaultOrgMargin,
+    defaultOrgProfit,
     updateProductPricing,
-    applyMarginsToAll,
-    setDefaultFloristMargin,
-    setDefaultOrgMargin,
+    applyOrgProfitToAll,
+    setDefaultOrgProfit,
     campaignProducts,
   };
 }

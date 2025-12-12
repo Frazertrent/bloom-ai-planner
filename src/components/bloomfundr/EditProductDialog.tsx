@@ -254,7 +254,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                 name="base_cost"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Base Cost *</FormLabel>
+                    <FormLabel>Your Price Point *</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -270,8 +270,9 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                         />
                       </div>
                     </FormControl>
-                    <FormDescription className="text-xs">
-                      Your cost to make this item
+                    <FormDescription className="text-xs text-muted-foreground">
+                      This is what you'll receive for each sale. Price it as low as you're 
+                      willing — this is a fundraiser and a marketing opportunity, not a retail sale!
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

@@ -7,6 +7,7 @@ import {
   DollarSign,
   TrendingUp,
   Copy,
+  HelpCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   usePricingState,
   useSaveCampaignPricing,
   useCampaignProductsWithDetails,
@@ -32,6 +39,7 @@ import {
 import {
   calculatePricing,
   calculateRevenueProjections,
+  calculateRevenueAtPrice,
   ProductPricing,
 } from "@/lib/pricingCalculator";
 
@@ -51,14 +59,18 @@ function ProductPricingCard({
   onUpdate: (updates: Partial<ProductPricing>) => void;
 }) {
   const breakdown = calculatePricing(
-    pricing.baseCost,
-    pricing.floristMarginPercent,
-    pricing.orgMarginPercent
+    pricing.floristPrice,
+    pricing.orgProfitPercent
   );
 
   const effectivePrice = pricing.isCustomPrice
     ? pricing.retailPrice
     : breakdown.suggestedRetailPrice;
+
+  // Calculate actual breakdown at the effective price
+  const actualBreakdown = pricing.isCustomPrice
+    ? calculateRevenueAtPrice(pricing.floristPrice, pricing.retailPrice)
+    : null;
 
   const isPriceBelowMinimum =
     pricing.isCustomPrice && pricing.retailPrice < breakdown.minimumRetailPrice;
@@ -86,44 +98,39 @@ function ProductPricingCard({
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold truncate mb-2">{product.name}</h3>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-              {/* Base Cost */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+              {/* Florist Price (fixed, from their product) */}
               <div>
-                <Label className="text-xs text-muted-foreground">Florist Cost</Label>
-                <p className="font-medium">${pricing.baseCost.toFixed(2)}</p>
+                <Label className="text-xs text-muted-foreground">Florist Price</Label>
+                <p className="font-medium text-emerald-600">${pricing.floristPrice.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">What they receive</p>
               </div>
 
-              {/* Florist Margin */}
+              {/* Org Profit % */}
               <div>
-                <Label htmlFor={`florist-${product.id}`} className="text-xs text-muted-foreground">
-                  Florist Margin %
-                </Label>
-                <Input
-                  id={`florist-${product.id}`}
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={pricing.floristMarginPercent}
-                  onChange={(e) =>
-                    onUpdate({ floristMarginPercent: parseFloat(e.target.value) || 0 })
-                  }
-                  className="h-8 w-20"
-                />
-              </div>
-
-              {/* Org Margin */}
-              <div>
-                <Label htmlFor={`org-${product.id}`} className="text-xs text-muted-foreground">
-                  Org Margin %
+                <Label htmlFor={`org-${product.id}`} className="text-xs text-muted-foreground flex items-center gap-1">
+                  Your Profit %
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-3 w-3" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs text-xs">
+                          This is the percentage of the selling price that goes to your organization.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </Label>
                 <Input
                   id={`org-${product.id}`}
                   type="number"
                   min={0}
-                  max={100}
-                  value={pricing.orgMarginPercent}
+                  max={50}
+                  value={pricing.orgProfitPercent}
                   onChange={(e) =>
-                    onUpdate({ orgMarginPercent: parseFloat(e.target.value) || 0 })
+                    onUpdate({ orgProfitPercent: parseFloat(e.target.value) || 0 })
                   }
                   className="h-8 w-20"
                 />
@@ -141,24 +148,30 @@ function ProductPricingCard({
             {/* Calculated Breakdown */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm mb-3">
               <div>
-                <span className="text-xs text-muted-foreground">Florist Revenue</span>
-                <p className="font-medium text-emerald-600">${breakdown.floristRevenue.toFixed(2)}</p>
+                <span className="text-xs text-muted-foreground">Florist Receives</span>
+                <p className="font-medium text-emerald-600">${pricing.floristPrice.toFixed(2)}</p>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground">Org Revenue</span>
-                <p className="font-medium text-rose-600">${breakdown.orgRevenue.toFixed(2)}</p>
+                <span className="text-xs text-muted-foreground">Your Profit</span>
+                <p className="font-medium text-rose-600">
+                  ${(actualBreakdown?.orgProfit ?? breakdown.orgProfit).toFixed(2)}
+                </p>
               </div>
               <div>
                 <span className="text-xs text-muted-foreground">Platform Fee</span>
-                <p className="font-medium">${breakdown.platformFee.toFixed(2)}</p>
+                <p className="font-medium">
+                  ${(actualBreakdown?.platformFee ?? breakdown.platformFee).toFixed(2)}
+                </p>
               </div>
               <div>
                 <span className="text-xs text-muted-foreground">Processing Fee</span>
-                <p className="font-medium">${breakdown.processingFee.toFixed(2)}</p>
+                <p className="font-medium">
+                  ${(actualBreakdown?.processingFee ?? breakdown.processingFee).toFixed(2)}
+                </p>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground font-medium">Suggested Price</span>
-                <p className="font-bold text-primary">${breakdown.suggestedRetailPrice.toFixed(2)}</p>
+                <span className="text-xs text-muted-foreground font-medium">Selling Price</span>
+                <p className="font-bold text-primary">${effectivePrice.toFixed(2)}</p>
               </div>
             </div>
 
@@ -176,7 +189,7 @@ function ProductPricingCard({
                   }
                 />
                 <Label htmlFor={`custom-${product.id}`} className="text-sm cursor-pointer">
-                  Set custom retail price
+                  Set custom selling price
                 </Label>
               </div>
 
@@ -203,7 +216,7 @@ function ProductPricingCard({
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
                   Price is below minimum (${breakdown.minimumRetailPrice.toFixed(2)}). 
-                  This will result in a loss.
+                  The florist won't receive their full price point.
                 </AlertDescription>
               </Alert>
             )}
@@ -219,16 +232,15 @@ export function Step3Pricing({ campaignId, onBack, onContinue }: Step3PricingPro
   const savePricing = useSaveCampaignPricing();
   const {
     productPricing,
-    defaultFloristMargin,
-    defaultOrgMargin,
+    defaultOrgProfit,
     updateProductPricing,
-    applyMarginsToAll,
+    applyOrgProfitToAll,
   } = usePricingState(campaignId);
 
   const handleApplyToAll = () => {
     if (productPricing.length > 0) {
       const first = productPricing[0];
-      applyMarginsToAll(first.floristMarginPercent, first.orgMarginPercent);
+      applyOrgProfitToAll(first.orgProfitPercent);
     }
   };
 
@@ -237,9 +249,8 @@ export function Step3Pricing({ campaignId, onBack, onContinue }: Step3PricingPro
     const finalPricing = productPricing.map((p) => {
       if (!p.isCustomPrice) {
         const breakdown = calculatePricing(
-          p.baseCost,
-          p.floristMarginPercent,
-          p.orgMarginPercent
+          p.floristPrice,
+          p.orgProfitPercent
         );
         return { ...p, retailPrice: breakdown.suggestedRetailPrice };
       }
@@ -249,8 +260,7 @@ export function Step3Pricing({ campaignId, onBack, onContinue }: Step3PricingPro
     await savePricing.mutateAsync({
       campaignId,
       productPricing: finalPricing,
-      floristMarginPercent: defaultFloristMargin,
-      orgMarginPercent: defaultOrgMargin,
+      orgProfitPercent: defaultOrgProfit,
     });
 
     onContinue();
@@ -261,9 +271,8 @@ export function Step3Pricing({ campaignId, onBack, onContinue }: Step3PricingPro
     const finalPricing = productPricing.map((p) => {
       if (!p.isCustomPrice) {
         const breakdown = calculatePricing(
-          p.baseCost,
-          p.floristMarginPercent,
-          p.orgMarginPercent
+          p.floristPrice,
+          p.orgProfitPercent
         );
         return { ...p, retailPrice: breakdown.suggestedRetailPrice };
       }
@@ -274,8 +283,7 @@ export function Step3Pricing({ campaignId, onBack, onContinue }: Step3PricingPro
       await savePricing.mutateAsync({
         campaignId,
         productPricing: finalPricing,
-        floristMarginPercent: defaultFloristMargin,
-        orgMarginPercent: defaultOrgMargin,
+        orgProfitPercent: defaultOrgProfit,
       });
     }
     onBack();
@@ -283,14 +291,6 @@ export function Step3Pricing({ campaignId, onBack, onContinue }: Step3PricingPro
 
   // Revenue projections
   const projections = calculateRevenueProjections(productPricing, [10, 50, 100]);
-
-  // Calculate averages
-  const avgFloristMargin =
-    productPricing.reduce((sum, p) => sum + p.floristMarginPercent, 0) /
-    (productPricing.length || 1);
-  const avgOrgMargin =
-    productPricing.reduce((sum, p) => sum + p.orgMarginPercent, 0) /
-    (productPricing.length || 1);
 
   if (isLoading) {
     return (
@@ -318,11 +318,21 @@ export function Step3Pricing({ campaignId, onBack, onContinue }: Step3PricingPro
 
   return (
     <div className="space-y-6">
+      {/* Helper Text for Organizations */}
+      <Alert className="bg-rose-50 border-rose-200">
+        <DollarSign className="h-4 w-4 text-rose-600" />
+        <AlertDescription className="text-rose-800">
+          <strong>Set your profit percentage</strong> — This is the money YOUR organization 
+          will earn on every sale. The florist has already set their price; you just decide 
+          how much to add for your fundraiser.
+        </AlertDescription>
+      </Alert>
+
       {/* Apply to All Button */}
       <div className="flex justify-end">
         <Button variant="outline" onClick={handleApplyToAll}>
           <Copy className="mr-2 h-4 w-4" />
-          Apply First Product's Margins to All
+          Apply First Product's Profit % to All
         </Button>
       </div>
 
@@ -352,20 +362,15 @@ export function Step3Pricing({ campaignId, onBack, onContinue }: Step3PricingPro
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Average Margins */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="p-4 rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground">Avg. Florist Margin</p>
-              <p className="text-2xl font-bold text-emerald-600">
-                {avgFloristMargin.toFixed(1)}%
-              </p>
-            </div>
-            <div className="p-4 rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground">Avg. Organization Margin</p>
-              <p className="text-2xl font-bold text-rose-600">
-                {avgOrgMargin.toFixed(1)}%
-              </p>
-            </div>
+          {/* Average Org Profit */}
+          <div className="p-4 rounded-lg bg-rose-50 border border-rose-100 mb-6">
+            <p className="text-sm text-rose-700">Your Average Profit Margin</p>
+            <p className="text-2xl font-bold text-rose-600">
+              {(productPricing.reduce((sum, p) => sum + p.orgProfitPercent, 0) / (productPricing.length || 1)).toFixed(1)}%
+            </p>
+            <p className="text-xs text-rose-600/70 mt-1">
+              This is the money YOUR organization will earn on each sale
+            </p>
           </div>
 
           {/* Projections Table */}
@@ -375,7 +380,7 @@ export function Step3Pricing({ campaignId, onBack, onContinue }: Step3PricingPro
                 <TableHead>Sales Volume</TableHead>
                 <TableHead className="text-right">Total Revenue</TableHead>
                 <TableHead className="text-right">Florist Earnings</TableHead>
-                <TableHead className="text-right">Organization Earnings</TableHead>
+                <TableHead className="text-right">Your Earnings</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -388,7 +393,7 @@ export function Step3Pricing({ campaignId, onBack, onContinue }: Step3PricingPro
                   <TableCell className="text-right text-emerald-600">
                     ${proj.floristRevenue.toFixed(2)}
                   </TableCell>
-                  <TableCell className="text-right text-rose-600">
+                  <TableCell className="text-right text-rose-600 font-semibold">
                     ${proj.orgRevenue.toFixed(2)}
                   </TableCell>
                 </TableRow>

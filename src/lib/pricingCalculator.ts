@@ -1,24 +1,22 @@
 // Pricing Calculator for BloomFundr campaigns
+// NEW MODEL: Florist sets their "Price Point" (what they receive), Org sets their profit %
 
 export interface PricingBreakdown {
-  baseCost: number;
-  floristMarginPercent: number;
-  orgMarginPercent: number;
+  floristPrice: number;         // What the florist receives per sale (their price point)
+  orgProfitPercent: number;     // Org's profit percentage
   platformFeePercent: number;
   processingFeePercent: number;
-  floristRevenue: number;
-  orgRevenue: number;
+  orgProfit: number;            // Dollar amount org earns
   platformFee: number;
   processingFee: number;
   suggestedRetailPrice: number;
-  minimumRetailPrice: number;
+  minimumRetailPrice: number;   // Minimum price to cover florist + fees (0% org profit)
 }
 
 export interface ProductPricing {
   productId: string;
-  baseCost: number;
-  floristMarginPercent: number;
-  orgMarginPercent: number;
+  floristPrice: number;         // What florist receives (formerly baseCost)
+  orgProfitPercent: number;     // Org's profit percentage
   retailPrice: number;
   isCustomPrice: boolean;
 }
@@ -26,56 +24,64 @@ export interface ProductPricing {
 /**
  * Calculate complete pricing breakdown for a product
  * 
- * Formula:
- * Retail = BaseCost + FloristRevenue + OrgRevenue + PlatformFee + ProcessingFee
- * 
- * Where:
- * - FloristRevenue = BaseCost * (floristMarginPercent / 100)
- * - OrgRevenue = BaseCost * (orgMarginPercent / 100)
- * - PlatformFee = Retail * (platformFeePercent / 100)
- * - ProcessingFee = Retail * (processingFeePercent / 100)
+ * NEW FORMULA:
+ * The florist's "Price Point" is what they receive - it's a fixed amount.
+ * The retail price must cover:
+ *   - Florist Price (fixed)
+ *   - Org Profit (% of retail)
+ *   - Platform Fee (% of retail)
+ *   - Processing Fee (% of retail)
  * 
  * Solving for Retail:
- * Retail = (BaseCost * (1 + floristMargin + orgMargin)) / (1 - platformFee - processingFee)
+ * Retail = FloristPrice / (1 - orgProfitPercent - platformFeePercent - processingFeePercent)
  */
 export function calculatePricing(
-  baseCost: number,
-  floristMarginPercent: number,
-  orgMarginPercent: number,
+  floristPrice: number,
+  orgProfitPercent: number,
   platformFeePercent: number = 10,
   processingFeePercent: number = 3
 ): PricingBreakdown {
   // Convert percentages to decimals
-  const floristMargin = floristMarginPercent / 100;
-  const orgMargin = orgMarginPercent / 100;
+  const orgProfit = orgProfitPercent / 100;
   const platformFee = platformFeePercent / 100;
   const processingFee = processingFeePercent / 100;
 
-  // Calculate the base amount that needs to be covered
-  const baseAmount = baseCost * (1 + floristMargin + orgMargin);
+  // Total percentage taken from retail (org + platform + processing)
+  const totalPercentages = orgProfit + platformFee + processingFee;
 
-  // Calculate retail price that covers all fees
-  // Retail - (Retail * platformFee) - (Retail * processingFee) = baseAmount
-  // Retail * (1 - platformFee - processingFee) = baseAmount
-  const suggestedRetailPrice = baseAmount / (1 - platformFee - processingFee);
+  // Ensure we don't divide by zero or negative
+  if (totalPercentages >= 1) {
+    // Invalid: percentages exceed 100%
+    return {
+      floristPrice,
+      orgProfitPercent,
+      platformFeePercent,
+      processingFeePercent,
+      orgProfit: 0,
+      platformFee: 0,
+      processingFee: 0,
+      suggestedRetailPrice: floristPrice,
+      minimumRetailPrice: floristPrice,
+    };
+  }
+
+  // Calculate retail price: Florist Price / (1 - all percentages)
+  const suggestedRetailPrice = floristPrice / (1 - totalPercentages);
 
   // Calculate individual components at the suggested price
-  const floristRevenue = baseCost * floristMargin;
-  const orgRevenue = baseCost * orgMargin;
+  const orgProfitAmount = suggestedRetailPrice * orgProfit;
   const platformFeeAmount = suggestedRetailPrice * platformFee;
   const processingFeeAmount = suggestedRetailPrice * processingFee;
 
-  // Minimum retail price is just above cost to prevent losses
-  const minimumRetailPrice = baseCost / (1 - platformFee - processingFee);
+  // Minimum retail price is florist price plus fees (0% org profit)
+  const minimumRetailPrice = floristPrice / (1 - platformFee - processingFee);
 
   return {
-    baseCost,
-    floristMarginPercent,
-    orgMarginPercent,
+    floristPrice,
+    orgProfitPercent,
     platformFeePercent,
     processingFeePercent,
-    floristRevenue: roundToTwoDecimals(floristRevenue),
-    orgRevenue: roundToTwoDecimals(orgRevenue),
+    orgProfit: roundToTwoDecimals(orgProfitAmount),
     platformFee: roundToTwoDecimals(platformFeeAmount),
     processingFee: roundToTwoDecimals(processingFeeAmount),
     suggestedRetailPrice: roundToTwoDecimals(suggestedRetailPrice),
@@ -85,35 +91,32 @@ export function calculatePricing(
 
 /**
  * Calculate actual revenue breakdown for a given retail price
+ * Used when org sets a custom retail price
  */
 export function calculateRevenueAtPrice(
-  baseCost: number,
+  floristPrice: number,
   retailPrice: number,
   platformFeePercent: number = 10,
   processingFeePercent: number = 3
 ): {
-  floristRevenue: number;
-  orgRevenue: number;
+  floristReceives: number;
+  orgProfit: number;
   platformFee: number;
   processingFee: number;
-  totalMargin: number;
   isProfitable: boolean;
 } {
   const platformFee = retailPrice * (platformFeePercent / 100);
   const processingFee = retailPrice * (processingFeePercent / 100);
-  const availableForMargins = retailPrice - baseCost - platformFee - processingFee;
-
-  // Split available margin 60/40 between florist and org if positive
-  const floristRevenue = availableForMargins > 0 ? availableForMargins * 0.6 : 0;
-  const orgRevenue = availableForMargins > 0 ? availableForMargins * 0.4 : 0;
+  
+  // Org profit is whatever is left after florist, platform, and processing
+  const orgProfit = retailPrice - floristPrice - platformFee - processingFee;
 
   return {
-    floristRevenue: roundToTwoDecimals(floristRevenue),
-    orgRevenue: roundToTwoDecimals(orgRevenue),
+    floristReceives: roundToTwoDecimals(floristPrice),
+    orgProfit: roundToTwoDecimals(Math.max(0, orgProfit)),
     platformFee: roundToTwoDecimals(platformFee),
     processingFee: roundToTwoDecimals(processingFee),
-    totalMargin: roundToTwoDecimals(availableForMargins),
-    isProfitable: availableForMargins > 0,
+    isProfitable: orgProfit > 0,
   };
 }
 
@@ -136,9 +139,8 @@ export function calculateRevenueProjections(
 
     products.forEach((product) => {
       const breakdown = calculatePricing(
-        product.baseCost,
-        product.floristMarginPercent,
-        product.orgMarginPercent
+        product.floristPrice,
+        product.orgProfitPercent
       );
       
       // Use custom price or suggested price
@@ -147,8 +149,11 @@ export function calculateRevenueProjections(
         : breakdown.suggestedRetailPrice;
       
       totalRevenue += price * volume;
-      floristRevenue += breakdown.floristRevenue * volume;
-      orgRevenue += breakdown.orgRevenue * volume;
+      floristRevenue += product.floristPrice * volume;
+      
+      // Calculate org profit based on actual price
+      const revenueAtPrice = calculateRevenueAtPrice(product.floristPrice, price);
+      orgRevenue += revenueAtPrice.orgProfit * volume;
     });
 
     // Average across products
