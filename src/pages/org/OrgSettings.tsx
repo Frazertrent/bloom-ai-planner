@@ -10,12 +10,17 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Building2, Phone, MapPin, Bell, Mail, ShoppingCart, Calendar, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Building2, Phone, MapPin, Bell, Mail, ShoppingCart, Calendar, AlertTriangle, Info } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useBloomFundrAuth } from "@/contexts/BloomFundrAuthContext";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function OrgSettings() {
+  const { user } = useBloomFundrAuth();
+  const queryClient = useQueryClient();
   const { data: org, isLoading } = useOrgProfile();
   const { data: notifPrefs, isLoading: prefsLoading } = useNotificationPreferences();
   const updatePrefs = useUpdateNotificationPreferences();
@@ -61,20 +66,43 @@ export default function OrgSettings() {
   }, [notifPrefs]);
 
   const handleSaveOrgDetails = async () => {
-    if (!org?.id) return;
+    if (!user?.id) {
+      toast.error("You must be logged in to save organization details");
+      return;
+    }
 
     try {
-      const { error } = await supabase
-        .from("bf_organizations")
-        .update({
-          name: orgForm.name,
-          org_type: orgForm.org_type,
-          contact_phone: orgForm.contact_phone,
-          address: orgForm.address,
-        })
-        .eq("id", org.id);
+      if (org?.id) {
+        // UPDATE existing organization
+        const { error } = await supabase
+          .from("bf_organizations")
+          .update({
+            name: orgForm.name,
+            org_type: orgForm.org_type,
+            contact_phone: orgForm.contact_phone,
+            address: orgForm.address,
+          })
+          .eq("id", org.id);
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // CREATE new organization
+        const { error } = await supabase
+          .from("bf_organizations")
+          .insert({
+            user_id: user.id,
+            name: orgForm.name || "My Organization",
+            org_type: orgForm.org_type || "Other",
+            contact_phone: orgForm.contact_phone,
+            address: orgForm.address,
+          });
+
+        if (error) throw error;
+        
+        // Refresh org profile query
+        queryClient.invalidateQueries({ queryKey: ["org-profile"] });
+      }
+      
       toast.success("Organization details saved");
     } catch (error) {
       console.error("Error saving org details:", error);
@@ -125,6 +153,14 @@ export default function OrgSettings() {
               </div>
             ) : (
               <>
+                {!org?.id && (
+                  <Alert className="mb-4">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      Complete your organization details to get started with BloomFundr.
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="name">Organization Name</Label>
                   <Input 
