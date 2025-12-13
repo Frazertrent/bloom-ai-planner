@@ -15,11 +15,12 @@ import { useCampaignWizard } from "@/hooks/useCampaignWizard";
 import { supabase } from "@/integrations/supabase/client";
 import { BFCampaign } from "@/types/bloomfundr";
 
-const WIZARD_STEPS: Step[] = [
+// Base wizard steps - Step 4 name changes based on tracking mode
+const getWizardSteps = (trackingMode: string): Step[] => [
   { id: 1, name: "Basic Info" },
   { id: 2, name: "Products" },
   { id: 3, name: "Pricing" },
-  { id: 4, name: "Students" },
+  { id: 4, name: trackingMode === "none" ? "—" : trackingMode === "self_register" ? "Sellers" : "Sellers" },
   { id: 5, name: "Review" },
 ];
 
@@ -68,10 +69,14 @@ export default function CampaignWizard() {
         endDate: campaignData.end_date ? new Date(campaignData.end_date) : undefined,
         pickupDate: campaignData.pickup_date ? new Date(campaignData.pickup_date) : undefined,
         pickupLocation: campaignData.pickup_location || "",
+        trackingMode: (campaignData.tracking_mode as 'none' | 'individual' | 'self_register') || "individual",
       });
       setCampaignId(campaignData.id);
     }
   }, [campaignData]);
+
+  // Get tracking mode from wizard state or campaign data
+  const trackingMode = wizardState.trackingMode || campaignData?.tracking_mode || "individual";
 
   // Set initial step from URL
   useEffect(() => {
@@ -115,8 +120,14 @@ export default function CampaignWizard() {
   };
 
   const handleStep3Continue = () => {
-    nextStep();
-    navigate(`/org/campaigns/${campaignId}/edit?step=4`, { replace: true });
+    // Skip Step 4 if tracking mode is 'none' (no students needed)
+    if (trackingMode === "none") {
+      setCurrentStep(5);
+      navigate(`/org/campaigns/${campaignId}/edit?step=5`, { replace: true });
+    } else {
+      nextStep();
+      navigate(`/org/campaigns/${campaignId}/edit?step=4`, { replace: true });
+    }
   };
 
   const handleStep4Back = () => {
@@ -130,8 +141,14 @@ export default function CampaignWizard() {
   };
 
   const handleStep5Back = () => {
-    prevStep();
-    navigate(`/org/campaigns/${campaignId}/edit?step=4`, { replace: true });
+    // Go back to Step 3 if tracking mode is 'none' (Step 4 was skipped)
+    if (trackingMode === "none") {
+      setCurrentStep(3);
+      navigate(`/org/campaigns/${campaignId}/edit?step=3`, { replace: true });
+    } else {
+      prevStep();
+      navigate(`/org/campaigns/${campaignId}/edit?step=4`, { replace: true });
+    }
   };
 
   const handleEditStep = (step: number) => {
@@ -148,7 +165,10 @@ export default function CampaignWizard() {
       case 3:
         return "Set Pricing";
       case 4:
-        return "Add Students";
+        if (trackingMode === "self_register") {
+          return "Seller Registration";
+        }
+        return "Add Sellers";
       case 5:
         return "Review & Launch";
       default:
@@ -165,13 +185,19 @@ export default function CampaignWizard() {
       case 3:
         return "Configure pricing and margins for all parties";
       case 4:
-        return "Select which students will participate in this campaign";
+        if (trackingMode === "self_register") {
+          return "Share the registration link so sellers can sign up";
+        }
+        return "Select which sellers will participate in this campaign";
       case 5:
         return "Review all details before launching your campaign";
       default:
         return "";
     }
   };
+
+  // Get dynamic wizard steps based on tracking mode
+  const wizardSteps = getWizardSteps(trackingMode);
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -214,6 +240,7 @@ export default function CampaignWizard() {
         return campaignId ? (
           <Step4Students
             campaignId={campaignId}
+            trackingMode={trackingMode as 'none' | 'individual' | 'self_register'}
             onBack={handleStep4Back}
             onContinue={handleStep4Continue}
           />
@@ -265,7 +292,7 @@ export default function CampaignWizard() {
         <Card>
           <CardContent className="pt-6">
             <StepIndicator
-              steps={WIZARD_STEPS}
+              steps={wizardSteps}
               currentStep={currentStep}
               onStepClick={handleStepClick}
               allowNavigation={!!campaignId}

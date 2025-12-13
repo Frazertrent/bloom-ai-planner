@@ -7,14 +7,19 @@ import {
   UserPlus,
   Check,
   Link as LinkIcon,
+  Copy,
+  Share2,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
 import {
   Select,
   SelectContent,
@@ -37,14 +42,35 @@ import {
   useCampaignStudents,
 } from "@/hooks/useCampaignStudents";
 import { AddStudentDialog } from "@/components/bloomfundr/AddStudentDialog";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Step4StudentsProps {
   campaignId: string;
+  trackingMode: 'none' | 'individual' | 'self_register';
   onBack: () => void;
   onContinue: () => void;
 }
 
-export function Step4Students({ campaignId, onBack, onContinue }: Step4StudentsProps) {
+export function Step4Students({ campaignId, trackingMode, onBack, onContinue }: Step4StudentsProps) {
+  const { toast } = useToast();
+  
+  // Fetch campaign data for self-registration code
+  const { data: campaign } = useQuery({
+    queryKey: ["bf-campaign-for-step4", campaignId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bf_campaigns")
+        .select("self_register_code, name")
+        .eq("id", campaignId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: trackingMode === 'self_register',
+  });
+
+  // Only fetch students for 'individual' mode
   const { data: students, isLoading } = useOrgStudentsForCampaign();
   const { data: campaignStudents } = useCampaignStudents(campaignId);
   const saveStudents = useSaveCampaignStudents();
@@ -100,21 +126,25 @@ export function Step4Students({ campaignId, onBack, onContinue }: Step4StudentsP
     filteredStudents.every((s) => isStudentSelected(s.id));
 
   const handleSaveAndContinue = async () => {
-    await saveStudents.mutateAsync({
-      campaignId,
-      studentIds: selectedStudentIds,
-      existingStudentIds,
-    });
+    if (trackingMode === 'individual') {
+      await saveStudents.mutateAsync({
+        campaignId,
+        studentIds: selectedStudentIds,
+        existingStudentIds,
+      });
+    }
     onContinue();
   };
 
   const handleBack = async () => {
-    // Save current selections before going back
-    await saveStudents.mutateAsync({
-      campaignId,
-      studentIds: selectedStudentIds,
-      existingStudentIds,
-    });
+    // Save current selections before going back (only for individual mode)
+    if (trackingMode === 'individual' && selectedStudentIds.length > 0) {
+      await saveStudents.mutateAsync({
+        campaignId,
+        studentIds: selectedStudentIds,
+        existingStudentIds,
+      });
+    }
     onBack();
   };
 
@@ -139,6 +169,122 @@ export function Step4Students({ campaignId, onBack, onContinue }: Step4StudentsP
       });
   };
 
+  // Build self-registration URL
+  const selfRegisterUrl = campaign?.self_register_code 
+    ? `${window.location.origin}/join/${campaign.self_register_code}`
+    : null;
+
+  const handleCopyLink = async (url: string) => {
+    await navigator.clipboard.writeText(url);
+    toast({
+      title: "Link copied!",
+      description: "The link has been copied to your clipboard.",
+    });
+  };
+
+  const handleShare = async (url: string, title: string) => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title,
+          text: `Join our fundraiser: ${campaign?.name}`,
+          url: url,
+        });
+      } catch {
+        // User cancelled or share failed
+      }
+    } else {
+      handleCopyLink(url);
+    }
+  };
+
+  // Self-Registration Mode UI
+  if (trackingMode === 'self_register') {
+    return (
+      <div className="space-y-6 max-w-xl mx-auto">
+        <div className="text-center">
+          <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <UserPlus className="h-8 w-8 text-primary" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2">Self-Registration Enabled</h3>
+          <p className="text-muted-foreground">
+            Sellers can sign themselves up using the link below. They'll automatically get their unique selling links.
+          </p>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Registration Link</CardTitle>
+            <CardDescription>
+              Share this link with your group so sellers can sign up
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {selfRegisterUrl ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <Input
+                    readOnly
+                    value={selfRegisterUrl}
+                    className="font-mono text-sm"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleCopyLink(selfRegisterUrl)}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => handleShare(selfRegisterUrl, `Join ${campaign?.name}`)}
+                  >
+                    <Share2 className="mr-2 h-4 w-4" />
+                    Share Link
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => window.open(selfRegisterUrl, '_blank')}
+                  >
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Preview
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                Loading registration link...
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Alert>
+          <Users className="h-4 w-4" />
+          <AlertDescription>
+            Once sellers register, you'll be able to see them and their sales on the campaign detail page after launch.
+          </AlertDescription>
+        </Alert>
+
+        <div className="flex flex-col gap-2 pt-4">
+          <Button onClick={handleSaveAndContinue}>
+            Continue to Review
+          </Button>
+          <Button variant="outline" onClick={handleBack}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Pricing
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Individual Mode - Student Selection UI
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -151,18 +297,21 @@ export function Step4Students({ campaignId, onBack, onContinue }: Step4StudentsP
     return (
       <div className="text-center py-12">
         <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <h3 className="text-lg font-medium mb-2">No Students Added</h3>
+        <h3 className="text-lg font-medium mb-2">No Sellers Added Yet</h3>
         <p className="text-muted-foreground mb-4">
-          Add students to your organization first.
+          Add sellers to your organization, or you can skip this step and add them later.
         </p>
-        <div className="flex justify-center gap-3">
+        <div className="flex flex-col sm:flex-row justify-center gap-3">
           <Button variant="outline" onClick={onBack}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Go Back
           </Button>
-          <Button onClick={() => setShowAddDialog(true)}>
+          <Button variant="outline" onClick={() => setShowAddDialog(true)}>
             <UserPlus className="mr-2 h-4 w-4" />
-            Add Student
+            Add Seller
+          </Button>
+          <Button onClick={onContinue}>
+            Skip for Now
           </Button>
         </div>
         <AddStudentDialog open={showAddDialog} onOpenChange={setShowAddDialog} />
@@ -179,7 +328,7 @@ export function Step4Students({ campaignId, onBack, onContinue }: Step4StudentsP
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search students..."
+              placeholder="Search sellers..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -200,7 +349,7 @@ export function Step4Students({ campaignId, onBack, onContinue }: Step4StudentsP
           </Select>
           <Button variant="outline" onClick={() => setShowAddDialog(true)}>
             <UserPlus className="mr-2 h-4 w-4" />
-            Add Student
+            Add Seller
           </Button>
         </div>
 
@@ -259,7 +408,7 @@ export function Step4Students({ campaignId, onBack, onContinue }: Step4StudentsP
 
         {filteredStudents.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
-            No students match your search.
+            No sellers match your search.
           </div>
         )}
       </div>
@@ -270,13 +419,13 @@ export function Step4Students({ campaignId, onBack, onContinue }: Step4StudentsP
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <Users className="h-5 w-5" />
-              Selected Students
+              Selected Sellers
             </CardTitle>
           </CardHeader>
           <CardContent>
             {selectedStudentIds.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Click on students to add them to this campaign.
+                Click on sellers to add them to this campaign.
               </p>
             ) : (
               <>
@@ -330,13 +479,13 @@ export function Step4Students({ campaignId, onBack, onContinue }: Step4StudentsP
             <div className="space-y-2">
               <Button
                 className="w-full"
-                disabled={selectedStudentIds.length === 0 || saveStudents.isPending}
+                disabled={saveStudents.isPending}
                 onClick={handleSaveAndContinue}
               >
                 {saveStudents.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Review Campaign
+                {selectedStudentIds.length === 0 ? "Skip for Now" : "Review Campaign"}
               </Button>
               <Button
                 variant="outline"
