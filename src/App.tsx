@@ -69,6 +69,7 @@ const DashboardRedirect = lazy(() => import("./components/bloomfundr/DashboardRe
 // Lazy loaded Public Order pages
 const OrderPage = lazy(() => import("./pages/order/OrderPage"));
 const CheckoutPage = lazy(() => import("./pages/order/CheckoutPage"));
+const SellerJoinPage = lazy(() => import("./pages/order/SellerJoinPage"));
 
 const queryClient = new QueryClient();
 
@@ -421,6 +422,13 @@ const AppContent = () => (
     <Route path="/order/:magicLinkCode/checkout" element={
       <Suspense fallback={<PageFallback />}>
         <CheckoutPage />
+      </Suspense>
+    } />
+    
+    {/* Seller Self-Registration Route */}
+    <Route path="/join/:code" element={
+      <Suspense fallback={<PageFallback />}>
+        <SellerJoinPage />
       </Suspense>
     } />
     
