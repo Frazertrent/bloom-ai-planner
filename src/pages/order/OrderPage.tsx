@@ -59,27 +59,52 @@ export default function OrderPage() {
     );
   }
 
-  const { campaign, organization, student, products, isActive, isExpired } = data;
+  const { campaign, organization, student, products, isActive, isExpired, isNotStarted } = data;
 
-  // Show expired/inactive message
-  if (isExpired || !isActive) {
+  // Common header component for non-active states
+  const CampaignHeader = () => (
+    <header className="bg-card border-b border-border">
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <Flower className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="font-bold text-lg">{organization.name} Fundraiser</h1>
+            <p className="text-sm text-muted-foreground">Supporting: {student.name}</p>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+
+  // Show "coming soon" message for campaigns that haven't started
+  if (isNotStarted) {
     return (
       <div className="min-h-screen bg-background">
-        {/* Header */}
-        <header className="bg-card border-b border-border">
-          <div className="max-w-6xl mx-auto px-4 py-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Flower className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="font-bold text-lg">{organization.name} Fundraiser</h1>
-                <p className="text-sm text-muted-foreground">Supporting: {student.name}</p>
-              </div>
-            </div>
+        <CampaignHeader />
+        <div className="flex items-center justify-center py-24">
+          <div className="text-center max-w-md px-4">
+            <Calendar className="h-16 w-16 mx-auto mb-4 text-primary" />
+            <h2 className="text-2xl font-bold mb-2">Campaign Coming Soon</h2>
+            <p className="text-muted-foreground mb-6">
+              This fundraiser opens on {format(new Date(campaign.start_date), "MMMM d, yyyy")}.
+              Check back then to place your order!
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Supporting {student.name} from {organization.name}
+            </p>
           </div>
-        </header>
+        </div>
+      </div>
+    );
+  }
 
+  // Show expired message
+  if (isExpired) {
+    return (
+      <div className="min-h-screen bg-background">
+        <CampaignHeader />
         <div className="flex items-center justify-center py-24">
           <div className="text-center max-w-md px-4">
             <Clock className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
@@ -90,6 +115,25 @@ export default function OrderPage() {
             </p>
             <p className="text-sm text-muted-foreground">
               For questions, please contact the organization directly.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show "not active" message for other non-active states
+  if (!isActive) {
+    return (
+      <div className="min-h-screen bg-background">
+        <CampaignHeader />
+        <div className="flex items-center justify-center py-24">
+          <div className="text-center max-w-md px-4">
+            <AlertCircle className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+            <h2 className="text-2xl font-bold mb-2">Campaign Not Available</h2>
+            <p className="text-muted-foreground mb-6">
+              This fundraiser is not currently accepting orders.
+              Please contact {organization.name} for more information.
             </p>
           </div>
         </div>
