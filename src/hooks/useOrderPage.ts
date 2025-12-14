@@ -21,6 +21,7 @@ export interface OrderPageData {
   products: BFCampaignProductWithProduct[];
   isActive: boolean;
   isExpired: boolean;
+  isNotStarted: boolean;
 }
 
 export function useOrderPageData(magicLinkCode: string | undefined) {
@@ -108,14 +109,19 @@ export function useOrderPageData(magicLinkCode: string | undefined) {
         return null;
       }
 
-      // Check if campaign is active
+      // Check campaign state
       const now = new Date();
       const endDate = new Date(campaign.end_date);
       const startDate = new Date(campaign.start_date);
       
-      const isActive = campaign.status === "active";
-      const isExpired = now > endDate || campaign.status === "closed" || campaign.status === "fulfilled" || campaign.status === "completed";
       const hasStarted = now >= startDate;
+      const isPastEndDate = now > endDate;
+      const isTerminalStatus = ["closed", "fulfilled", "completed", "cancelled"].includes(campaign.status);
+      
+      // Campaign is active if status is active/draft, has started, not past end, not terminal
+      const isActive = ["active", "draft"].includes(campaign.status) && hasStarted && !isPastEndDate && !isTerminalStatus;
+      const isExpired = isPastEndDate || isTerminalStatus;
+      const isNotStarted = !hasStarted && !isTerminalStatus;
 
       // Transform products
       const products: BFCampaignProductWithProduct[] = (campaignProducts || []).map((cp: any) => ({
@@ -140,8 +146,9 @@ export function useOrderPageData(magicLinkCode: string | undefined) {
         organization: organization as BFOrganization,
         student: student as BFStudent,
         products,
-        isActive: isActive && hasStarted && !isExpired,
+        isActive,
         isExpired,
+        isNotStarted,
       };
     },
     enabled: !!magicLinkCode,
