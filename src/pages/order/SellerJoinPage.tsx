@@ -214,7 +214,7 @@ export default function SellerJoinPage() {
   }
 
   // Campaign not accepting registrations
-  if (!campaign.self_registration_open || campaign.status !== "active") {
+  if (!campaign.self_registration_open || !["draft", "active"].includes(campaign.status)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10 p-4">
         <Card className="max-w-md w-full">
