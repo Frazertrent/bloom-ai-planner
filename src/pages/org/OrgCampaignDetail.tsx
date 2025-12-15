@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -25,11 +26,15 @@ import { CampaignPaymentsTab } from "@/components/bloomfundr/CampaignPaymentsTab
 import { PayoutBreakdownCard } from "@/components/bloomfundr/PayoutBreakdownCard";
 import { PayoutStatusCard } from "@/components/bloomfundr/PayoutStatusCard";
 import { PayoutDetailSheet } from "@/components/bloomfundr/PayoutDetailSheet";
+import { OrderFulfillmentBadge } from "@/components/bloomfundr/OrderFulfillmentBadge";
+import { FulfillmentProgressCard } from "@/components/bloomfundr/FulfillmentProgressCard";
 import { useOrgCampaignAnalytics, useOrgCampaignRealtime } from "@/hooks/useOrgCampaignAnalytics";
 import { useCampaignPayouts, useCreatePayouts } from "@/hooks/useCampaignPayouts";
+import { useUpdateOrderStatus, useBulkUpdateOrderStatus } from "@/hooks/useFloristOrders";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { FulfillmentStatus } from "@/types/bloomfundr";
 import {
   ArrowLeft,
   Calendar,
@@ -49,6 +54,7 @@ import {
   ExternalLink,
   Bell,
   Wallet,
+  Package,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -71,10 +77,13 @@ export default function OrgCampaignDetail() {
   const [showLinksModal, setShowLinksModal] = useState(false);
   const [showPayoutDetail, setShowPayoutDetail] = useState(false);
   const [showAllStudents, setShowAllStudents] = useState(false);
+  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
 
   const { data: analytics, isLoading, refetch } = useOrgCampaignAnalytics(id);
   const { data: payoutData, isLoading: payoutsLoading } = useCampaignPayouts(id);
   const createPayouts = useCreatePayouts();
+  const updateOrderStatus = useUpdateOrderStatus();
+  const bulkUpdateOrderStatus = useBulkUpdateOrderStatus();
 
   // Real-time updates
   const handleRealtimeUpdate = useCallback(() => {
@@ -82,6 +91,39 @@ export default function OrgCampaignDetail() {
   }, [refetch]);
 
   useOrgCampaignRealtime(id, handleRealtimeUpdate);
+
+  // Helper functions for order selection
+  const readyOrders = analytics?.orders.filter(o => o.fulfillmentStatus === "ready") || [];
+  const allReadySelected = readyOrders.length > 0 && readyOrders.every(o => selectedOrders.includes(o.id));
+  const someReadySelected = readyOrders.some(o => selectedOrders.includes(o.id));
+  const allOrdersPickedUp = analytics?.stats.fulfillmentBreakdown.picked_up === analytics?.stats.totalOrders && (analytics?.stats.totalOrders || 0) > 0;
+
+  const toggleOrderSelection = (orderId: string) => {
+    setSelectedOrders(prev => 
+      prev.includes(orderId) 
+        ? prev.filter(id => id !== orderId) 
+        : [...prev, orderId]
+    );
+  };
+
+  const toggleAllReadyOrders = () => {
+    if (allReadySelected) {
+      setSelectedOrders([]);
+    } else {
+      setSelectedOrders(readyOrders.map(o => o.id));
+    }
+  };
+
+  const handleMarkPickedUp = (orderId: string) => {
+    updateOrderStatus.mutate({ orderId, status: "picked_up" });
+    setSelectedOrders(prev => prev.filter(id => id !== orderId));
+  };
+
+  const handleBulkMarkPickedUp = () => {
+    if (selectedOrders.length === 0) return;
+    bulkUpdateOrderStatus.mutate({ orderIds: selectedOrders, status: "picked_up" });
+    setSelectedOrders([]);
+  };
 
   // End campaign mutation
   const endCampaignMutation = useMutation({
@@ -283,6 +325,36 @@ export default function OrgCampaignDetail() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Fulfillment Progress - Only show for active or closed campaigns with orders */}
+        {(campaign.status === "active" || campaign.status === "closed") && stats.totalOrders > 0 && (
+          <FulfillmentProgressCard
+            breakdown={stats.fulfillmentBreakdown}
+            totalOrders={stats.totalOrders}
+          />
+        )}
+
+        {/* Prompt to mark fulfilled when all orders are picked up */}
+        {campaign.status === "closed" && allOrdersPickedUp && (
+          <Card className="bg-emerald-500/5 border-emerald-500/20">
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-emerald-600" />
+                  <p className="text-sm font-medium">All orders have been picked up!</p>
+                </div>
+                <Button
+                  size="sm"
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                  onClick={() => markFulfilledMutation.mutate()}
+                  disabled={markFulfilledMutation.isPending}
+                >
+                  Mark Campaign as Fulfilled
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Charts Row */}
         <div className="grid gap-6 lg:grid-cols-2">
@@ -494,7 +566,28 @@ export default function OrgCampaignDetail() {
             <TabsTrigger value="links">Student Links</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="orders" className="mt-4">
+          <TabsContent value="orders" className="mt-4 space-y-4">
+            {/* Bulk Actions */}
+            {selectedOrders.length > 0 && (
+              <Card className="bg-muted/50 border-border">
+                <CardContent className="py-3">
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <p className="text-sm">
+                      <span className="font-medium">{selectedOrders.length}</span> order(s) selected
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={handleBulkMarkPickedUp}
+                      disabled={bulkUpdateOrderStatus.isPending}
+                    >
+                      <Package className="h-4 w-4 mr-2" />
+                      Mark Selected as Picked Up
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="bg-card border-border">
               <CardHeader>
                 <CardTitle>Recent Orders</CardTitle>
@@ -505,36 +598,58 @@ export default function OrgCampaignDetail() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-10">
+                          {readyOrders.length > 0 && (
+                            <Checkbox
+                              checked={allReadySelected}
+                              onCheckedChange={toggleAllReadyOrders}
+                              aria-label="Select all ready orders"
+                            />
+                          )}
+                        </TableHead>
                         <TableHead>Order #</TableHead>
                         <TableHead>Customer</TableHead>
                         <TableHead>Student</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Date</TableHead>
+                        <TableHead className="w-24">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {orders.slice(0, 10).map((order) => (
                         <TableRow key={order.id}>
+                          <TableCell>
+                            {order.fulfillmentStatus === "ready" && (
+                              <Checkbox
+                                checked={selectedOrders.includes(order.id)}
+                                onCheckedChange={() => toggleOrderSelection(order.id)}
+                                aria-label={`Select order ${order.orderNumber}`}
+                              />
+                            )}
+                          </TableCell>
                           <TableCell className="font-medium">{order.orderNumber}</TableCell>
                           <TableCell>{order.customerName}</TableCell>
                           <TableCell>{order.studentName || "—"}</TableCell>
                           <TableCell className="text-right">${order.total.toFixed(2)}</TableCell>
                           <TableCell>
-                            <span
-                              className={`text-xs px-2 py-1 rounded-full ${
-                                order.fulfillmentStatus === "fulfilled"
-                                  ? "bg-emerald-500/10 text-emerald-600"
-                                  : order.fulfillmentStatus === "pending"
-                                  ? "bg-amber-500/10 text-amber-600"
-                                  : "bg-muted text-muted-foreground"
-                              }`}
-                            >
-                              {order.fulfillmentStatus}
-                            </span>
+                            <OrderFulfillmentBadge status={order.fulfillmentStatus as FulfillmentStatus} />
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {format(new Date(order.createdAt), "MMM d, h:mm a")}
+                          </TableCell>
+                          <TableCell>
+                            {order.fulfillmentStatus === "ready" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleMarkPickedUp(order.id)}
+                                disabled={updateOrderStatus.isPending}
+                              >
+                                <Package className="h-4 w-4 mr-1" />
+                                Pickup
+                              </Button>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}

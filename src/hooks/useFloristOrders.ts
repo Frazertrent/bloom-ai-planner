@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useFloristProfile } from "@/hooks/useFloristData";
 import { toast } from "sonner";
+import { notifyOrgOrdersReady } from "@/lib/notifications";
 import type { 
   BFOrderWithRelations, 
   BFCampaign, 
@@ -155,14 +156,17 @@ export function useFloristOrderDetail(orderId: string | undefined) {
 
 export function useUpdateOrderStatus() {
   const queryClient = useQueryClient();
+  const { data: florist } = useFloristProfile();
 
   return useMutation({
     mutationFn: async ({ 
       orderId, 
-      status 
+      status,
+      campaignId,
     }: { 
       orderId: string; 
       status: FulfillmentStatus;
+      campaignId?: string;
     }) => {
       const { error } = await supabase
         .from("bf_orders")
@@ -170,12 +174,71 @@ export function useUpdateOrderStatus() {
         .eq("id", orderId);
 
       if (error) throw error;
+
+      // If marking as ready, check if all orders for this campaign are now ready and send notification
+      if (status === "ready" && campaignId) {
+        // Get campaign details for notification
+        const { data: campaign } = await supabase
+          .from("bf_campaigns")
+          .select("id, name, organization_id")
+          .eq("id", campaignId)
+          .single();
+
+        if (campaign) {
+          // Count how many orders are now ready for this campaign
+          const { count: readyCount } = await supabase
+            .from("bf_orders")
+            .select("*", { count: "exact", head: true })
+            .eq("campaign_id", campaignId)
+            .eq("payment_status", "paid")
+            .eq("fulfillment_status", "ready");
+
+          // Notify org about orders ready
+          await notifyOrgOrdersReady({
+            organizationId: campaign.organization_id,
+            campaignId: campaign.id,
+            campaignName: campaign.name,
+            floristName: florist?.business_name || "Florist",
+            orderCount: readyCount || 1,
+          });
+
+          // Check if ALL orders are now ready or picked up
+          const { count: totalPaidOrders } = await supabase
+            .from("bf_orders")
+            .select("*", { count: "exact", head: true })
+            .eq("campaign_id", campaignId)
+            .eq("payment_status", "paid");
+
+          const { count: completedOrders } = await supabase
+            .from("bf_orders")
+            .select("*", { count: "exact", head: true })
+            .eq("campaign_id", campaignId)
+            .eq("payment_status", "paid")
+            .in("fulfillment_status", ["ready", "picked_up"]);
+
+          if (totalPaidOrders && completedOrders && totalPaidOrders === completedOrders) {
+            return { orderId, status, campaignId, allOrdersReady: true, campaignName: campaign.name };
+          }
+        }
+      }
+
+      return { orderId, status, campaignId, allOrdersReady: false };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["florist-orders-list"] });
       queryClient.invalidateQueries({ queryKey: ["florist-order-detail"] });
       queryClient.invalidateQueries({ queryKey: ["florist-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["org-campaign-analytics"] });
       toast.success("Order status updated");
+
+      // Show special toast if all orders are ready
+      if (result?.allOrdersReady && result?.campaignName) {
+        setTimeout(() => {
+          toast.success(`All orders for ${result.campaignName} are now ready for pickup!`, {
+            duration: 5000,
+          });
+        }, 500);
+      }
     },
     onError: (error) => {
       console.error("Error updating order status:", error);
@@ -201,11 +264,14 @@ export function useBulkUpdateOrderStatus() {
         .in("id", orderIds);
 
       if (error) throw error;
+
+      return { orderIds, status };
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["florist-orders-list"] });
       queryClient.invalidateQueries({ queryKey: ["florist-order-detail"] });
       queryClient.invalidateQueries({ queryKey: ["florist-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["org-campaign-analytics"] });
       toast.success(`${variables.orderIds.length} orders updated`);
     },
     onError: (error) => {
