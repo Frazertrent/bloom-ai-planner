@@ -47,17 +47,17 @@ export default function FloristOrderDetail() {
 
   const handleMarkInProduction = () => {
     if (!id) return;
-    updateStatus.mutate({ orderId: id, status: "in_production" });
+    updateStatus.mutate({ orderId: id, status: "in_production", campaignId: order?.campaign_id });
   };
 
   const handleMarkReady = () => {
     if (!id) return;
-    updateStatus.mutate({ orderId: id, status: "ready" });
+    updateStatus.mutate({ orderId: id, status: "ready", campaignId: order?.campaign_id });
   };
 
   const handleMarkPickedUp = () => {
     if (!id) return;
-    updateStatus.mutate({ orderId: id, status: "picked_up" });
+    updateStatus.mutate({ orderId: id, status: "picked_up", campaignId: order?.campaign_id });
   };
 
   if (isLoading) {

@@ -3,6 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import type { BFCampaign, BFFlorist, CampaignStatus } from "@/types/bloomfundr";
 
+export interface FulfillmentBreakdown {
+  pending: number;
+  in_production: number;
+  ready: number;
+  picked_up: number;
+}
+
 export interface CampaignAnalytics {
   campaign: BFCampaign;
   florist: BFFlorist | null;
@@ -13,6 +20,7 @@ export interface CampaignAnalytics {
     avgOrderValue: number;
     paidOrders: number;
     pendingOrders: number;
+    fulfillmentBreakdown: FulfillmentBreakdown;
   };
   products: Array<{
     id: string;
@@ -156,6 +164,14 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
       const paidOrders = (allOrdersData || []).filter(o => o.payment_status === "paid").length;
       const pendingOrders = (allOrdersData || []).filter(o => o.payment_status === "pending").length;
 
+      // Calculate fulfillment breakdown (only for paid orders)
+      const fulfillmentBreakdown: FulfillmentBreakdown = {
+        pending: orders.filter(o => o.fulfillment_status === "pending").length,
+        in_production: orders.filter(o => o.fulfillment_status === "in_production").length,
+        ready: orders.filter(o => o.fulfillment_status === "ready").length,
+        picked_up: orders.filter(o => o.fulfillment_status === "picked_up").length,
+      };
+
       // Transform products
       const products = (campaignProducts || []).map(cp => ({
         id: cp.product_id,
@@ -224,6 +240,7 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
           avgOrderValue,
           paidOrders,
           pendingOrders,
+          fulfillmentBreakdown,
         },
         products,
         students,

@@ -178,3 +178,24 @@ export async function notifyFloristFulfillmentReminder(params: {
     linkUrl: `/florist/campaigns/${campaignId}`,
   });
 }
+
+/**
+ * Notifies organization that orders are ready for pickup
+ */
+export async function notifyOrgOrdersReady(params: {
+  organizationId: string;
+  campaignId: string;
+  campaignName: string;
+  floristName: string;
+  orderCount: number;
+}) {
+  const { organizationId, campaignId, campaignName, floristName, orderCount } = params;
+
+  await createOrgNotification({
+    organizationId,
+    title: `Orders Ready: ${campaignName}`,
+    message: `${orderCount} order(s) are ready for pickup from ${floristName}!`,
+    notificationType: "success",
+    linkUrl: `/org/campaigns/${campaignId}`,
+  });
+}
