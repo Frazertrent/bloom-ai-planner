@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import { useOrder } from "@/contexts/OrderContext";
 import { useOrderPageData } from "@/hooks/useOrderPage";
 import { useCreateOrder } from "@/hooks/useCreateOrder";
 import { checkoutFormSchema, CheckoutFormData } from "@/lib/checkoutValidation";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -43,6 +46,29 @@ export default function CheckoutPage() {
     orderId: string;
     orderNumber: string;
   } | null>(null);
+  const [paymentSimulated, setPaymentSimulated] = useState(false);
+
+  // Simulate payment mutation (test mode - replaces Stripe)
+  const simulatePaymentMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const { error } = await supabase
+        .from("bf_orders")
+        .update({ 
+          payment_status: "paid",
+          paid_at: new Date().toISOString()
+        })
+        .eq("id", orderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setPaymentSimulated(true);
+      toast.success("Payment simulated successfully!");
+    },
+    onError: (error) => {
+      console.error("Payment simulation error:", error);
+      toast.error("Failed to simulate payment");
+    },
+  });
 
   const {
     register,
@@ -155,22 +181,51 @@ export default function CheckoutPage() {
                 
                 <Separator className="my-4" />
                 
-                <div className="space-y-2 text-sm">
-                  <p className="text-muted-foreground">
-                    Please save this order number for your records. You will receive a 
-                    confirmation email with payment instructions.
-                  </p>
-                  <p className="text-muted-foreground">
-                    <strong>Next step:</strong> Complete payment to confirm your order.
-                  </p>
-                </div>
+                {paymentSimulated ? (
+                  <div className="text-center space-y-2">
+                    <div className="flex items-center justify-center gap-2 text-emerald-600">
+                      <CheckCircle className="h-5 w-5" />
+                      <span className="font-medium">Payment Complete!</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Your order is confirmed and will be ready for pickup.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 text-sm">
+                    <p className="text-muted-foreground">
+                      Please save this order number for your records.
+                    </p>
+                    <p className="text-muted-foreground">
+                      <strong>Next step:</strong> Complete payment to confirm your order.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
             <div className="space-y-3">
-              <Button size="lg" className="w-full sm:w-auto">
-                Continue to Payment
-              </Button>
+              {!paymentSimulated ? (
+                <Button 
+                  size="lg" 
+                  className="w-full sm:w-auto"
+                  onClick={() => simulatePaymentMutation.mutate(orderCreated.orderId)}
+                  disabled={simulatePaymentMutation.isPending}
+                >
+                  {simulatePaymentMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Simulate Payment (Test Mode)"
+                  )}
+                </Button>
+              ) : (
+                <p className="text-xs text-muted-foreground text-center px-4 py-2 bg-amber-50 border border-amber-200 rounded-md">
+                  Test Mode: In production, this will integrate with Stripe for secure payment processing.
+                </p>
+              )}
               <div>
                 <Button variant="outline" asChild>
                   <Link to={`/order/${magicLinkCode}`}>

@@ -94,7 +94,26 @@ export function useCreateOrder() {
 
       if (itemsError) throw itemsError;
 
-      // 4. Get campaign and student info for notifications
+      // 4. Update student stats (order_count and total_sales)
+      const { data: currentStudentStats } = await supabase
+        .from("bf_campaign_students")
+        .select("order_count, total_sales")
+        .eq("campaign_id", campaignId)
+        .eq("student_id", studentId)
+        .single();
+
+      if (currentStudentStats) {
+        await supabase
+          .from("bf_campaign_students")
+          .update({
+            order_count: (currentStudentStats.order_count || 0) + 1,
+            total_sales: Number(currentStudentStats.total_sales || 0) + subtotal,
+          })
+          .eq("campaign_id", campaignId)
+          .eq("student_id", studentId);
+      }
+
+      // 5. Get campaign and student info for notifications
       const { data: campaign } = await supabase
         .from("bf_campaigns")
         .select("organization_id, florist_id, name")
