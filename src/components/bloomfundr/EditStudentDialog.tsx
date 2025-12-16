@@ -39,7 +39,12 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-const GRADES = ["Freshman", "Sophomore", "Junior", "Senior", "Other"];
+const GRADES = [
+  "Kindergarten", "1st Grade", "2nd Grade", "3rd Grade", "4th Grade", "5th Grade",
+  "6th Grade", "7th Grade", "8th Grade",
+  "Freshman", "Sophomore", "Junior", "Senior",
+  "College", "Adult", "Other"
+];
 
 interface EditStudentDialogProps {
   student: BFStudent | null;
@@ -150,7 +155,12 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
                         <SelectValue placeholder="Select grade" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent 
+                      className="max-h-[200px] z-[100]"
+                      position="popper"
+                      side="bottom"
+                      sideOffset={4}
+                    >
                       {GRADES.map((grade) => (
                         <SelectItem key={grade} value={grade}>
                           {grade}

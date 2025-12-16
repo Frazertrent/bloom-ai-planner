@@ -9,8 +9,8 @@ interface StudentWithSales extends BFStudent {
   order_count: number;
 }
 
-// Internal hook to get org for student operations
-function useOrgForStudents() {
+// Hook to get org for student operations
+export function useOrgForStudents() {
   const { user } = useBloomFundrAuth();
   
   return useQuery({

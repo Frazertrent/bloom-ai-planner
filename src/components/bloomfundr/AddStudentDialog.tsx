@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAddStudent } from "@/hooks/useOrgStudents";
+import { useAddStudent, useOrgForStudents } from "@/hooks/useOrgStudents";
 import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
@@ -38,7 +38,12 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-const GRADES = ["Freshman", "Sophomore", "Junior", "Senior", "Other"];
+const GRADES = [
+  "Kindergarten", "1st Grade", "2nd Grade", "3rd Grade", "4th Grade", "5th Grade",
+  "6th Grade", "7th Grade", "8th Grade",
+  "Freshman", "Sophomore", "Junior", "Senior",
+  "College", "Adult", "Other"
+];
 
 interface AddStudentDialogProps {
   open: boolean;
@@ -47,6 +52,7 @@ interface AddStudentDialogProps {
 
 export function AddStudentDialog({ open, onOpenChange }: AddStudentDialogProps) {
   const addStudent = useAddStudent();
+  const { data: org, isLoading: orgLoading } = useOrgForStudents();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -139,7 +145,12 @@ export function AddStudentDialog({ open, onOpenChange }: AddStudentDialogProps) 
                         <SelectValue placeholder="Select grade" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent 
+                      className="max-h-[200px] z-[100]"
+                      position="popper"
+                      side="bottom"
+                      sideOffset={4}
+                    >
                       {GRADES.map((grade) => (
                         <SelectItem key={grade} value={grade}>
                           {grade}
@@ -170,9 +181,13 @@ export function AddStudentDialog({ open, onOpenChange }: AddStudentDialogProps) 
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={addStudent.isPending}>
+              <Button 
+                type="submit" 
+                disabled={addStudent.isPending || orgLoading || !org}
+                className="min-h-[44px]"
+              >
                 {addStudent.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Add Seller
+                {orgLoading ? "Loading..." : "Add Seller"}
               </Button>
             </div>
           </form>
