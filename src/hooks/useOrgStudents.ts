@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useOrgProfile } from "@/hooks/useOrgData";
+import { useBloomFundrAuth } from "@/contexts/BloomFundrAuthContext";
 import { toast } from "sonner";
 import type { BFStudent } from "@/types/bloomfundr";
 
@@ -9,8 +9,33 @@ interface StudentWithSales extends BFStudent {
   order_count: number;
 }
 
+// Internal hook to get org for student operations
+function useOrgForStudents() {
+  const { user } = useBloomFundrAuth();
+  
+  return useQuery({
+    queryKey: ["bf-org-for-students", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase
+        .from("bf_organizations")
+        .select("id, name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      
+      if (error) {
+        console.error("Error fetching org:", error);
+        return null;
+      }
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+}
+
 export function useOrgStudentsList(search?: string, teamFilter?: string) {
-  const { data: org } = useOrgProfile();
+  const { data: org } = useOrgForStudents();
 
   return useQuery({
     queryKey: ["org-students-list", org?.id, search, teamFilter],
@@ -77,7 +102,7 @@ export function useOrgStudentsList(search?: string, teamFilter?: string) {
 }
 
 export function useTeamGroups() {
-  const { data: org } = useOrgProfile();
+  const { data: org } = useOrgForStudents();
 
   return useQuery({
     queryKey: ["org-team-groups", org?.id],
@@ -125,11 +150,13 @@ interface AddStudentData {
 
 export function useAddStudent() {
   const queryClient = useQueryClient();
-  const { data: org } = useOrgProfile();
+  const { data: org } = useOrgForStudents();
 
   return useMutation({
     mutationFn: async (data: AddStudentData) => {
-      if (!org?.id) throw new Error("Organization not found");
+      if (!org?.id) {
+        throw new Error("Please wait for your organization data to load, then try again.");
+      }
 
       const { error } = await supabase.from("bf_students").insert({
         organization_id: org.id,
@@ -147,12 +174,14 @@ export function useAddStudent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["org-students-list"] });
       queryClient.invalidateQueries({ queryKey: ["org-team-groups"] });
+      queryClient.invalidateQueries({ queryKey: ["org-students"] });
       queryClient.invalidateQueries({ queryKey: ["org-stats"] });
-      toast.success("Student added successfully");
+      queryClient.invalidateQueries({ queryKey: ["bf-org-students-for-campaign"] });
+      toast.success("Seller added successfully");
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error("Error adding student:", error);
-      toast.error("Failed to add student");
+      toast.error(error.message || "Failed to add seller");
     },
   });
 }
