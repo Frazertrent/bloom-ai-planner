@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -114,6 +115,23 @@ export function Step1BasicInfo({
       trackingMode: wizardState.trackingMode,
     },
   });
+
+  // Reset form when wizardState is populated from campaign data
+  useEffect(() => {
+    if (wizardState.name) {
+      form.reset({
+        name: wizardState.name,
+        description: wizardState.description,
+        eventOccasion: wizardState.eventOccasion,
+        startDate: wizardState.startDate,
+        endDate: wizardState.endDate,
+        pickupDate: wizardState.pickupDate,
+        pickupLocation: wizardState.pickupLocation,
+        floristId: wizardState.floristId,
+        trackingMode: wizardState.trackingMode,
+      });
+    }
+  }, [wizardState.name, wizardState.floristId, wizardState.startDate]);
 
   const handleSaveDraft = async () => {
     const values = form.getValues();
