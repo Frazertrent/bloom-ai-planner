@@ -19,7 +19,8 @@ import { CampaignStatusBadge } from "@/components/bloomfundr/CampaignStatusBadge
 import { supabase } from "@/integrations/supabase/client";
 import { useOrgProfile } from "@/hooks/useOrgData";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
-import { Calendar, Eye, Plus } from "lucide-react";
+import { useLaunchCampaign } from "@/hooks/useCampaignReview";
+import { Calendar, Eye, Plus, Rocket } from "lucide-react";
 import { format, isWithinInterval } from "date-fns";
 import type { BFCampaign, BFFlorist, CampaignStatus } from "@/types/bloomfundr";
 
@@ -41,6 +42,7 @@ export default function OrgCampaigns() {
   const dateRange = getDateRangeFilter("date");
 
   const { data: org } = useOrgProfile();
+  const launchCampaign = useLaunchCampaign();
 
   const { data: allCampaigns, isLoading } = useQuery({
     queryKey: ["org-campaigns-with-florists", org?.id, activeTab],
@@ -236,12 +238,28 @@ export default function OrgCampaigns() {
                           ${campaign.total_revenue.toFixed(2)}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link to={`/org/campaigns/${campaign.id}`}>
-                              <Eye className="h-4 w-4 mr-1" />
-                              View
-                            </Link>
-                          </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            {campaign.status === "draft" && (
+                              <Button 
+                                size="sm" 
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  launchCampaign.mutate(campaign.id);
+                                }}
+                                disabled={launchCampaign.isPending}
+                                className="bg-emerald-600 hover:bg-emerald-700"
+                              >
+                                <Rocket className="h-3 w-3 mr-1" />
+                                Launch
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="sm" asChild>
+                              <Link to={`/org/campaigns/${campaign.id}`}>
+                                <Eye className="h-4 w-4 mr-1" />
+                                View
+                              </Link>
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

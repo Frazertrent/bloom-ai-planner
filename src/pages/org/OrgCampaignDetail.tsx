@@ -34,6 +34,8 @@ import { useUpdateOrderStatus, useBulkUpdateOrderStatus } from "@/hooks/useFlori
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useLaunchCampaign } from "@/hooks/useCampaignReview";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { FulfillmentStatus } from "@/types/bloomfundr";
 import {
   ArrowLeft,
@@ -55,6 +57,8 @@ import {
   Bell,
   Wallet,
   Package,
+  Rocket,
+  AlertCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -84,6 +88,7 @@ export default function OrgCampaignDetail() {
   const createPayouts = useCreatePayouts();
   const updateOrderStatus = useUpdateOrderStatus();
   const bulkUpdateOrderStatus = useBulkUpdateOrderStatus();
+  const launchCampaign = useLaunchCampaign();
 
   // Real-time updates
   const handleRealtimeUpdate = useCallback(() => {
@@ -248,12 +253,22 @@ export default function OrgCampaignDetail() {
           </div>
           <div className="flex gap-2 flex-wrap">
             {campaign.status === "draft" && (
-              <Button variant="outline" asChild>
-                <Link to={`/org/campaigns/${id}/edit`}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Edit
-                </Link>
-              </Button>
+              <>
+                <Button 
+                  onClick={() => launchCampaign.mutate(id!)}
+                  disabled={launchCampaign.isPending}
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                >
+                  <Rocket className="h-4 w-4 mr-2" />
+                  {launchCampaign.isPending ? "Launching..." : "Launch Campaign"}
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to={`/org/campaigns/${id}/edit`}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit
+                  </Link>
+                </Button>
+              </>
             )}
             {(campaign.status === "active" || campaign.status === "closed") && (
               <Button variant="outline" asChild>
@@ -269,6 +284,26 @@ export default function OrgCampaignDetail() {
             </Button>
           </div>
         </div>
+
+        {/* Draft Campaign Alert */}
+        {campaign.status === "draft" && (
+          <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-800 dark:text-amber-200">Campaign Not Launched</AlertTitle>
+            <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-2 text-amber-700 dark:text-amber-300">
+              <span>Your campaign is still in draft mode. Launch it to notify your florist partner!</span>
+              <Button 
+                size="sm" 
+                onClick={() => launchCampaign.mutate(id!)}
+                disabled={launchCampaign.isPending}
+                className="bg-emerald-600 hover:bg-emerald-700 w-fit"
+              >
+                <Rocket className="h-3 w-3 mr-1" />
+                Launch Now
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
