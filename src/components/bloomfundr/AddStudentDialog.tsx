@@ -60,15 +60,20 @@ export function AddStudentDialog({ open, onOpenChange }: AddStudentDialogProps) 
   });
 
   const onSubmit = async (data: FormData) => {
-    await addStudent.mutateAsync({
-      name: data.name,
-      email: data.email || undefined,
-      phone: data.phone || undefined,
-      grade: data.grade || undefined,
-      team_group: data.team_group || undefined,
-    });
-    form.reset();
-    onOpenChange(false);
+    try {
+      await addStudent.mutateAsync({
+        name: data.name,
+        email: data.email || undefined,
+        phone: data.phone || undefined,
+        grade: data.grade || undefined,
+        team_group: data.team_group || undefined,
+      });
+      form.reset();
+      onOpenChange(false);
+    } catch (error) {
+      // Error is already handled by mutation's onError, but catch to prevent unhandled rejection
+      console.error("Submit error:", error);
+    }
   };
 
   return (
