@@ -132,12 +132,23 @@ export function useTeamGroups() {
 }
 
 function generateUniqueCode(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  // Use lowercase to match existing codes in database
+  const chars = "abcdefghjkmnpqrstuvwxyz23456789";
   let code = "";
   for (let i = 0; i < 8; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return code;
+}
+
+// Helper to check if error is a network error
+function isNetworkError(error: unknown): boolean {
+  if (error instanceof Error) {
+    return error.message.includes("Load failed") || 
+           error.message.includes("NetworkError") ||
+           error.message.includes("Failed to fetch");
+  }
+  return false;
 }
 
 interface AddStudentData {
@@ -148,6 +159,35 @@ interface AddStudentData {
   team_group?: string;
 }
 
+async function insertStudentWithRetry(
+  orgId: string, 
+  data: AddStudentData, 
+  retries = 1
+): Promise<void> {
+  const studentData = {
+    organization_id: orgId,
+    name: data.name.trim(),
+    email: data.email?.trim() || null,
+    phone: data.phone?.trim() || null,
+    grade: data.grade || null,
+    team_group: data.team_group?.trim() || null,
+    unique_code: generateUniqueCode(),
+    is_active: true,
+  };
+
+  try {
+    const { error } = await supabase.from("bf_students").insert(studentData);
+    if (error) throw error;
+  } catch (error) {
+    if (isNetworkError(error) && retries > 0) {
+      // Wait a moment and retry once for network errors
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return insertStudentWithRetry(orgId, data, retries - 1);
+    }
+    throw error;
+  }
+}
+
 export function useAddStudent() {
   const queryClient = useQueryClient();
   const { data: org } = useOrgForStudents();
@@ -155,21 +195,10 @@ export function useAddStudent() {
   return useMutation({
     mutationFn: async (data: AddStudentData) => {
       if (!org?.id) {
-        throw new Error("Please wait for your organization data to load, then try again.");
+        throw new Error("Organization not loaded. Please wait and try again.");
       }
 
-      const { error } = await supabase.from("bf_students").insert({
-        organization_id: org.id,
-        name: data.name.trim(),
-        email: data.email?.trim() || null,
-        phone: data.phone?.trim() || null,
-        grade: data.grade || null,
-        team_group: data.team_group?.trim() || null,
-        unique_code: generateUniqueCode(),
-        is_active: true,
-      });
-
-      if (error) throw error;
+      await insertStudentWithRetry(org.id, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["org-students-list"] });
@@ -181,7 +210,11 @@ export function useAddStudent() {
     },
     onError: (error: Error) => {
       console.error("Error adding student:", error);
-      toast.error(error.message || "Failed to add seller");
+      if (isNetworkError(error)) {
+        toast.error("Network error - please check your connection and try again");
+      } else {
+        toast.error(error.message || "Failed to add seller");
+      }
     },
   });
 }
