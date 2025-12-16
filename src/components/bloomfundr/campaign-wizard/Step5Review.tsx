@@ -290,11 +290,19 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
                 )}
               </div>
               {students.length > 0 && (
-                <div className="bg-muted/50 p-3 rounded-lg">
-                  <p className="text-xs text-muted-foreground mb-1">Example Magic Link:</p>
-                  <code className="text-xs break-all">
-                    {window.location.origin}/shop/{students[0].magicLinkCode}
-                  </code>
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg text-center">
+                  <p className="text-sm font-medium mb-1">Each seller gets their own unique link to share</p>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Links are ready and will be available after launch
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowLinksModal(true)}
+                  >
+                    <LinkIcon className="mr-2 h-4 w-4" />
+                    Preview Seller Links
+                  </Button>
                 </div>
               )}
             </CardContent>
