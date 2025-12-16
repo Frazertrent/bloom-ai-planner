@@ -231,12 +231,12 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
         </Collapsible>
       </Card>
 
-      {/* Pricing Summary Section */}
+      {/* Your Estimated Earnings Section */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
-            Pricing Summary
+            Your Estimated Earnings
           </CardTitle>
           <Button variant="ghost" size="sm" onClick={() => onEditStep(3)}>
             <Edit className="h-4 w-4 mr-1" />
@@ -244,25 +244,14 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
-            <div className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-950/30">
-              <p className="text-sm text-muted-foreground">Florist Margin</p>
-              <p className="text-2xl font-bold text-emerald-600">{avgFloristMargin}%</p>
-            </div>
-            <div className="p-4 rounded-lg bg-rose-50 dark:bg-rose-950/30">
-              <p className="text-sm text-muted-foreground">Organization Margin</p>
-              <p className="text-2xl font-bold text-rose-600">{avgOrgMargin}%</p>
-            </div>
-            <div className="p-4 rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground">Platform Fee</p>
-              <p className="text-2xl font-bold">10%</p>
-            </div>
-            <div className="p-4 rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground">Est. Org Revenue (100 orders)</p>
-              <p className="text-2xl font-bold text-primary">
-                ${calculateEstimatedRevenue(100).org.toFixed(0)}
-              </p>
-            </div>
+          <div className="text-center py-6 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg">
+            <p className="text-sm text-muted-foreground mb-1">If you sell 100 orders:</p>
+            <p className="text-4xl font-bold text-emerald-600">
+              ${calculateEstimatedRevenue(100).org.toFixed(0)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Based on your {avgOrgMargin}% profit per sale
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -322,13 +311,8 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
               checked={agreedToTerms}
               onCheckedChange={(checked) => setAgreedToTerms(!!checked)}
             />
-            <label htmlFor="terms" className="text-sm cursor-pointer">
-              <span className="font-medium">I understand and agree to the pricing and revenue splits.</span>
-              <p className="text-muted-foreground mt-1">
-                By launching this campaign, I confirm that the florist will receive {avgFloristMargin}%
-                margin, our organization will receive {avgOrgMargin}% margin, and the platform fee is 10%.
-                Payment processing fees (~3%) will be deducted from the total.
-              </p>
+            <label htmlFor="terms" className="text-sm cursor-pointer font-medium">
+              I'm ready to launch this campaign and start fundraising.
             </label>
           </div>
         </CardContent>
