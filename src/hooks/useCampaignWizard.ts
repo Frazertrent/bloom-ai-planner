@@ -85,7 +85,8 @@ export function useSaveCampaignDraft() {
       // Generate unique codes based on tracking mode
       const generateCode = () => Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
       
-      const campaignData = {
+      // Base campaign data (without codes)
+      const baseCampaignData = {
         organization_id: organizationId,
         florist_id: data.floristId,
         name: data.name,
@@ -99,17 +100,14 @@ export function useSaveCampaignDraft() {
         organization_margin_percent: 20,
         platform_fee_percent: 10,
         tracking_mode: data.trackingMode,
-        // Generate codes based on tracking mode
-        campaign_link_code: data.trackingMode === 'none' ? generateCode() : null,
-        self_register_code: data.trackingMode === 'self_register' ? generateCode() : null,
         self_registration_open: data.trackingMode === 'self_register',
       };
 
       if (campaignId) {
-        // Update existing draft
+        // Update existing draft - DO NOT regenerate codes, just update other fields
         const { data: result, error } = await supabase
           .from("bf_campaigns")
-          .update(campaignData)
+          .update(baseCampaignData)
           .eq("id", campaignId)
           .select()
           .single();
@@ -117,7 +115,13 @@ export function useSaveCampaignDraft() {
         if (error) throw error;
         return result as BFCampaign;
       } else {
-        // Create new draft
+        // Create new draft - generate codes based on tracking mode
+        const campaignData = {
+          ...baseCampaignData,
+          campaign_link_code: data.trackingMode === 'none' ? generateCode() : null,
+          self_register_code: data.trackingMode === 'self_register' ? generateCode() : null,
+        };
+        
         const { data: result, error } = await supabase
           .from("bf_campaigns")
           .insert(campaignData)

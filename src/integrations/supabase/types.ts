@@ -155,6 +155,7 @@ export type Database = {
           created_at: string | null
           id: string
           max_quantity: number | null
+          org_profit_percent: number | null
           product_id: string
           retail_price: number
         }
@@ -163,6 +164,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           max_quantity?: number | null
+          org_profit_percent?: number | null
           product_id: string
           retail_price: number
         }
@@ -171,6 +173,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           max_quantity?: number | null
+          org_profit_percent?: number | null
           product_id?: string
           retail_price?: number
         }
