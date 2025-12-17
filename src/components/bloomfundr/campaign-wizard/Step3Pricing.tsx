@@ -45,6 +45,7 @@ import {
 
 interface Step3PricingProps {
   campaignId: string;
+  trackingMode: 'none' | 'individual' | 'self_register';
   onBack: () => void;
   onContinue: () => void;
 }
@@ -212,7 +213,7 @@ function ProductPricingCard({
   );
 }
 
-export function Step3Pricing({ campaignId, onBack, onContinue }: Step3PricingProps) {
+export function Step3Pricing({ campaignId, trackingMode, onBack, onContinue }: Step3PricingProps) {
   const { data: campaignProducts, isLoading } = useCampaignProductsWithDetails(campaignId);
   const savePricing = useSaveCampaignPricing();
   const {
@@ -391,7 +392,7 @@ export function Step3Pricing({ campaignId, onBack, onContinue }: Step3PricingPro
         </Button>
         <Button onClick={handleSaveAndContinue} disabled={savePricing.isPending}>
           {savePricing.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Continue to Students
+          {trackingMode === 'none' ? 'Continue to Review' : 'Continue to Sellers'}
         </Button>
       </div>
     </div>
