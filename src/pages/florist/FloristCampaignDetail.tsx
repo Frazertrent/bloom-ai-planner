@@ -60,12 +60,11 @@ export default function FloristCampaignDetail() {
         .select("*, product:bf_products(*)")
         .eq("campaign_id", id);
 
-      // Fetch orders for this campaign
+      // Fetch orders for this campaign (all orders, not filtered by payment status)
       const { data: orders } = await supabase
         .from("bf_orders")
         .select("*")
-        .eq("campaign_id", id)
-        .eq("payment_status", "paid");
+        .eq("campaign_id", id);
 
       return {
         ...campaignData,
