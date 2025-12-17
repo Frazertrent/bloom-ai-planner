@@ -39,8 +39,8 @@ import {
   ShoppingCart,
 } from "lucide-react";
 
-const customerFormSchema = z.object({
-  studentId: z.string().min(1, "Please select a student"),
+// Base schema without studentId - we'll add it conditionally
+const baseCustomerFormSchema = z.object({
   customerName: z.string().min(1, "Customer name is required"),
   customerEmail: z.string().email("Invalid email").optional().or(z.literal("")),
   customerPhone: z.string().min(10, "Phone number must be at least 10 digits"),
@@ -51,7 +51,17 @@ const customerFormSchema = z.object({
   notes: z.string().optional(),
 });
 
-type CustomerFormData = z.infer<typeof customerFormSchema>;
+// Schema with required studentId (for individual/self_register modes)
+const customerFormSchemaWithStudent = baseCustomerFormSchema.extend({
+  studentId: z.string().min(1, "Please select a seller"),
+});
+
+// Schema without studentId requirement (for 'none' mode)
+const customerFormSchemaNoStudent = baseCustomerFormSchema.extend({
+  studentId: z.string().optional(),
+});
+
+type CustomerFormData = z.infer<typeof customerFormSchemaWithStudent>;
 
 interface OrderLineItem extends ManualOrderItem {
   id: string;
@@ -69,8 +79,12 @@ export default function ManualOrderEntry() {
     null
   );
 
+  // Determine tracking mode from campaign
+  const trackingMode = analytics?.campaign?.tracking_mode as 'none' | 'individual' | 'self_register' | undefined;
+  const requiresStudent = trackingMode !== 'none';
+
   const form = useForm<CustomerFormData>({
-    resolver: zodResolver(customerFormSchema),
+    resolver: zodResolver(requiresStudent ? customerFormSchemaWithStudent : customerFormSchemaNoStudent),
     defaultValues: {
       studentId: "",
       customerName: "",
@@ -160,7 +174,7 @@ export default function ManualOrderEntry() {
     try {
       const result = await createOrderMutation.mutateAsync({
         campaignId: campaignId!,
-        studentId: data.studentId,
+        studentId: requiresStudent ? data.studentId : undefined, // Only pass studentId if tracking mode requires it
         customerName: data.customerName,
         customerEmail: data.customerEmail || undefined,
         customerPhone: data.customerPhone,
@@ -271,39 +285,41 @@ export default function ManualOrderEntry() {
             <div className="grid gap-6 lg:grid-cols-3">
               {/* Left: Form */}
               <div className="lg:col-span-2 space-y-6">
-                {/* Student Attribution */}
-                <Card className="border-border">
-                  <CardHeader>
-                    <CardTitle>Student Attribution</CardTitle>
-                    <CardDescription>Select the student this order is for</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <FormField
-                      control={form.control}
-                      name="studentId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Student *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a student" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {students.map((student) => (
-                                <SelectItem key={student.id} value={student.id}>
-                                  {student.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
+                {/* Student Attribution - Only show if tracking mode requires it */}
+                {requiresStudent && (
+                  <Card className="border-border">
+                    <CardHeader>
+                      <CardTitle>Seller Attribution</CardTitle>
+                      <CardDescription>Select the seller this order is for</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <FormField
+                        control={form.control}
+                        name="studentId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Seller *</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a seller" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {students.map((student) => (
+                                  <SelectItem key={student.id} value={student.id}>
+                                    {student.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Customer Information */}
                 <Card className="border-border">

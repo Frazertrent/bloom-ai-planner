@@ -63,7 +63,7 @@ import {
   Mail,
   MessageSquare,
 } from "lucide-react";
-import { generateOrderLink } from "@/lib/linkGenerator";
+import { generateOrderLink, generateCampaignLink } from "@/lib/linkGenerator";
 import { format } from "date-fns";
 import {
   LineChart,
@@ -175,15 +175,30 @@ export default function OrgCampaignDetail() {
   const handleExportCSV = () => {
     if (!analytics) return;
 
-    const headers = ["Order #", "Customer", "Student", "Amount", "Status", "Date"];
-    const rows = analytics.orders.map(o => [
-      o.orderNumber,
-      o.customerName,
-      o.studentName || "—",
-      `$${o.total.toFixed(2)}`,
-      o.fulfillmentStatus,
-      format(new Date(o.createdAt), "yyyy-MM-dd HH:mm"),
-    ]);
+    const trackingMode = analytics.trackingMode;
+    const showSellerColumn = trackingMode !== 'none';
+
+    const headers = showSellerColumn
+      ? ["Order #", "Customer", "Seller", "Amount", "Status", "Date"]
+      : ["Order #", "Customer", "Amount", "Status", "Date"];
+
+    const rows = analytics.orders.map(o => showSellerColumn
+      ? [
+          o.orderNumber,
+          o.customerName,
+          o.studentName || "—",
+          `$${o.total.toFixed(2)}`,
+          o.fulfillmentStatus,
+          format(new Date(o.createdAt), "yyyy-MM-dd HH:mm"),
+        ]
+      : [
+          o.orderNumber,
+          o.customerName,
+          `$${o.total.toFixed(2)}`,
+          o.fulfillmentStatus,
+          format(new Date(o.createdAt), "yyyy-MM-dd HH:mm"),
+        ]
+    );
 
     const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -229,9 +244,10 @@ export default function OrgCampaignDetail() {
     );
   }
 
-  const { campaign, florist, stats, products, students, orders, allOrders, salesByDay } = analytics;
+  const { campaign, florist, stats, products, students, orders, allOrders, salesByDay, trackingMode, campaignLinkCode } = analytics;
   const top3Students = students.slice(0, 3);
   const displayStudents = showAllStudents ? students : students.slice(0, 5);
+  const showSellerInfo = trackingMode !== 'none';
 
   return (
     <OrgLayout>
@@ -501,95 +517,97 @@ export default function OrgCampaignDetail() {
           </Card>
         </div>
 
-        {/* Student Leaderboard */}
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-amber-500" />
-              Student Leaderboard
-            </CardTitle>
-            <CardDescription>Top performers in this campaign</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {students.length > 0 ? (
-              <>
-                {/* Top 3 Highlighted */}
-                {top3Students.length > 0 && (
-                  <div className="grid gap-4 md:grid-cols-3 mb-6">
-                    {top3Students.map((student, idx) => (
-                      <div
-                        key={student.id}
-                        className={`p-4 rounded-lg border ${
-                          idx === 0
-                            ? "bg-amber-500/10 border-amber-500/20"
-                            : idx === 1
-                            ? "bg-slate-400/10 border-slate-400/20"
-                            : "bg-amber-700/10 border-amber-700/20"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span
-                            className={`text-2xl font-bold ${
-                              idx === 0
-                                ? "text-amber-500"
-                                : idx === 1
-                                ? "text-slate-400"
-                                : "text-amber-700"
-                            }`}
-                          >
-                            #{idx + 1}
-                          </span>
-                          <div className="flex-1">
-                            <p className="font-medium">{student.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {student.orderCount} orders • ${student.totalSales.toFixed(2)}
-                            </p>
+        {/* Student Leaderboard - Only show if tracking mode uses sellers */}
+        {showSellerInfo && (
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-amber-500" />
+                Seller Leaderboard
+              </CardTitle>
+              <CardDescription>Top performers in this campaign</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {students.length > 0 ? (
+                <>
+                  {/* Top 3 Highlighted */}
+                  {top3Students.length > 0 && (
+                    <div className="grid gap-4 md:grid-cols-3 mb-6">
+                      {top3Students.map((student, idx) => (
+                        <div
+                          key={student.id}
+                          className={`p-4 rounded-lg border ${
+                            idx === 0
+                              ? "bg-amber-500/10 border-amber-500/20"
+                              : idx === 1
+                              ? "bg-slate-400/10 border-slate-400/20"
+                              : "bg-amber-700/10 border-amber-700/20"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span
+                              className={`text-2xl font-bold ${
+                                idx === 0
+                                  ? "text-amber-500"
+                                  : idx === 1
+                                  ? "text-slate-400"
+                                  : "text-amber-700"
+                              }`}
+                            >
+                              #{idx + 1}
+                            </span>
+                            <div className="flex-1">
+                              <p className="font-medium">{student.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {student.orderCount} orders • ${student.totalSales.toFixed(2)}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Full list collapsible */}
-                <Collapsible open={showAllStudents} onOpenChange={setShowAllStudents}>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12">Rank</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead className="text-right">Orders</TableHead>
-                        <TableHead className="text-right">Sales</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {displayStudents.map((student, idx) => (
-                        <TableRow key={student.id}>
-                          <TableCell className="font-medium">{idx + 1}</TableCell>
-                          <TableCell>{student.name}</TableCell>
-                          <TableCell className="text-right">{student.orderCount}</TableCell>
-                          <TableCell className="text-right">${student.totalSales.toFixed(2)}</TableCell>
-                        </TableRow>
                       ))}
-                    </TableBody>
-                  </Table>
-                  {students.length > 5 && (
-                    <CollapsibleTrigger asChild>
-                      <Button variant="ghost" className="w-full mt-2">
-                        <ChevronDown className={`h-4 w-4 mr-2 transition-transform ${showAllStudents ? "rotate-180" : ""}`} />
-                        {showAllStudents ? "Show Less" : `View All (${students.length})`}
-                      </Button>
-                    </CollapsibleTrigger>
+                    </div>
                   )}
-                </Collapsible>
-              </>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                No students assigned to this campaign
-              </div>
-            )}
-          </CardContent>
-        </Card>
+
+                  {/* Full list collapsible */}
+                  <Collapsible open={showAllStudents} onOpenChange={setShowAllStudents}>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-12">Rank</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead className="text-right">Orders</TableHead>
+                          <TableHead className="text-right">Sales</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {displayStudents.map((student, idx) => (
+                          <TableRow key={student.id}>
+                            <TableCell className="font-medium">{idx + 1}</TableCell>
+                            <TableCell>{student.name}</TableCell>
+                            <TableCell className="text-right">{student.orderCount}</TableCell>
+                            <TableCell className="text-right">${student.totalSales.toFixed(2)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    {students.length > 5 && (
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" className="w-full mt-2">
+                          <ChevronDown className={`h-4 w-4 mr-2 transition-transform ${showAllStudents ? "rotate-180" : ""}`} />
+                          {showAllStudents ? "Show Less" : `View All (${students.length})`}
+                        </Button>
+                      </CollapsibleTrigger>
+                    )}
+                  </Collapsible>
+                </>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No sellers assigned to this campaign
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Tabs: Orders, Fulfillment & Student Links */}
         <Tabs defaultValue="orders">
@@ -676,7 +694,7 @@ export default function OrgCampaignDetail() {
                         </TableHead>
                         <TableHead>Order #</TableHead>
                         <TableHead>Customer</TableHead>
-                        <TableHead>Seller</TableHead>
+                        {showSellerInfo && <TableHead>Seller</TableHead>}
                         <TableHead className="text-right hidden sm:table-cell">Amount</TableHead>
                         <TableHead className="hidden sm:table-cell">Payment</TableHead>
                         <TableHead>Status</TableHead>
@@ -698,33 +716,35 @@ export default function OrgCampaignDetail() {
                           </TableCell>
                           <TableCell className="font-medium">{order.orderNumber}</TableCell>
                           <TableCell>{order.customerName}</TableCell>
-                          <TableCell>
-                            {order.studentName ? (
-                              <div className="flex items-center gap-1.5">
-                                <span className="truncate max-w-[80px] sm:max-w-none">{order.studentName}</span>
-                                <div className="flex gap-0.5">
-                                  {order.studentEmail && (
-                                    <a
-                                      href={`mailto:${order.studentEmail}?subject=Delivery Status - Order ${order.orderNumber}`}
-                                      className="p-1 rounded hover:bg-muted"
-                                      title={`Email ${order.studentName}`}
-                                    >
-                                      <Mail className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
-                                    </a>
-                                  )}
-                                  {order.studentPhone && (
-                                    <a
-                                      href={`sms:${order.studentPhone}`}
-                                      className="p-1 rounded hover:bg-muted"
-                                      title={`Text ${order.studentName}`}
-                                    >
-                                      <MessageSquare className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
-                                    </a>
-                                  )}
+                          {showSellerInfo && (
+                            <TableCell>
+                              {order.studentName ? (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="truncate max-w-[80px] sm:max-w-none">{order.studentName}</span>
+                                  <div className="flex gap-0.5">
+                                    {order.studentEmail && (
+                                      <a
+                                        href={`mailto:${order.studentEmail}?subject=Delivery Status - Order ${order.orderNumber}`}
+                                        className="p-1 rounded hover:bg-muted"
+                                        title={`Email ${order.studentName}`}
+                                      >
+                                        <Mail className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                                      </a>
+                                    )}
+                                    {order.studentPhone && (
+                                      <a
+                                        href={`sms:${order.studentPhone}`}
+                                        className="p-1 rounded hover:bg-muted"
+                                        title={`Text ${order.studentName}`}
+                                      >
+                                        <MessageSquare className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                                      </a>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            ) : "—"}
-                          </TableCell>
+                              ) : "—"}
+                            </TableCell>
+                          )}
                           <TableCell className="text-right hidden sm:table-cell">${order.total.toFixed(2)}</TableCell>
                           <TableCell className="hidden sm:table-cell">
                             <Badge variant={order.paymentStatus === "paid" ? "default" : "secondary"} className={order.paymentStatus === "paid" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"}>
@@ -828,7 +848,7 @@ export default function OrgCampaignDetail() {
                         </TableHead>
                         <TableHead>Order #</TableHead>
                         <TableHead>Customer</TableHead>
-                        <TableHead>Seller</TableHead>
+                        {showSellerInfo && <TableHead>Seller</TableHead>}
                         <TableHead className="text-right hidden sm:table-cell">Amount</TableHead>
                         <TableHead className="w-24">Action</TableHead>
                       </TableRow>
@@ -845,33 +865,35 @@ export default function OrgCampaignDetail() {
                           </TableCell>
                           <TableCell className="font-medium">{order.orderNumber}</TableCell>
                           <TableCell>{order.customerName}</TableCell>
-                          <TableCell>
-                            {order.studentName ? (
-                              <div className="flex items-center gap-1.5">
-                                <span className="truncate max-w-[80px] sm:max-w-none">{order.studentName}</span>
-                                <div className="flex gap-0.5">
-                                  {order.studentEmail && (
-                                    <a
-                                      href={`mailto:${order.studentEmail}?subject=Ready for Pickup - Order ${order.orderNumber}`}
-                                      className="p-1 rounded hover:bg-muted"
-                                      title={`Email ${order.studentName}`}
-                                    >
-                                      <Mail className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
-                                    </a>
-                                  )}
-                                  {order.studentPhone && (
-                                    <a
-                                      href={`sms:${order.studentPhone}`}
-                                      className="p-1 rounded hover:bg-muted"
-                                      title={`Text ${order.studentName}`}
-                                    >
-                                      <MessageSquare className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
-                                    </a>
-                                  )}
+                          {showSellerInfo && (
+                            <TableCell>
+                              {order.studentName ? (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="truncate max-w-[80px] sm:max-w-none">{order.studentName}</span>
+                                  <div className="flex gap-0.5">
+                                    {order.studentEmail && (
+                                      <a
+                                        href={`mailto:${order.studentEmail}?subject=Ready for Pickup - Order ${order.orderNumber}`}
+                                        className="p-1 rounded hover:bg-muted"
+                                        title={`Email ${order.studentName}`}
+                                      >
+                                        <Mail className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                                      </a>
+                                    )}
+                                    {order.studentPhone && (
+                                      <a
+                                        href={`sms:${order.studentPhone}`}
+                                        className="p-1 rounded hover:bg-muted"
+                                        title={`Text ${order.studentName}`}
+                                      >
+                                        <MessageSquare className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                                      </a>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            ) : "—"}
-                          </TableCell>
+                              ) : "—"}
+                            </TableCell>
+                          )}
                           <TableCell className="text-right hidden sm:table-cell">${order.total.toFixed(2)}</TableCell>
                           <TableCell>
                             <Button
@@ -939,60 +961,97 @@ export default function OrgCampaignDetail() {
           <TabsContent value="links" className="mt-4">
             <Card className="bg-card border-border">
               <CardHeader>
-                <CardTitle>Student Links</CardTitle>
-                <CardDescription>Share these links with students for order attribution</CardDescription>
+                <CardTitle>{trackingMode === 'none' ? 'Campaign Link' : 'Seller Links'}</CardTitle>
+                <CardDescription>
+                  {trackingMode === 'none' 
+                    ? 'Share this link to let anyone order from your fundraiser'
+                    : 'Share these links with sellers for order attribution'}
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                {students.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Student</TableHead>
-                        <TableHead>Orders</TableHead>
-                        <TableHead>Sales</TableHead>
-                        <TableHead>Link</TableHead>
-                        <TableHead className="w-32">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {students.map((student) => {
-                        const link = `${window.location.origin}/order/${student.magicLinkCode}`;
-                        return (
-                          <TableRow key={student.id}>
-                            <TableCell className="font-medium">{student.name}</TableCell>
-                            <TableCell>{student.orderCount}</TableCell>
-                            <TableCell>${student.totalSales.toFixed(2)}</TableCell>
-                            <TableCell>
-                              <code className="text-xs bg-muted px-2 py-1 rounded">
-                                {student.magicLinkCode}
-                              </code>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(link);
-                                    toast({ title: "Copied!", description: "Link copied to clipboard" });
-                                  }}
-                                >
-                                  <Copy className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon" disabled title="Send Reminder">
-                                  <Bell className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No students assigned
+                {trackingMode === 'none' ? (
+                  // Campaign-wide link for 'none' tracking mode
+                  <div className="space-y-4">
+                    {campaignLinkCode ? (
+                      <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm mb-2">Your Campaign Link</p>
+                          <code className="text-xs bg-background px-3 py-2 rounded block overflow-x-auto">
+                            {generateCampaignLink(campaignLinkCode)}
+                          </code>
+                        </div>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            navigator.clipboard.writeText(generateCampaignLink(campaignLinkCode));
+                            toast({ title: "Copied!", description: "Campaign link copied to clipboard" });
+                          }}
+                        >
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copy
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No campaign link available
+                      </div>
+                    )}
                   </div>
+                ) : (
+                  // Seller links for individual/self_register modes
+                  students.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Seller</TableHead>
+                          <TableHead>Orders</TableHead>
+                          <TableHead>Sales</TableHead>
+                          <TableHead>Link</TableHead>
+                          <TableHead className="w-32">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {students.map((student) => {
+                          const link = generateOrderLink(student.magicLinkCode);
+                          return (
+                            <TableRow key={student.id}>
+                              <TableCell className="font-medium">{student.name}</TableCell>
+                              <TableCell>{student.orderCount}</TableCell>
+                              <TableCell>${student.totalSales.toFixed(2)}</TableCell>
+                              <TableCell>
+                                <code className="text-xs bg-muted px-2 py-1 rounded">
+                                  {student.magicLinkCode}
+                                </code>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(link);
+                                      toast({ title: "Copied!", description: "Link copied to clipboard" });
+                                    }}
+                                  >
+                                    <Copy className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" disabled title="Send Reminder">
+                                    <Bell className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      {trackingMode === 'self_register' 
+                        ? 'No sellers have registered yet' 
+                        : 'No sellers assigned to this campaign'}
+                    </div>
+                  )
                 )}
               </CardContent>
             </Card>
@@ -1081,6 +1140,8 @@ export default function OrgCampaignDetail() {
             magicLinkCode: s.magicLinkCode,
             fullUrl: generateOrderLink(s.magicLinkCode),
           }))}
+          trackingMode={trackingMode}
+          campaignLink={campaignLinkCode ? generateCampaignLink(campaignLinkCode) : null}
         />
 
         {/* Payout Detail Sheet */}

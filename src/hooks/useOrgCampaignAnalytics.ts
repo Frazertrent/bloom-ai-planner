@@ -13,6 +13,8 @@ export interface FulfillmentBreakdown {
 export interface CampaignAnalytics {
   campaign: BFCampaign;
   florist: BFFlorist | null;
+  trackingMode: 'none' | 'individual' | 'self_register';
+  campaignLinkCode: string | null;
   stats: {
     totalOrders: number;
     totalRevenue: number;
@@ -257,6 +259,8 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
       return {
         campaign: { ...campaign, status: campaign.status as CampaignStatus } as BFCampaign,
         florist: florist as BFFlorist | null,
+        trackingMode: (campaign.tracking_mode || 'individual') as 'none' | 'individual' | 'self_register',
+        campaignLinkCode: campaign.campaign_link_code || null,
         stats: {
           totalOrders,
           totalRevenue,

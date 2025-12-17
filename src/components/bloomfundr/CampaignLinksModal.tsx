@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, Check, Download, Link as LinkIcon, X } from "lucide-react";
+import { Copy, Check, Download, Link as LinkIcon, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 
 interface StudentLink {
@@ -24,6 +25,8 @@ interface CampaignLinksModalProps {
   onOpenChange: (open: boolean) => void;
   campaignName: string;
   studentLinks: StudentLink[];
+  trackingMode?: 'none' | 'individual' | 'self_register';
+  campaignLink?: string | null;
 }
 
 export function CampaignLinksModal({
@@ -31,9 +34,12 @@ export function CampaignLinksModal({
   onOpenChange,
   campaignName,
   studentLinks,
+  trackingMode = 'individual',
+  campaignLink,
 }: CampaignLinksModalProps) {
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [campaignLinkCopied, setCampaignLinkCopied] = useState(false);
 
   const copyToClipboard = async (text: string, studentId: string) => {
     try {
@@ -48,6 +54,25 @@ export function CampaignLinksModal({
       toast({
         title: "Failed to copy",
         description: "Please try again or copy manually.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const copyCampaignLink = async () => {
+    if (!campaignLink) return;
+    try {
+      await navigator.clipboard.writeText(campaignLink);
+      setCampaignLinkCopied(true);
+      setTimeout(() => setCampaignLinkCopied(false), 2000);
+      toast({
+        title: "Link copied!",
+        description: "The campaign link has been copied to your clipboard.",
+      });
+    } catch (err) {
+      toast({
+        title: "Failed to copy",
+        description: "Please try again.",
         variant: "destructive",
       });
     }
@@ -101,16 +126,92 @@ export function CampaignLinksModal({
     });
   };
 
+  // For 'none' tracking mode, show campaign link only
+  if (trackingMode === 'none') {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LinkIcon className="h-5 w-5" />
+              Campaign Link
+            </DialogTitle>
+            <DialogDescription>
+              Share this link with anyone to let them order from your fundraiser.
+              All sales will be attributed to the campaign.
+            </DialogDescription>
+          </DialogHeader>
+
+          {campaignLink ? (
+            <Card className="bg-muted/50">
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium mb-2">Your Campaign Link</p>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        readOnly
+                        value={campaignLink}
+                        className="bg-background text-sm"
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={copyCampaignLink}
+                      >
+                        {campaignLinkCopied ? (
+                          <Check className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={copyCampaignLink}
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copy Link
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      asChild
+                    >
+                      <a href={campaignLink} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Open Link
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No campaign link available.</p>
+              <p className="text-sm mt-1">Campaign links are generated when the campaign is created.</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // For 'individual' and 'self_register' modes, show student links
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <LinkIcon className="h-5 w-5" />
-            Student Links
+            Seller Links
           </DialogTitle>
           <DialogDescription>
-            Share these unique links with each student. They can share their link
+            Share these unique links with each seller. They can share their link
             with friends and family to attribute sales.
           </DialogDescription>
         </DialogHeader>
@@ -128,34 +229,43 @@ export function CampaignLinksModal({
 
         <ScrollArea className="h-[400px] pr-4">
           <div className="space-y-3">
-            {studentLinks.map((link) => (
-              <div
-                key={link.studentId}
-                className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">{link.studentName}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Input
-                      readOnly
-                      value={link.fullUrl}
-                      className="h-8 text-xs bg-background"
-                    />
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => copyToClipboard(link.fullUrl, link.studentId)}
+            {studentLinks.length > 0 ? (
+              studentLinks.map((link) => (
+                <div
+                  key={link.studentId}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
                 >
-                  {copiedId === link.studentId ? (
-                    <Check className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">{link.studentName}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Input
+                        readOnly
+                        value={link.fullUrl}
+                        className="h-8 text-xs bg-background"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => copyToClipboard(link.fullUrl, link.studentId)}
+                  >
+                    {copiedId === link.studentId ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No sellers assigned to this campaign yet.</p>
+                {trackingMode === 'self_register' && (
+                  <p className="text-sm mt-1">Sellers will appear here after they self-register.</p>
+                )}
               </div>
-            ))}
+            )}
           </div>
         </ScrollArea>
       </DialogContent>

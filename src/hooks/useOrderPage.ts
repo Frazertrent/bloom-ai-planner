@@ -12,16 +12,17 @@ export interface OrderPageData {
   campaignStudent: {
     id: string;
     campaign_id: string;
-    student_id: string;
+    student_id: string | null;
     magic_link_code: string;
-  };
+  } | null;
   campaign: BFCampaign;
   organization: BFOrganization;
-  student: BFStudent;
+  student: BFStudent | null; // Can be null for 'none' tracking mode
   products: BFCampaignProductWithProduct[];
   isActive: boolean;
   isExpired: boolean;
   isNotStarted: boolean;
+  trackingMode: 'none' | 'individual' | 'self_register';
 }
 
 export function useOrderPageData(magicLinkCode: string | undefined) {
@@ -30,28 +31,53 @@ export function useOrderPageData(magicLinkCode: string | undefined) {
     queryFn: async (): Promise<OrderPageData | null> => {
       if (!magicLinkCode) return null;
 
-      // Look up campaign_student by magic_link_code
-      const { data: campaignStudent, error: csError } = await supabase
+      // First, try to look up campaign_student by magic_link_code (individual/self_register modes)
+      const { data: campaignStudent } = await supabase
         .from("bf_campaign_students")
         .select("id, campaign_id, student_id, magic_link_code")
         .eq("magic_link_code", magicLinkCode)
         .single();
 
-      if (csError || !campaignStudent) {
-        console.error("Campaign student not found:", csError);
-        return null;
-      }
+      let campaign: any = null;
+      let student: BFStudent | null = null;
 
-      // Fetch campaign
-      const { data: campaign, error: campaignError } = await supabase
-        .from("bf_campaigns")
-        .select("*")
-        .eq("id", campaignStudent.campaign_id)
-        .single();
+      if (campaignStudent) {
+        // Found via campaign_student - fetch campaign and student
+        const { data: campaignData, error: campaignError } = await supabase
+          .from("bf_campaigns")
+          .select("*")
+          .eq("id", campaignStudent.campaign_id)
+          .single();
 
-      if (campaignError || !campaign) {
-        console.error("Campaign not found:", campaignError);
-        return null;
+        if (campaignError || !campaignData) {
+          console.error("Campaign not found:", campaignError);
+          return null;
+        }
+        campaign = campaignData;
+
+        // Fetch student
+        const { data: studentData } = await supabase
+          .from("bf_students")
+          .select("*")
+          .eq("id", campaignStudent.student_id)
+          .single();
+
+        student = studentData as BFStudent | null;
+      } else {
+        // Not found via campaign_student - try campaign_link_code (for 'none' tracking mode)
+        const { data: campaignData, error: campaignError } = await supabase
+          .from("bf_campaigns")
+          .select("*")
+          .eq("campaign_link_code", magicLinkCode)
+          .single();
+
+        if (campaignError || !campaignData) {
+          console.error("Campaign not found via campaign_link_code:", campaignError);
+          return null;
+        }
+        campaign = campaignData;
+        // No student for 'none' tracking mode
+        student = null;
       }
 
       // Fetch organization
@@ -63,18 +89,6 @@ export function useOrderPageData(magicLinkCode: string | undefined) {
 
       if (orgError || !organization) {
         console.error("Organization not found:", orgError);
-        return null;
-      }
-
-      // Fetch student
-      const { data: student, error: studentError } = await supabase
-        .from("bf_students")
-        .select("*")
-        .eq("id", campaignStudent.student_id)
-        .single();
-
-      if (studentError || !student) {
-        console.error("Student not found:", studentError);
         return null;
       }
 
@@ -137,18 +151,21 @@ export function useOrderPageData(magicLinkCode: string | undefined) {
         } : undefined,
       }));
 
+      const trackingMode = (campaign.tracking_mode || 'individual') as 'none' | 'individual' | 'self_register';
+
       return {
-        campaignStudent,
+        campaignStudent: campaignStudent || null,
         campaign: {
           ...campaign,
           status: campaign.status as CampaignStatus,
         } as BFCampaign,
         organization: organization as BFOrganization,
-        student: student as BFStudent,
+        student,
         products,
         isActive,
         isExpired,
         isNotStarted,
+        trackingMode,
       };
     },
     enabled: !!magicLinkCode,
