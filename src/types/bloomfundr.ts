@@ -6,7 +6,7 @@ export type OrgType = 'school' | 'sports' | 'dance' | 'cheer' | 'church' | 'othe
 
 export type ProductCategory = 'boutonniere' | 'corsage' | 'bouquet' | 'custom';
 
-export type CampaignStatus = 'draft' | 'active' | 'closed' | 'fulfilled' | 'completed';
+export type CampaignStatus = 'draft' | 'scheduled' | 'active' | 'closed' | 'fulfilled' | 'completed';
 
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 

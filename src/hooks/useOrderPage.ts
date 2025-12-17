@@ -133,7 +133,7 @@ export function useOrderPageData(magicLinkCode: string | undefined) {
       const hasStarted = !isBefore(today, startDate); // today >= startDate
       const isPastEndDate = isAfter(today, endDate);  // today > endDate
       const isTerminalStatus = ["closed", "fulfilled", "completed", "cancelled"].includes(campaign.status);
-      const isDraft = campaign.status === "draft";
+      const isDraft = campaign.status === "draft" || campaign.status === "scheduled";
       
       // Campaign is active if status is active (not draft!), has started, not past end, not terminal
       const isActive = campaign.status === "active" && hasStarted && !isPastEndDate && !isTerminalStatus;
