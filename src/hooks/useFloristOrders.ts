@@ -2,8 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useFloristProfile } from "@/hooks/useFloristData";
 import { toast } from "sonner";
-import { notifyOrgOrdersReady } from "@/lib/notifications";
-import type { 
+import { notifyOrgOrdersReady, notifyOrgAllOrdersReady } from "@/lib/notifications";
+import type {
   BFOrderWithRelations, 
   BFCampaign, 
   BFCustomer, 
@@ -189,34 +189,40 @@ export function useUpdateOrderStatus() {
             .from("bf_orders")
             .select("*", { count: "exact", head: true })
             .eq("campaign_id", campaignId)
-            .eq("payment_status", "paid")
             .eq("fulfillment_status", "ready");
 
-          // Notify org about orders ready
-          await notifyOrgOrdersReady({
-            organizationId: campaign.organization_id,
-            campaignId: campaign.id,
-            campaignName: campaign.name,
-            floristName: florist?.business_name || "Florist",
-            orderCount: readyCount || 1,
-          });
-
-          // Check if ALL orders are now ready or picked up
-          const { count: totalPaidOrders } = await supabase
+          // Check if ALL orders are now ready (none pending or in production)
+          const { count: pendingCount } = await supabase
             .from("bf_orders")
             .select("*", { count: "exact", head: true })
             .eq("campaign_id", campaignId)
-            .eq("payment_status", "paid");
+            .in("fulfillment_status", ["pending", "in_production"]);
 
-          const { count: completedOrders } = await supabase
+          const { count: totalOrders } = await supabase
             .from("bf_orders")
             .select("*", { count: "exact", head: true })
-            .eq("campaign_id", campaignId)
-            .eq("payment_status", "paid")
-            .in("fulfillment_status", ["ready", "picked_up"]);
+            .eq("campaign_id", campaignId);
 
-          if (totalPaidOrders && completedOrders && totalPaidOrders === completedOrders) {
-            return { orderId, status, campaignId, allOrdersReady: true, campaignName: campaign.name };
+          // If no pending/in_production orders remain, ALL orders are ready!
+          if (pendingCount === 0 && totalOrders && totalOrders > 0) {
+            // Send special "All Orders Ready" notification
+            await notifyOrgAllOrdersReady({
+              organizationId: campaign.organization_id,
+              campaignId: campaign.id,
+              campaignName: campaign.name,
+              floristName: florist?.business_name || "Florist",
+              orderCount: totalOrders,
+            });
+            return { orderId, status, campaignId, allOrdersReady: true, campaignName: campaign.name, totalOrders };
+          } else {
+            // Regular notification for orders marked ready
+            await notifyOrgOrdersReady({
+              organizationId: campaign.organization_id,
+              campaignId: campaign.id,
+              campaignName: campaign.name,
+              floristName: florist?.business_name || "Florist",
+              orderCount: readyCount || 1,
+            });
           }
         }
       }

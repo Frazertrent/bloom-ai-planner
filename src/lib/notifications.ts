@@ -196,6 +196,27 @@ export async function notifyOrgOrdersReady(params: {
     title: `Orders Ready: ${campaignName}`,
     message: `${orderCount} order(s) are ready for pickup from ${floristName}!`,
     notificationType: "success",
-    linkUrl: `/org/campaigns/${campaignId}`,
+    linkUrl: `/org/campaigns/${campaignId}?tab=fulfillment`,
+  });
+}
+
+/**
+ * Notifies organization when ALL orders for a campaign are ready
+ */
+export async function notifyOrgAllOrdersReady(params: {
+  organizationId: string;
+  campaignId: string;
+  campaignName: string;
+  floristName: string;
+  orderCount: number;
+}) {
+  const { organizationId, campaignId, campaignName, floristName, orderCount } = params;
+
+  await createOrgNotification({
+    organizationId,
+    title: `🎉 All Orders Ready: ${campaignName}`,
+    message: `All ${orderCount} orders are ready for pickup from ${floristName}! Time to collect!`,
+    notificationType: "success",
+    linkUrl: `/org/campaigns/${campaignId}?tab=fulfillment`,
   });
 }

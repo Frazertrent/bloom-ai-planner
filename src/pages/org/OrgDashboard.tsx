@@ -8,7 +8,8 @@ import {
   useOrgProfile, 
   useOrgStats, 
   useOrgCampaigns, 
-  useTopSellers 
+  useTopSellers,
+  useOrgReadyOrders 
 } from "@/hooks/useOrgData";
 import { 
   DollarSign, 
@@ -16,7 +17,7 @@ import {
   Users, 
   TrendingUp,
   Plus,
-  
+  Package,
   Trophy,
   Share2,
   Eye
@@ -28,6 +29,7 @@ export default function OrgDashboard() {
   const { data: stats, isLoading: statsLoading } = useOrgStats();
   const { data: campaigns, isLoading: campaignsLoading } = useOrgCampaigns("active");
   const { data: topSellers, isLoading: sellersLoading } = useTopSellers(5);
+  const { data: readyOrders, isLoading: readyOrdersLoading } = useOrgReadyOrders();
 
   const isLoading = orgLoading || statsLoading;
 
@@ -132,6 +134,46 @@ export default function OrgDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Orders Ready for Pickup Widget */}
+        {readyOrders && readyOrders.totalReady > 0 && (
+          <Card className="border-2 border-blue-500/30 bg-blue-500/5">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-blue-500/10">
+                  <Package className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Orders Ready for Pickup</CardTitle>
+                  <CardDescription>{readyOrders.totalReady} orders ready to collect</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {readyOrders.byCampaign.slice(0, 3).map((item) => (
+                  <div 
+                    key={item.campaignId} 
+                    className="flex items-center justify-between p-3 rounded-lg bg-background border border-border"
+                  >
+                    <div>
+                      <p className="font-medium text-foreground">{item.campaignName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {item.floristName} • {item.readyCount} ready
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to={`/org/campaigns/${item.campaignId}?tab=fulfillment`}>
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Link>
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
           {/* Active Campaigns */}
