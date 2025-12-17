@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2, CheckCircle, AlertCircle, Copy, Share2, ExternalLink, Flower } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { generateOrderLink } from "@/lib/linkGenerator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -132,7 +133,7 @@ export default function SellerJoinPage() {
         throw new Error("Failed to join campaign");
       }
 
-      const sellingLink = `${window.location.origin}/order/${magicLinkCode}`;
+      const sellingLink = generateOrderLink(magicLinkCode);
       
       return {
         studentId: student.id,

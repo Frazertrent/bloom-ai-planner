@@ -63,6 +63,7 @@ import {
   Mail,
   MessageSquare,
 } from "lucide-react";
+import { generateOrderLink } from "@/lib/linkGenerator";
 import { format } from "date-fns";
 import {
   LineChart,
@@ -1078,7 +1079,7 @@ export default function OrgCampaignDetail() {
             studentId: s.id,
             studentName: s.name,
             magicLinkCode: s.magicLinkCode,
-            fullUrl: `${window.location.origin}/order/${s.magicLinkCode}`,
+            fullUrl: generateOrderLink(s.magicLinkCode),
           }))}
         />
 

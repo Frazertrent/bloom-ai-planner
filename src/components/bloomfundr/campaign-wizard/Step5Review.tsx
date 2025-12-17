@@ -18,6 +18,7 @@ import {
   Link as LinkIcon,
   PartyPopper,
 } from "lucide-react";
+import { generateOrderLink, generateCampaignLink } from "@/lib/linkGenerator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -84,13 +85,12 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
 
   const getStudentLinks = () => {
     if (!reviewData) return [];
-    const baseUrl = window.location.origin;
     
     return reviewData.students.map((student) => ({
       studentId: student.id,
       studentName: student.name,
       magicLinkCode: student.magicLinkCode,
-      fullUrl: `${baseUrl}/shop/${student.magicLinkCode}`,
+      fullUrl: generateOrderLink(student.magicLinkCode),
     }));
   };
 
@@ -129,8 +129,7 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
   }
 
   const { campaign, florist, products, students, avgFloristMargin, avgOrgMargin, trackingMode, campaignLinkCode } = reviewData;
-  const baseUrl = window.location.origin;
-  const campaignLink = campaignLinkCode ? `${baseUrl}/shop/${campaignLinkCode}` : null;
+  const campaignLink = campaignLinkCode ? generateCampaignLink(campaignLinkCode) : null;
 
   return (
     <div className="space-y-6">

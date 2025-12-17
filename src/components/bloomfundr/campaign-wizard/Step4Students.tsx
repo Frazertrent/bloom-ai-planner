@@ -11,6 +11,7 @@ import {
   Share2,
   ExternalLink,
 } from "lucide-react";
+import { generateSellerJoinLink } from "@/lib/linkGenerator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -171,7 +172,7 @@ export function Step4Students({ campaignId, trackingMode, onBack, onContinue }: 
 
   // Build self-registration URL
   const selfRegisterUrl = campaign?.self_register_code 
-    ? `${window.location.origin}/join/${campaign.self_register_code}`
+    ? generateSellerJoinLink(campaign.self_register_code)
     : null;
 
   const handleCopyLink = async (url: string) => {
