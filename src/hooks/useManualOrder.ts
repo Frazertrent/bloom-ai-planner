@@ -14,7 +14,7 @@ export interface ManualOrderItem {
 
 export interface ManualOrderData {
   campaignId: string;
-  studentId: string;
+  studentId?: string | null;
   customerName: string;
   customerEmail?: string;
   customerPhone: string;
@@ -119,7 +119,7 @@ export function useCreateManualOrder() {
         .insert({
           campaign_id: campaignId,
           customer_id: customerId,
-          attributed_student_id: studentId,
+          attributed_student_id: studentId || null,
           subtotal,
           platform_fee: platformFee,
           processing_fee: processingFee,
@@ -153,35 +153,41 @@ export function useCreateManualOrder() {
 
       if (itemsError) throw itemsError;
 
-      // 4. Update student's sales totals
-      const { data: studentRecord } = await supabase
-        .from("bf_campaign_students")
-        .select("id, total_sales, order_count")
-        .eq("campaign_id", campaignId)
-        .eq("student_id", studentId)
-        .single();
-
-      if (studentRecord) {
-        await supabase
+      // 4. Update student's sales totals - only if studentId is provided
+      let studentNameForNotification: string | null = null;
+      if (studentId) {
+        const { data: studentRecord } = await supabase
           .from("bf_campaign_students")
-          .update({
-            total_sales: Number(studentRecord.total_sales || 0) + subtotal,
-            order_count: Number(studentRecord.order_count || 0) + 1,
-          })
-          .eq("id", studentRecord.id);
+          .select("id, total_sales, order_count")
+          .eq("campaign_id", campaignId)
+          .eq("student_id", studentId)
+          .single();
+
+        if (studentRecord) {
+          await supabase
+            .from("bf_campaign_students")
+            .update({
+              total_sales: Number(studentRecord.total_sales || 0) + subtotal,
+              order_count: Number(studentRecord.order_count || 0) + 1,
+            })
+            .eq("id", studentRecord.id);
+        }
+
+        // Get student name for notification
+        const { data: student } = await supabase
+          .from("bf_students")
+          .select("name")
+          .eq("id", studentId)
+          .single();
+        
+        studentNameForNotification = student?.name || null;
       }
 
-      // 5. Get campaign and student info for notification
+      // 5. Get campaign info for notification
       const { data: campaign } = await supabase
         .from("bf_campaigns")
         .select("organization_id, florist_id, name")
         .eq("id", campaignId)
-        .single();
-
-      const { data: student } = await supabase
-        .from("bf_students")
-        .select("name")
-        .eq("id", studentId)
         .single();
 
       // 6. Create notifications for organization and florist
@@ -193,7 +199,7 @@ export function useCreateManualOrder() {
           campaignName: campaign.name,
           orderNumber: order.order_number,
           customerName,
-          studentName: student?.name || "Unknown Student",
+          studentName: studentNameForNotification || "Campaign Sale",
           amount: total,
         });
 

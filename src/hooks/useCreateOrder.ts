@@ -7,7 +7,7 @@ import type { Json } from "@/integrations/supabase/types";
 
 interface CreateOrderParams {
   campaignId: string;
-  studentId: string;
+  studentId: string | null;
   customerData: CheckoutFormData;
   cart: CartItem[];
   subtotal: number;
@@ -63,7 +63,7 @@ export function useCreateOrder() {
         .insert({
           campaign_id: campaignId,
           customer_id: customerId,
-          attributed_student_id: studentId,
+          attributed_student_id: studentId || null,
           subtotal,
           platform_fee: platformFee,
           processing_fee: processingFee,
@@ -94,39 +94,45 @@ export function useCreateOrder() {
 
       if (itemsError) throw itemsError;
 
-      // 4. Update student stats (order_count and total_sales)
-      const { data: currentStudentStats } = await supabase
-        .from("bf_campaign_students")
-        .select("order_count, total_sales")
-        .eq("campaign_id", campaignId)
-        .eq("student_id", studentId)
-        .single();
-
-      if (currentStudentStats) {
-        await supabase
+      // 4. Update student stats (order_count and total_sales) - only if studentId is provided
+      let studentName: string | null = null;
+      if (studentId) {
+        const { data: currentStudentStats } = await supabase
           .from("bf_campaign_students")
-          .update({
-            order_count: Number(currentStudentStats.order_count || 0) + 1,
-            total_sales: Number(currentStudentStats.total_sales || 0) + subtotal,
-          })
+          .select("order_count, total_sales")
           .eq("campaign_id", campaignId)
-          .eq("student_id", studentId);
+          .eq("student_id", studentId)
+          .single();
+
+        if (currentStudentStats) {
+          await supabase
+            .from("bf_campaign_students")
+            .update({
+              order_count: Number(currentStudentStats.order_count || 0) + 1,
+              total_sales: Number(currentStudentStats.total_sales || 0) + subtotal,
+            })
+            .eq("campaign_id", campaignId)
+            .eq("student_id", studentId);
+        }
+
+        // Get student name for notifications
+        const { data: student } = await supabase
+          .from("bf_students")
+          .select("name")
+          .eq("id", studentId)
+          .single();
+        
+        studentName = student?.name || null;
       }
 
-      // 5. Get campaign and student info for notifications
+      // 5. Get campaign info for notifications
       const { data: campaign } = await supabase
         .from("bf_campaigns")
         .select("organization_id, florist_id, name")
         .eq("id", campaignId)
         .single();
 
-      const { data: student } = await supabase
-        .from("bf_students")
-        .select("name")
-        .eq("id", studentId)
-        .single();
-
-      // 5. Create notifications for organization and florist
+      // 6. Create notifications for organization and florist
       if (campaign) {
         // Notify organization
         await notifyNewOrder({
@@ -135,7 +141,7 @@ export function useCreateOrder() {
           campaignName: campaign.name,
           orderNumber: order.order_number,
           customerName: customerData.fullName,
-          studentName: student?.name || "Unknown Student",
+          studentName: studentName || "Campaign Sale",
           amount: total,
         });
 

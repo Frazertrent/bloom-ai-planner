@@ -47,8 +47,8 @@ const CART_STORAGE_KEY = "bloomfundr_cart";
 
 interface StoredCart {
   campaignId: string;
-  studentId: string;
-  studentName: string;
+  studentId: string | null;
+  studentName: string | null;
   items: CartItem[];
 }
 
@@ -81,7 +81,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isInitialized) return;
     
-    if (campaignId && studentId && studentName) {
+    if (campaignId) {
       const data: StoredCart = {
         campaignId,
         studentId,
@@ -94,7 +94,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     }
   }, [cart, campaignId, studentId, studentName, isInitialized]);
 
-  const setCampaignContext = useCallback((cId: string, sId: string, sName: string) => {
+  const setCampaignContext = useCallback((cId: string, sId: string | null, sName: string | null) => {
     // If switching campaigns, clear cart
     if (campaignId && campaignId !== cId) {
       setCart([]);

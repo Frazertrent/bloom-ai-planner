@@ -538,6 +538,7 @@ export type Database = {
           platform_fee: number
           processing_fee: number
           stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
           subtotal: number
           total: number
           updated_at: string | null
@@ -557,6 +558,7 @@ export type Database = {
           platform_fee?: number
           processing_fee?: number
           stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
           subtotal: number
           total: number
           updated_at?: string | null
@@ -576,6 +578,7 @@ export type Database = {
           platform_fee?: number
           processing_fee?: number
           stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
           subtotal?: number
           total?: number
           updated_at?: string | null
