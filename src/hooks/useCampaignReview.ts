@@ -22,6 +22,8 @@ export interface CampaignReviewData {
   }[];
   avgFloristMargin: number;
   avgOrgMargin: number;
+  trackingMode: string;
+  campaignLinkCode: string | null;
 }
 
 export function useCampaignReviewData(campaignId: string | undefined) {
@@ -96,6 +98,8 @@ export function useCampaignReviewData(campaignId: string | undefined) {
         students,
         avgFloristMargin: campaign.florist_margin_percent,
         avgOrgMargin: campaign.organization_margin_percent,
+        trackingMode: campaign.tracking_mode || 'none',
+        campaignLinkCode: campaign.campaign_link_code,
       };
     },
     enabled: !!campaignId,
