@@ -6,7 +6,7 @@ import { ProductCard } from "@/components/order/ProductCard";
 import { ProductDetailModal } from "@/components/order/ProductDetailModal";
 import { FloatingCart } from "@/components/order/FloatingCart";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, MapPin, Clock, AlertCircle, Flower, Rocket } from "lucide-react";
+import { Calendar, Clock, AlertCircle, Flower, Rocket } from "lucide-react";
 import { format } from "date-fns";
 import type { BFCampaignProductWithProduct } from "@/types/bloomfundr";
 
@@ -212,19 +212,10 @@ export default function OrderPage() {
               <span>Order by {format(new Date(campaign.end_date), "MMM d, yyyy")}</span>
             </div>
             
-            {campaign.pickup_date && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
-                <span>Delivered By: {format(new Date(campaign.pickup_date), "MMM d, yyyy")}</span>
-              </div>
-            )}
-            
-            {campaign.pickup_location && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <MapPin className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
-                <span className="truncate">{campaign.pickup_location}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
+              <span>Delivered By: {format(new Date(new Date(campaign.end_date).getTime() + 2 * 24 * 60 * 60 * 1000), "MMM d, yyyy")}</span>
+            </div>
           </div>
         </div>
 
