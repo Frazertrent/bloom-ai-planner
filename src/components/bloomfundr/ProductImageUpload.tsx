@@ -1,8 +1,9 @@
 import { useState, useRef } from "react";
-import { Upload, X, Loader2, ImageIcon } from "lucide-react";
+import { Upload, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import heic2any from "heic2any";
 
 interface ProductImageUploadProps {
   value: string | null;
@@ -10,13 +11,21 @@ interface ProductImageUploadProps {
   disabled?: boolean;
 }
 
+const isHeicFile = (file: File): boolean => {
+  const heicTypes = ['image/heic', 'image/heif'];
+  const heicExtensions = ['.heic', '.heif'];
+  const extension = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+  return heicTypes.includes(file.type.toLowerCase()) || heicExtensions.includes(extension);
+};
+
 export function ProductImageUpload({ value, onChange, disabled }: ProductImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string>("");
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async (file: File) => {
-    if (!file.type.startsWith("image/")) {
+    if (!file.type.startsWith("image/") && !isHeicFile(file)) {
       toast.error("Please select an image file");
       return;
     }
@@ -29,21 +38,34 @@ export function ProductImageUpload({ value, onChange, disabled }: ProductImageUp
 
     setIsUploading(true);
     try {
-      // Generate unique filename
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      let fileToUpload: File | Blob = file;
+      let finalExtension = file.name.split(".").pop() || "jpg";
+
+      // Convert HEIC to JPEG
+      if (isHeicFile(file)) {
+        setUploadStatus("Converting HEIC...");
+        const convertedBlob = await heic2any({
+          blob: file,
+          toType: "image/jpeg",
+          quality: 0.9,
+        });
+        fileToUpload = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+        finalExtension = "jpg";
+      }
+
+      setUploadStatus("Uploading...");
+      const fileName = `${crypto.randomUUID()}.${finalExtension}`;
       const filePath = `products/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from("product-images")
-        .upload(filePath, file, {
+        .upload(filePath, fileToUpload, {
           cacheControl: "3600",
           upsert: false,
         });
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: urlData } = supabase.storage
         .from("product-images")
         .getPublicUrl(filePath);
@@ -55,6 +77,7 @@ export function ProductImageUpload({ value, onChange, disabled }: ProductImageUp
       toast.error("Failed to upload image. Please try again.");
     } finally {
       setIsUploading(false);
+      setUploadStatus("");
     }
   };
 
@@ -167,7 +190,7 @@ export function ProductImageUpload({ value, onChange, disabled }: ProductImageUp
           {isUploading ? (
             <>
               <Loader2 className="h-10 w-10 text-bloomfundr-primary animate-spin" />
-              <p className="text-sm text-muted-foreground">Uploading...</p>
+              <p className="text-sm text-muted-foreground">{uploadStatus || "Uploading..."}</p>
             </>
           ) : (
             <>
@@ -179,7 +202,7 @@ export function ProductImageUpload({ value, onChange, disabled }: ProductImageUp
                   Drop your image here or click to browse
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  PNG, JPG, WEBP up to 10MB • Full HD quality preserved
+                  PNG, JPG, WEBP, HEIC up to 10MB • iPhone photos supported
                 </p>
               </div>
             </>
