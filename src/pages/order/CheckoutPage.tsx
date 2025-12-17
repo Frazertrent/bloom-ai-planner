@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import { useOrder } from "@/contexts/OrderContext";
 import { useOrderPageData } from "@/hooks/useOrderPage";
 import { useCreateOrder } from "@/hooks/useCreateOrder";
@@ -31,7 +30,6 @@ import {
   Phone,
   FileText,
   Loader2,
-  CheckCircle,
 } from "lucide-react";
 
 export default function CheckoutPage() {
@@ -42,33 +40,7 @@ export default function CheckoutPage() {
   const createOrderMutation = useCreateOrder();
   
   const [summaryOpen, setSummaryOpen] = useState(true);
-  const [orderCreated, setOrderCreated] = useState<{
-    orderId: string;
-    orderNumber: string;
-  } | null>(null);
-  const [paymentSimulated, setPaymentSimulated] = useState(false);
-
-  // Simulate payment mutation (test mode - replaces Stripe)
-  const simulatePaymentMutation = useMutation({
-    mutationFn: async (orderId: string) => {
-      const { error } = await supabase
-        .from("bf_orders")
-        .update({ 
-          payment_status: "paid",
-          paid_at: new Date().toISOString()
-        })
-        .eq("id", orderId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      setPaymentSimulated(true);
-      toast.success("Payment simulated successfully!");
-    },
-    onError: (error) => {
-      console.error("Payment simulation error:", error);
-      toast.error("Failed to simulate payment");
-    },
-  });
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const {
     register,
@@ -84,44 +56,66 @@ export default function CheckoutPage() {
     },
   });
 
-  // Redirect if cart is empty
+  // Redirect if cart is empty and not already redirecting to payment
   useEffect(() => {
-    if (!pageLoading && cart.length === 0 && !orderCreated) {
+    if (!pageLoading && cart.length === 0 && !isRedirecting) {
       navigate(`/order/${magicLinkCode}`);
     }
-  }, [cart.length, magicLinkCode, navigate, pageLoading, orderCreated]);
+  }, [cart.length, magicLinkCode, navigate, pageLoading, isRedirecting]);
 
   // Calculate fees
-  const platformFeePercent = 10;
   const processingFeePercent = 3;
   const subtotal = cartTotal;
   const processingFee = subtotal * (processingFeePercent / 100);
   const total = subtotal + processingFee;
 
   const onSubmit = async (data: CheckoutFormData) => {
-    if (!campaignId || !studentId) {
-      console.error("Missing campaign or student context");
+    if (!campaignId) {
+      console.error("Missing campaign context");
       return;
     }
 
     try {
       const result = await createOrderMutation.mutateAsync({
         campaignId,
-        studentId,
+        studentId: studentId || null,
         customerData: data,
         cart,
         subtotal,
       });
 
-      setOrderCreated({
-        orderId: result.orderId,
-        orderNumber: result.orderNumber,
-      });
+      // Call edge function to get checkout URL
+      setIsRedirecting(true);
+      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke(
+        "create-checkout-session",
+        {
+          body: {
+            orderId: result.orderId,
+            magicLinkCode,
+            origin: window.location.origin,
+          },
+        }
+      );
 
-      // Clear cart after successful order creation
+      if (checkoutError) {
+        console.error("Checkout session error:", checkoutError);
+        toast.error("Failed to initiate payment. Please try again.");
+        setIsRedirecting(false);
+        return;
+      }
+
+      // Clear cart and redirect to payment
       clearCart();
+      
+      if (checkoutData?.checkoutUrl) {
+        window.location.href = checkoutData.checkoutUrl;
+      } else {
+        toast.error("Failed to get payment URL");
+        setIsRedirecting(false);
+      }
     } catch (error) {
       console.error("Error creating order:", error);
+      setIsRedirecting(false);
     }
   };
 
@@ -143,104 +137,6 @@ export default function CheckoutPage() {
     );
   }
 
-  // Order confirmation view
-  if (orderCreated) {
-    return (
-      <div className="min-h-screen bg-background">
-        <header className="bg-card border-b border-border">
-          <div className="max-w-4xl mx-auto px-4 py-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Flower className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h1 className="font-bold">{pageData?.organization.name} Fundraiser</h1>
-                <p className="text-sm text-muted-foreground">Supporting: {studentName}</p>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <main className="max-w-2xl mx-auto px-4 py-12">
-          <div className="text-center">
-            <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="h-10 w-10 text-emerald-600" />
-            </div>
-            
-            <h1 className="text-3xl font-bold mb-2">Order Created!</h1>
-            <p className="text-muted-foreground mb-6">
-              Your order has been submitted successfully.
-            </p>
-
-            <Card className="bg-card border-border text-left mb-8">
-              <CardContent className="pt-6">
-                <div className="text-center mb-4">
-                  <p className="text-sm text-muted-foreground">Order Number</p>
-                  <p className="text-2xl font-bold font-mono">{orderCreated.orderNumber}</p>
-                </div>
-                
-                <Separator className="my-4" />
-                
-                {paymentSimulated ? (
-                  <div className="text-center space-y-2">
-                    <div className="flex items-center justify-center gap-2 text-emerald-600">
-                      <CheckCircle className="h-5 w-5" />
-                      <span className="font-medium">Payment Complete!</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Your order is confirmed and will be ready for pickup.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-2 text-sm">
-                    <p className="text-muted-foreground">
-                      Please save this order number for your records.
-                    </p>
-                    <p className="text-muted-foreground">
-                      <strong>Next step:</strong> Complete payment to confirm your order.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <div className="space-y-3">
-              {!paymentSimulated ? (
-                <Button 
-                  size="lg" 
-                  className="w-full sm:w-auto"
-                  onClick={() => simulatePaymentMutation.mutate(orderCreated.orderId)}
-                  disabled={simulatePaymentMutation.isPending}
-                >
-                  {simulatePaymentMutation.isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    "Simulate Payment (Test Mode)"
-                  )}
-                </Button>
-              ) : (
-                <p className="text-xs text-muted-foreground text-center px-4 py-2 bg-amber-50 border border-amber-200 rounded-md">
-                  Test Mode: In production, this will integrate with Stripe for secure payment processing.
-                </p>
-              )}
-              <div>
-                <Button variant="outline" asChild>
-                  <Link to={`/order/${magicLinkCode}`}>
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back to Store
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background pb-6">
       {/* Header */}
@@ -256,6 +152,7 @@ export default function CheckoutPage() {
               <h1 className="font-bold text-base md:text-lg">Checkout</h1>
               <p className="text-xs md:text-sm text-muted-foreground truncate">
                 {pageData?.organization.name} Fundraiser
+                {studentName && ` · Supporting ${studentName}`}
               </p>
             </div>
           </div>
@@ -356,12 +253,17 @@ export default function CheckoutPage() {
                   <Button 
                     type="submit" 
                     className="w-full py-7 text-base md:text-lg min-h-[56px] active:scale-[0.98] transition-transform"
-                    disabled={isSubmitting || createOrderMutation.isPending}
+                    disabled={isSubmitting || createOrderMutation.isPending || isRedirecting}
                   >
                     {(isSubmitting || createOrderMutation.isPending) ? (
                       <>
                         <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                         Creating Order...
+                      </>
+                    ) : isRedirecting ? (
+                      <>
+                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        Redirecting to Payment...
                       </>
                     ) : (
                       <>Continue to Payment</>

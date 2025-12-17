@@ -69,6 +69,9 @@ const DashboardRedirect = lazy(() => import("./components/bloomfundr/DashboardRe
 // Lazy loaded Public Order pages
 const OrderPage = lazy(() => import("./pages/order/OrderPage"));
 const CheckoutPage = lazy(() => import("./pages/order/CheckoutPage"));
+const OrderSuccess = lazy(() => import("./pages/order/OrderSuccess"));
+const OrderCancel = lazy(() => import("./pages/order/OrderCancel"));
+const TestPayment = lazy(() => import("./pages/order/TestPayment"));
 const SellerJoinPage = lazy(() => import("./pages/order/SellerJoinPage"));
 
 const queryClient = new QueryClient();
@@ -422,6 +425,21 @@ const AppContent = () => (
     <Route path="/order/:magicLinkCode/checkout" element={
       <Suspense fallback={<PageFallback />}>
         <CheckoutPage />
+      </Suspense>
+    } />
+    <Route path="/order/:magicLinkCode/success" element={
+      <Suspense fallback={<PageFallback />}>
+        <OrderSuccess />
+      </Suspense>
+    } />
+    <Route path="/order/:magicLinkCode/cancel" element={
+      <Suspense fallback={<PageFallback />}>
+        <OrderCancel />
+      </Suspense>
+    } />
+    <Route path="/order/:magicLinkCode/test-payment" element={
+      <Suspense fallback={<PageFallback />}>
+        <TestPayment />
       </Suspense>
     } />
     
