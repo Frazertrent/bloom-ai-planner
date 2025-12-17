@@ -174,7 +174,7 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
 
       // Transform products
       const products = (campaignProducts || []).map(cp => ({
-        id: cp.product_id,
+        id: cp.id,
         name: (cp.product as any)?.name || "Unknown",
         retailPrice: Number(cp.retail_price),
         quantitySold: productQuantities[cp.id] || 0,
