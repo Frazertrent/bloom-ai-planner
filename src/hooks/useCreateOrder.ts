@@ -72,6 +72,7 @@ export function useCreateOrder() {
           campaign_id: campaignId,
           customer_id: customerId,
           attributed_student_id: studentId || null,
+          customer_name: customerData.fullName,
           subtotal,
           platform_fee: platformFee,
           processing_fee: processingFee,

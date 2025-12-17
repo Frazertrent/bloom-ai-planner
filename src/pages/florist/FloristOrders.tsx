@@ -61,9 +61,10 @@ export default function FloristOrdersPage() {
     // Search filter
     if (search) {
       const searchLower = search.toLowerCase();
+      const customerName = order.customer_name || order.customer?.full_name || "";
       const matchesSearch =
         order.order_number.toLowerCase().includes(searchLower) ||
-        order.customer?.full_name?.toLowerCase().includes(searchLower) ||
+        customerName.toLowerCase().includes(searchLower) ||
         order.customer?.email?.toLowerCase().includes(searchLower);
       if (!matchesSearch) return false;
     }
@@ -232,7 +233,7 @@ export default function FloristOrdersPage() {
                             {order.order_number}
                           </Link>
                         </TableCell>
-                        <TableCell>{order.customer?.full_name || "Unknown"}</TableCell>
+                        <TableCell>{order.customer_name || order.customer?.full_name || "Unknown"}</TableCell>
                         <TableCell className="hidden md:table-cell">{order.campaign?.name || "Unknown"}</TableCell>
                         <TableCell className="text-center hidden sm:table-cell">
                           {order.order_items?.reduce((sum, i) => sum + i.quantity, 0) || 0}

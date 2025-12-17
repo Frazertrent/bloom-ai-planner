@@ -531,6 +531,7 @@ export type Database = {
           campaign_id: string
           created_at: string | null
           customer_id: string
+          customer_name: string | null
           entry_method: string
           fulfillment_status: string
           id: string
@@ -551,6 +552,7 @@ export type Database = {
           campaign_id: string
           created_at?: string | null
           customer_id: string
+          customer_name?: string | null
           entry_method?: string
           fulfillment_status?: string
           id?: string
@@ -571,6 +573,7 @@ export type Database = {
           campaign_id?: string
           created_at?: string | null
           customer_id?: string
+          customer_name?: string | null
           entry_method?: string
           fulfillment_status?: string
           id?: string

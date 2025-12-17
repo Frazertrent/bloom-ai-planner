@@ -39,7 +39,7 @@ export function useFloristOrdersList(campaignId?: string, statusFilter?: Fulfill
       // Build orders query (show all orders, not filtered by payment status)
       let query = supabase
         .from("bf_orders")
-        .select("*")
+        .select("*, customer_name")
         .in("campaign_id", campaignIds)
         .order("created_at", { ascending: false });
 

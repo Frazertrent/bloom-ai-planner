@@ -208,6 +208,7 @@ export interface BFOrder {
   campaign_id: string;
   customer_id: string;
   attributed_student_id: string | null;
+  customer_name: string | null;
   subtotal: number;
   platform_fee: number;
   processing_fee: number;
