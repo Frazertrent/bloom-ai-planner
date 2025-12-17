@@ -236,21 +236,31 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
                   <TableRow>
                     <TableHead>Product</TableHead>
                     <TableHead className="text-right">Retail Price</TableHead>
+                    <TableHead className="text-right">Your Profit</TableHead>
                     <TableHead className="text-right">Max Qty</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {products.map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell className="font-medium">{product.name}</TableCell>
-                      <TableCell className="text-right">
-                        ${product.retailPrice.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {product.maxQuantity || "No limit"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {products.map((product) => {
+                    const revenue = calculateRevenueAtPrice(
+                      product.floristPrice,
+                      product.retailPrice
+                    );
+                    return (
+                      <TableRow key={product.id}>
+                        <TableCell className="font-medium">{product.name}</TableCell>
+                        <TableCell className="text-right">
+                          ${product.retailPrice.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-right text-emerald-600 font-medium">
+                          +${revenue.orgProfit.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {product.maxQuantity || "No limit"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </CardContent>
