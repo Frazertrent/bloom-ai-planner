@@ -22,8 +22,8 @@ export default function OrderPage() {
     if (data) {
       setCampaignContext(
         data.campaign.id,
-        data.student.id,
-        data.student.name
+        data.student?.id || null,
+        data.student?.name || null
       );
     }
   }, [data, setCampaignContext]);
@@ -59,7 +59,10 @@ export default function OrderPage() {
     );
   }
 
-  const { campaign, organization, student, products, isActive, isExpired, isNotStarted } = data;
+  const { campaign, organization, student, products, isActive, isExpired, isNotStarted, trackingMode } = data;
+
+  // For 'none' tracking mode, we show "Supporting: {Organization}" instead of a student
+  const supportingText = student ? student.name : organization.name;
 
   // Common header component for non-active states
   const CampaignHeader = () => (
@@ -71,7 +74,9 @@ export default function OrderPage() {
           </div>
           <div>
             <h1 className="font-bold text-lg">{organization.name} Fundraiser</h1>
-            <p className="text-sm text-muted-foreground">Supporting: {student.name}</p>
+            {trackingMode !== 'none' && student && (
+              <p className="text-sm text-muted-foreground">Supporting: {student.name}</p>
+            )}
           </div>
         </div>
       </div>
@@ -91,9 +96,11 @@ export default function OrderPage() {
               This fundraiser opens on {format(new Date(campaign.start_date), "MMMM d, yyyy")}.
               Check back then to place your order!
             </p>
-            <p className="text-sm text-muted-foreground">
-              Supporting {student.name} from {organization.name}
-            </p>
+            {trackingMode !== 'none' && student && (
+              <p className="text-sm text-muted-foreground">
+                Supporting {student.name} from {organization.name}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -154,9 +161,15 @@ export default function OrderPage() {
               <h1 className="font-bold text-sm md:text-lg truncate">
                 {organization.name} Fundraiser
               </h1>
-              <p className="text-xs md:text-sm text-muted-foreground">
-                Supporting: <span className="font-medium text-foreground">{student.name}</span>
-              </p>
+              {trackingMode !== 'none' && student ? (
+                <p className="text-xs md:text-sm text-muted-foreground">
+                  Supporting: <span className="font-medium text-foreground">{student.name}</span>
+                </p>
+              ) : (
+                <p className="text-xs md:text-sm text-muted-foreground">
+                  {campaign.name}
+                </p>
+              )}
             </div>
           </div>
         </div>

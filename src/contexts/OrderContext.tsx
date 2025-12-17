@@ -18,7 +18,7 @@ interface OrderContextType {
   campaignId: string | null;
   studentId: string | null;
   studentName: string | null;
-  setCampaignContext: (campaignId: string, studentId: string, studentName: string) => void;
+  setCampaignContext: (campaignId: string, studentId: string | null, studentName: string | null) => void;
   
   // Cart
   cart: CartItem[];
