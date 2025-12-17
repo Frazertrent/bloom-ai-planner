@@ -14,6 +14,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Building2, Phone, MapPin, Bell, Mail, ShoppingCart, Calendar, AlertTriangle, Info } from "lucide-react";
 
+const PRESET_ORG_TYPES = ["school", "sports", "dance", "cheer", "church", "other"];
+
 const ORG_TYPE_OPTIONS = [
   { value: "school", label: "School" },
   { value: "sports", label: "Sports Team" },
@@ -39,6 +41,7 @@ export default function OrgSettings() {
   const [orgForm, setOrgForm] = useState({
     name: "",
     org_type: "",
+    custom_org_type: "",
     contact_phone: "",
     address: "",
   });
@@ -54,9 +57,11 @@ export default function OrgSettings() {
   // Initialize form with org data
   useEffect(() => {
     if (org) {
+      const isPresetType = PRESET_ORG_TYPES.includes(org.org_type || "");
       setOrgForm({
         name: org.name || "",
-        org_type: org.org_type || "",
+        org_type: isPresetType ? (org.org_type || "") : "other",
+        custom_org_type: isPresetType ? "" : (org.org_type || ""),
         contact_phone: org.contact_phone || "",
         address: org.address || "",
       });
@@ -91,6 +96,16 @@ export default function OrgSettings() {
       return;
     }
 
+    if (orgForm.org_type === "other" && !orgForm.custom_org_type.trim()) {
+      toast.error("Please specify your organization type");
+      return;
+    }
+
+    // Determine final org_type to save
+    const finalOrgType = orgForm.org_type === "other" 
+      ? orgForm.custom_org_type.trim() 
+      : orgForm.org_type;
+
     try {
       if (org?.id) {
         // UPDATE existing organization
@@ -98,7 +113,7 @@ export default function OrgSettings() {
           .from("bf_organizations")
           .update({
             name: orgForm.name.trim(),
-            org_type: orgForm.org_type,
+            org_type: finalOrgType,
             contact_phone: orgForm.contact_phone || null,
             address: orgForm.address || null,
           })
@@ -112,7 +127,7 @@ export default function OrgSettings() {
           .insert({
             user_id: user.id,
             name: orgForm.name.trim(),
-            org_type: orgForm.org_type,
+            org_type: finalOrgType,
             contact_phone: orgForm.contact_phone || null,
             address: orgForm.address || null,
           });
@@ -194,7 +209,11 @@ export default function OrgSettings() {
                   <Label htmlFor="type">Organization Type</Label>
                   <Select
                     value={orgForm.org_type}
-                    onValueChange={(value) => setOrgForm({ ...orgForm, org_type: value })}
+                    onValueChange={(value) => setOrgForm({ 
+                      ...orgForm, 
+                      org_type: value,
+                      custom_org_type: value === "other" ? orgForm.custom_org_type : ""
+                    })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select organization type" />
@@ -208,6 +227,17 @@ export default function OrgSettings() {
                     </SelectContent>
                   </Select>
                 </div>
+                {orgForm.org_type === "other" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="custom_type">Please Specify Organization Type</Label>
+                    <Input 
+                      id="custom_type"
+                      value={orgForm.custom_org_type}
+                      onChange={(e) => setOrgForm({ ...orgForm, custom_org_type: e.target.value })}
+                      placeholder="e.g., Youth Group, Non-Profit, Book Club"
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="phone" className="flex items-center gap-2">
                     <Phone className="h-4 w-4" />
