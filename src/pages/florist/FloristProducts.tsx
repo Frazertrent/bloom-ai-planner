@@ -255,19 +255,20 @@ export default function FloristProductsPage() {
               >
                 {/* Product Image */}
                 <div className="h-40 bg-muted/30 relative">
-                  {product.image_url ? (
+                  {/* Fallback always rendered underneath */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <ImageOff className="h-12 w-12 text-muted-foreground/30" />
+                  </div>
+                  {/* Image overlays fallback - if fails, becomes transparent */}
+                  {product.image_url && (
                     <img
                       src={product.image_url}
                       alt={product.name}
-                      className="w-full h-full object-cover"
+                      className="absolute inset-0 w-full h-full object-cover"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = "none";
+                        (e.target as HTMLImageElement).style.opacity = "0";
                       }}
                     />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <ImageOff className="h-12 w-12 text-muted-foreground/30" />
-                    </div>
                   )}
                   
                   {/* Status Badge */}
