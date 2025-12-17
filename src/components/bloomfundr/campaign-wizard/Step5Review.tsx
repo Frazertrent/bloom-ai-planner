@@ -183,7 +183,7 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
             {campaign.pickup_date && (
               <div>
                 <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  <MapPin className="h-3 w-3" /> Pickup Date
+                  <MapPin className="h-3 w-3" /> Pickup/Delivery Date
                 </p>
                 <p className="font-medium">
                   {format(new Date(campaign.pickup_date), "PPP")}

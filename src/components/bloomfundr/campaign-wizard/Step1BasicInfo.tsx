@@ -386,13 +386,13 @@ export function Step1BasicInfo({
             )}
           />
 
-          {/* Pickup Date */}
+          {/* Pickup and Delivery Date */}
           <FormField
             control={form.control}
             name="pickupDate"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Pickup Date</FormLabel>
+                <FormLabel>Pickup and Delivery Date</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -406,7 +406,7 @@ export function Step1BasicInfo({
                         {field.value ? (
                           format(field.value, "PPP")
                         ) : (
-                          <span>Pick a pickup date</span>
+                          <span>Pick a date</span>
                         )}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
@@ -426,7 +426,7 @@ export function Step1BasicInfo({
                   </PopoverContent>
                 </Popover>
                 <FormDescription>
-                  When customers will pick up their orders
+                  When orders will be ready for pickup/delivery
                 </FormDescription>
                 <FormMessage />
               </FormItem>
