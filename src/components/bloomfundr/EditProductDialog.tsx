@@ -35,6 +35,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { ProductImageUpload } from "./ProductImageUpload";
 import type { BFProduct, CustomizationOptions } from "@/types/bloomfundr";
 
 const productSchema = z.object({
@@ -44,7 +45,7 @@ const productSchema = z.object({
     required_error: "Please select a category",
   }),
   base_cost: z.coerce.number().min(0.01, "Cost must be greater than 0").max(10000, "Cost seems too high"),
-  image_url: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
+  image_url: z.string().nullable().optional(),
   is_active: z.boolean().default(true),
 });
 
@@ -70,7 +71,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       description: "",
       category: undefined,
       base_cost: 0,
-      image_url: "",
+      image_url: null,
       is_active: true,
     },
   });
@@ -280,22 +281,10 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="image_url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Image URL</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="https://example.com/image.jpg"
-                      className="bg-bloomfundr-background border-bloomfundr-muted"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <ProductImageUpload
+              value={form.watch("image_url") || null}
+              onChange={(url) => form.setValue("image_url", url)}
+              disabled={updateProduct.isPending}
             />
 
             <FormField
