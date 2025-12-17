@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { format, startOfDay, isBefore } from "date-fns";
+import { format, startOfDay, isBefore, parseISO } from "date-fns";
 import {
   ArrowLeft,
   Loader2,
@@ -137,7 +137,7 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
   
   // Determine if this is a future campaign
   const today = startOfDay(new Date());
-  const startDate = startOfDay(new Date(campaign.start_date));
+  const startDate = startOfDay(parseISO(campaign.start_date));
   const isFutureCampaign = isBefore(today, startDate);
   const isAlreadyLaunched = campaign.status === 'active' || campaign.status === 'scheduled';
   const showAsLaunched = hasLaunched || isAlreadyLaunched;
@@ -171,13 +171,13 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
             <div>
               <p className="text-sm text-muted-foreground">Start Date</p>
               <p className="font-medium">
-                {format(new Date(campaign.start_date), "PPP")}
+                {format(parseISO(campaign.start_date), "MMMM do, yyyy")}
               </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">End Date</p>
               <p className="font-medium">
-                {format(new Date(campaign.end_date), "PPP")}
+                {format(parseISO(campaign.end_date), "MMMM do, yyyy")}
               </p>
             </div>
             {campaign.pickup_date && (
@@ -186,7 +186,7 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
                   <MapPin className="h-3 w-3" /> Seller Pickup Date
                 </p>
                 <p className="font-medium">
-                  {format(new Date(campaign.pickup_date), "PPP")}
+                  {format(parseISO(campaign.pickup_date), "MMMM do, yyyy")}
                 </p>
               </div>
             )}
