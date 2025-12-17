@@ -55,10 +55,7 @@ export default function FloristOrderDetail() {
     updateStatus.mutate({ orderId: id, status: "ready", campaignId: order?.campaign_id });
   };
 
-  const handleMarkPickedUp = () => {
-    if (!id) return;
-    updateStatus.mutate({ orderId: id, status: "picked_up", campaignId: order?.campaign_id });
-  };
+  // Note: "Picked Up" status is now controlled by organizations only
 
   if (isLoading) {
     return (
@@ -121,10 +118,14 @@ export default function FloristOrderDetail() {
               </Button>
             )}
             {order.fulfillment_status === "ready" && (
-              <Button onClick={handleMarkPickedUp} disabled={updateStatus.isPending}>
-                <Package className="h-4 w-4 mr-2" />
-                Mark Picked Up
-              </Button>
+              <div className="text-sm text-muted-foreground bg-muted px-3 py-2 rounded-lg">
+                Awaiting pickup by organization
+              </div>
+            )}
+            {order.fulfillment_status === "picked_up" && (
+              <div className="text-sm text-emerald-600 bg-emerald-500/10 px-3 py-2 rounded-lg">
+                ✓ Picked up
+              </div>
             )}
           </div>
         </div>

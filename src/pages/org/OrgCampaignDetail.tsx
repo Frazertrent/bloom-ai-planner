@@ -83,6 +83,7 @@ export default function OrgCampaignDetail() {
   const [showPayoutDetail, setShowPayoutDetail] = useState(false);
   const [showAllStudents, setShowAllStudents] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [orderStatusFilter, setOrderStatusFilter] = useState<string>("all");
 
   const { data: analytics, isLoading, refetch } = useOrgCampaignAnalytics(id);
   const { data: payoutData, isLoading: payoutsLoading } = useCampaignPayouts(id);
@@ -587,10 +588,18 @@ export default function OrgCampaignDetail() {
           </CardContent>
         </Card>
 
-        {/* Tabs: Orders & Student Links */}
+        {/* Tabs: Orders, Fulfillment & Student Links */}
         <Tabs defaultValue="orders">
-          <TabsList>
-            <TabsTrigger value="orders">Recent Orders</TabsTrigger>
+          <TabsList className="flex-wrap h-auto gap-1">
+            <TabsTrigger value="orders">Orders</TabsTrigger>
+            <TabsTrigger value="fulfillment">
+              Fulfillment
+              {readyOrders.length > 0 && (
+                <span className="ml-1.5 px-1.5 py-0.5 text-xs bg-blue-500/10 text-blue-600 rounded-full">
+                  {readyOrders.length}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="payments">
               Payments
               {stats.pendingOrders > 0 && (
@@ -599,10 +608,21 @@ export default function OrgCampaignDetail() {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="links">Student Links</TabsTrigger>
+            <TabsTrigger value="links">Links</TabsTrigger>
           </TabsList>
 
           <TabsContent value="orders" className="mt-4 space-y-4">
+            {/* Order Status Filter Tabs */}
+            <Tabs value={orderStatusFilter} onValueChange={setOrderStatusFilter}>
+              <TabsList className="h-auto flex-wrap gap-1">
+                <TabsTrigger value="all" className="text-xs">All ({orders.length})</TabsTrigger>
+                <TabsTrigger value="pending" className="text-xs">Pending ({stats.fulfillmentBreakdown.pending})</TabsTrigger>
+                <TabsTrigger value="in_production" className="text-xs">In Production ({stats.fulfillmentBreakdown.in_production})</TabsTrigger>
+                <TabsTrigger value="ready" className="text-xs">Ready ({stats.fulfillmentBreakdown.ready})</TabsTrigger>
+                <TabsTrigger value="picked_up" className="text-xs">Picked Up ({stats.fulfillmentBreakdown.picked_up})</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
             {/* Bulk Actions */}
             {selectedOrders.length > 0 && (
               <Card className="bg-muted/50 border-border">
@@ -626,18 +646,26 @@ export default function OrgCampaignDetail() {
 
             <Card className="bg-card border-border">
               <CardHeader>
-                <CardTitle>Recent Orders</CardTitle>
-                <CardDescription>{orders.length} orders total</CardDescription>
+                <CardTitle>Orders</CardTitle>
+                <CardDescription>
+                  {orderStatusFilter === "all" ? `${orders.length} orders total` : `${orders.filter(o => o.fulfillmentStatus === orderStatusFilter).length} ${orderStatusFilter.replace("_", " ")} orders`}
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                {orders.length > 0 ? (
+                {(() => {
+                  const filteredOrders = orderStatusFilter === "all" 
+                    ? orders 
+                    : orders.filter(o => o.fulfillmentStatus === orderStatusFilter);
+                  const filteredReadyOrders = filteredOrders.filter(o => o.fulfillmentStatus === "ready");
+                  
+                  return filteredOrders.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-10">
-                          {readyOrders.length > 0 && (
+                          {filteredReadyOrders.length > 0 && (
                             <Checkbox
-                              checked={allReadySelected}
+                              checked={filteredReadyOrders.length > 0 && filteredReadyOrders.every(o => selectedOrders.includes(o.id))}
                               onCheckedChange={toggleAllReadyOrders}
                               aria-label="Select all ready orders"
                             />
@@ -645,16 +673,16 @@ export default function OrgCampaignDetail() {
                         </TableHead>
                         <TableHead>Order #</TableHead>
                         <TableHead>Customer</TableHead>
-                        <TableHead>Student</TableHead>
+                        <TableHead className="hidden md:table-cell">Student</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
-                        <TableHead>Payment</TableHead>
-                        <TableHead>Fulfillment</TableHead>
-                        <TableHead>Date</TableHead>
+                        <TableHead className="hidden sm:table-cell">Payment</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="hidden lg:table-cell">Date</TableHead>
                         <TableHead className="w-24">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {orders.slice(0, 10).map((order) => (
+                      {filteredOrders.slice(0, 20).map((order) => (
                         <TableRow key={order.id}>
                           <TableCell>
                             {order.fulfillmentStatus === "ready" && (
@@ -667,9 +695,9 @@ export default function OrgCampaignDetail() {
                           </TableCell>
                           <TableCell className="font-medium">{order.orderNumber}</TableCell>
                           <TableCell>{order.customerName}</TableCell>
-                          <TableCell>{order.studentName || "—"}</TableCell>
+                          <TableCell className="hidden md:table-cell">{order.studentName || "—"}</TableCell>
                           <TableCell className="text-right">${order.total.toFixed(2)}</TableCell>
-                          <TableCell>
+                          <TableCell className="hidden sm:table-cell">
                             <Badge variant={order.paymentStatus === "paid" ? "default" : "secondary"} className={order.paymentStatus === "paid" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"}>
                               {order.paymentStatus === "paid" ? "Paid" : "Pending"}
                             </Badge>
@@ -677,7 +705,7 @@ export default function OrgCampaignDetail() {
                           <TableCell>
                             <OrderFulfillmentBadge status={order.fulfillmentStatus as FulfillmentStatus} />
                           </TableCell>
-                          <TableCell className="text-muted-foreground">
+                          <TableCell className="text-muted-foreground hidden lg:table-cell">
                             {format(new Date(order.createdAt), "MMM d, h:mm a")}
                           </TableCell>
                           <TableCell>
@@ -699,11 +727,150 @@ export default function OrgCampaignDetail() {
                   </Table>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
-                    No orders yet
+                    {orderStatusFilter === "all" ? "No orders yet" : `No ${orderStatusFilter.replace("_", " ")} orders`}
                   </div>
-                )}
+                );
+                })()}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Fulfillment Tab */}
+          <TabsContent value="fulfillment" className="mt-4 space-y-4">
+            {/* Ready for Pickup Summary */}
+            <Card className={`border-2 ${readyOrders.length > 0 ? "border-blue-500/30 bg-blue-500/5" : "border-border"}`}>
+              <CardContent className="py-6">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className={`p-3 rounded-full ${readyOrders.length > 0 ? "bg-blue-500/10" : "bg-muted"}`}>
+                      <Package className={`h-6 w-6 ${readyOrders.length > 0 ? "text-blue-600" : "text-muted-foreground"}`} />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{readyOrders.length} Ready for Pickup</p>
+                      <p className="text-sm text-muted-foreground">
+                        {florist?.business_name ? `from ${florist.business_name}` : "Orders ready to collect"}
+                      </p>
+                    </div>
+                  </div>
+                  {readyOrders.length > 0 && (
+                    <Button
+                      onClick={() => {
+                        setSelectedOrders(readyOrders.map(o => o.id));
+                        handleBulkMarkPickedUp();
+                      }}
+                      disabled={bulkUpdateOrderStatus.isPending}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Mark All Picked Up
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Fulfillment Progress */}
+            {stats.totalOrders > 0 && (
+              <FulfillmentProgressCard
+                breakdown={stats.fulfillmentBreakdown}
+                totalOrders={stats.totalOrders}
+              />
+            )}
+
+            {/* Ready Orders Table */}
+            {readyOrders.length > 0 && (
+              <Card className="bg-card border-border">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5 text-blue-600" />
+                    Ready Orders
+                  </CardTitle>
+                  <CardDescription>Select orders as you collect them</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-10">
+                          <Checkbox
+                            checked={allReadySelected}
+                            onCheckedChange={toggleAllReadyOrders}
+                            aria-label="Select all ready orders"
+                          />
+                        </TableHead>
+                        <TableHead>Order #</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead className="hidden md:table-cell">Student</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="w-24">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {readyOrders.map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedOrders.includes(order.id)}
+                              onCheckedChange={() => toggleOrderSelection(order.id)}
+                              aria-label={`Select order ${order.orderNumber}`}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">{order.orderNumber}</TableCell>
+                          <TableCell>{order.customerName}</TableCell>
+                          <TableCell className="hidden md:table-cell">{order.studentName || "—"}</TableCell>
+                          <TableCell className="text-right">${order.total.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleMarkPickedUp(order.id)}
+                              disabled={updateOrderStatus.isPending}
+                            >
+                              <Package className="h-4 w-4 mr-1" />
+                              Pickup
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  
+                  {selectedOrders.length > 0 && (
+                    <div className="mt-4 pt-4 border-t flex justify-end">
+                      <Button
+                        onClick={handleBulkMarkPickedUp}
+                        disabled={bulkUpdateOrderStatus.isPending}
+                      >
+                        <Package className="h-4 w-4 mr-2" />
+                        Mark {selectedOrders.length} as Picked Up
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Picked Up Orders Summary */}
+            {stats.fulfillmentBreakdown.picked_up > 0 && (
+              <Card className="bg-emerald-500/5 border-emerald-500/20">
+                <CardContent className="py-4">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-emerald-600" />
+                    <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                      {stats.fulfillmentBreakdown.picked_up} of {stats.totalOrders} orders picked up
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Empty state */}
+            {stats.totalOrders === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium">No orders to fulfill yet</p>
+                <p className="text-sm mt-1">Orders will appear here once customers start purchasing</p>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="payments" className="mt-4">

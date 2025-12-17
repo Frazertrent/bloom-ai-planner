@@ -233,3 +233,82 @@ export function useTopSellers(limit: number = 5) {
     enabled: !!org?.id,
   });
 }
+
+interface ReadyOrdersData {
+  totalReady: number;
+  byCampaign: {
+    campaignId: string;
+    campaignName: string;
+    floristName: string;
+    readyCount: number;
+  }[];
+}
+
+export function useOrgReadyOrders() {
+  const { data: org } = useOrgProfile();
+
+  return useQuery({
+    queryKey: ["org-ready-orders", org?.id],
+    queryFn: async (): Promise<ReadyOrdersData> => {
+      if (!org?.id) {
+        return { totalReady: 0, byCampaign: [] };
+      }
+
+      // Get campaigns for this org with florist info
+      const { data: campaigns } = await supabase
+        .from("bf_campaigns")
+        .select("id, name, florist_id")
+        .eq("organization_id", org.id)
+        .in("status", ["active", "closed"]);
+
+      if (!campaigns || campaigns.length === 0) {
+        return { totalReady: 0, byCampaign: [] };
+      }
+
+      // Get florist names
+      const floristIds = [...new Set(campaigns.map(c => c.florist_id))];
+      const { data: florists } = await supabase
+        .from("bf_florists")
+        .select("id, business_name")
+        .in("id", floristIds);
+
+      const floristMap = new Map(florists?.map(f => [f.id, f.business_name]) || []);
+
+      const campaignIds = campaigns.map(c => c.id);
+
+      // Get ready orders grouped by campaign
+      const { data: readyOrders } = await supabase
+        .from("bf_orders")
+        .select("id, campaign_id")
+        .in("campaign_id", campaignIds)
+        .eq("fulfillment_status", "ready");
+
+      if (!readyOrders || readyOrders.length === 0) {
+        return { totalReady: 0, byCampaign: [] };
+      }
+
+      // Group by campaign
+      const countByCampaign = new Map<string, number>();
+      readyOrders.forEach(order => {
+        const current = countByCampaign.get(order.campaign_id) || 0;
+        countByCampaign.set(order.campaign_id, current + 1);
+      });
+
+      const byCampaign = campaigns
+        .filter(c => countByCampaign.has(c.id))
+        .map(c => ({
+          campaignId: c.id,
+          campaignName: c.name,
+          floristName: floristMap.get(c.florist_id) || "Unknown Florist",
+          readyCount: countByCampaign.get(c.id) || 0,
+        }))
+        .sort((a, b) => b.readyCount - a.readyCount);
+
+      return {
+        totalReady: readyOrders.length,
+        byCampaign,
+      };
+    },
+    enabled: !!org?.id,
+  });
+}
