@@ -409,21 +409,32 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
         </Button>
       </div>
 
-      {/* Secondary Action Buttons */}
-      <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 pt-4 border-t">
-        <Button variant="outline" onClick={onBack}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          {trackingMode === 'none' ? 'Back to Pricing' : 'Back to Sellers'}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={handleSaveDraft}
-          disabled={saveDraft.isPending || launchCampaign.isPending}
-        >
-          {saveDraft.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Save as Draft
-        </Button>
-      </div>
+      {/* Secondary Action Buttons - Different based on launch status */}
+      {showAsLaunched ? (
+        <div className="flex flex-col sm:flex-row sm:justify-center gap-3 pt-4 border-t">
+          <Button variant="outline" onClick={() => navigate(`/org/campaigns/${campaignId}`)}>
+            View Campaign Details
+          </Button>
+          <Button variant="outline" onClick={() => navigate("/org/campaigns")}>
+            Back to Campaigns
+          </Button>
+        </div>
+      ) : (
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 pt-4 border-t">
+          <Button variant="outline" onClick={onBack}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            {trackingMode === 'none' ? 'Back to Pricing' : 'Back to Sellers'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleSaveDraft}
+            disabled={saveDraft.isPending || launchCampaign.isPending}
+          >
+            {saveDraft.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save as Draft
+          </Button>
+        </div>
+      )}
 
       {/* Success Modal */}
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
