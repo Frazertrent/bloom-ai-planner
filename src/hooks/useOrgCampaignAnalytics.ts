@@ -43,6 +43,7 @@ export interface CampaignAnalytics {
     studentName: string | null;
     total: number;
     fulfillmentStatus: string;
+    paymentStatus: string;
     createdAt: string;
   }>;
   allOrders: Array<{
@@ -105,8 +106,8 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
         .eq("campaign_id", campaignId)
         .order("created_at", { ascending: false });
 
-      // Filter paid orders for stats
-      const orders = (allOrdersData || []).filter((o) => o.payment_status === "paid");
+      // All orders for display (not filtered by payment status)
+      const allOrders = allOrdersData || [];
 
       // Fetch students for this campaign
       const { data: campaignStudents } = await supabase
@@ -114,8 +115,6 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
         .select(`
           id,
           magic_link_code,
-          order_count,
-          total_sales,
           student:bf_students(id, name)
         `)
         .eq("campaign_id", campaignId);
@@ -131,7 +130,7 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
         `)
         .eq("campaign_id", campaignId);
 
-      // Fetch order items for quantity calculations
+      // Fetch order items for quantity calculations (from all orders)
       const { data: orderItems } = await supabase
         .from("bf_order_items")
         .select(`
@@ -139,7 +138,7 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
           quantity,
           unit_price
         `)
-        .in("order_id", (orders || []).map(o => o.id));
+        .in("order_id", allOrders.map(o => o.id));
 
       // Calculate product quantities
       const productQuantities: Record<string, number> = {};
@@ -148,7 +147,7 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
           (productQuantities[item.campaign_product_id] || 0) + item.quantity;
       });
 
-      // Build student name map
+      // Build student name map and campaign student id map
       const studentNameMap: Record<string, string> = {};
       (campaignStudents || []).forEach(cs => {
         if (cs.student?.id) {
@@ -156,20 +155,32 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
         }
       });
 
-      // Calculate stats
-      const totalOrders = orders?.length || 0;
-      const totalRevenue = orders?.reduce((sum, o) => sum + Number(o.subtotal), 0) || 0;
+      // Calculate student stats directly from orders (not from stale bf_campaign_students data)
+      const studentStats: Record<string, { orderCount: number; totalSales: number }> = {};
+      allOrders.forEach(o => {
+        if (o.attributed_student_id) {
+          if (!studentStats[o.attributed_student_id]) {
+            studentStats[o.attributed_student_id] = { orderCount: 0, totalSales: 0 };
+          }
+          studentStats[o.attributed_student_id].orderCount += 1;
+          studentStats[o.attributed_student_id].totalSales += Number(o.subtotal);
+        }
+      });
+
+      // Calculate stats from all orders
+      const totalOrders = allOrders.length;
+      const totalRevenue = allOrders.reduce((sum, o) => sum + Number(o.subtotal), 0);
       const orgEarnings = totalRevenue * (campaign.organization_margin_percent / 100);
       const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-      const paidOrders = (allOrdersData || []).filter(o => o.payment_status === "paid").length;
-      const pendingOrders = (allOrdersData || []).filter(o => o.payment_status === "pending").length;
+      const paidOrders = allOrders.filter(o => o.payment_status === "paid").length;
+      const pendingOrders = allOrders.filter(o => o.payment_status === "pending").length;
 
-      // Calculate fulfillment breakdown (only for paid orders)
+      // Calculate fulfillment breakdown (from all orders)
       const fulfillmentBreakdown: FulfillmentBreakdown = {
-        pending: orders.filter(o => o.fulfillment_status === "pending").length,
-        in_production: orders.filter(o => o.fulfillment_status === "in_production").length,
-        ready: orders.filter(o => o.fulfillment_status === "ready").length,
-        picked_up: orders.filter(o => o.fulfillment_status === "picked_up").length,
+        pending: allOrders.filter(o => o.fulfillment_status === "pending").length,
+        in_production: allOrders.filter(o => o.fulfillment_status === "in_production").length,
+        ready: allOrders.filter(o => o.fulfillment_status === "ready").length,
+        picked_up: allOrders.filter(o => o.fulfillment_status === "picked_up").length,
       };
 
       // Transform products
@@ -181,29 +192,33 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
         revenue: (productQuantities[cp.id] || 0) * Number(cp.retail_price),
       }));
 
-      // Transform students
-      const students = (campaignStudents || []).map(cs => ({
-        id: cs.student?.id || cs.id,
-        name: cs.student?.name || "Unknown",
-        magicLinkCode: cs.magic_link_code,
-        orderCount: cs.order_count || 0,
-        totalSales: Number(cs.total_sales) || 0,
-      })).sort((a, b) => b.totalSales - a.totalSales);
+      // Transform students - use calculated stats from orders, not stale db data
+      const students = (campaignStudents || []).map(cs => {
+        const stats = studentStats[cs.student?.id || ''] || { orderCount: 0, totalSales: 0 };
+        return {
+          id: cs.student?.id || cs.id,
+          name: cs.student?.name || "Unknown",
+          magicLinkCode: cs.magic_link_code,
+          orderCount: stats.orderCount,
+          totalSales: stats.totalSales,
+        };
+      }).sort((a, b) => b.totalSales - a.totalSales);
 
-      // Transform orders
-      const transformedOrders = (orders || []).map(o => ({
+      // Transform orders (show all orders, include payment status)
+      const transformedOrders = allOrders.map(o => ({
         id: o.id,
         orderNumber: o.order_number,
         customerName: (o.customer as any)?.full_name || "Unknown",
         studentName: o.attributed_student_id ? studentNameMap[o.attributed_student_id] || null : null,
         total: Number(o.total),
         fulfillmentStatus: o.fulfillment_status,
+        paymentStatus: o.payment_status,
         createdAt: o.created_at || "",
       }));
 
       // Calculate sales by day
       const salesByDayMap: Record<string, { orders: number; revenue: number }> = {};
-      (orders || []).forEach(o => {
+      allOrders.forEach(o => {
         const date = o.created_at?.split("T")[0] || "";
         if (!salesByDayMap[date]) {
           salesByDayMap[date] = { orders: 0, revenue: 0 };
@@ -217,7 +232,7 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
         .sort((a, b) => a.date.localeCompare(b.date));
 
       // Transform all orders for payments tab
-      const allOrders = (allOrdersData || []).map(o => ({
+      const allOrdersForPayments = allOrders.map(o => ({
         id: o.id,
         orderNumber: o.order_number,
         customerName: (o.customer as any)?.full_name || "Unknown",
@@ -245,7 +260,7 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
         products,
         students,
         orders: transformedOrders,
-        allOrders,
+        allOrders: allOrdersForPayments,
         salesByDay,
       };
     },

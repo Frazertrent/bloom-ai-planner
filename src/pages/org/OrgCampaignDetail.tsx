@@ -27,6 +27,7 @@ import { PayoutBreakdownCard } from "@/components/bloomfundr/PayoutBreakdownCard
 import { PayoutStatusCard } from "@/components/bloomfundr/PayoutStatusCard";
 import { PayoutDetailSheet } from "@/components/bloomfundr/PayoutDetailSheet";
 import { OrderFulfillmentBadge } from "@/components/bloomfundr/OrderFulfillmentBadge";
+import { Badge } from "@/components/ui/badge";
 import { FulfillmentProgressCard } from "@/components/bloomfundr/FulfillmentProgressCard";
 import { useOrgCampaignAnalytics, useOrgCampaignRealtime } from "@/hooks/useOrgCampaignAnalytics";
 import { useCampaignPayouts, useCreatePayouts } from "@/hooks/useCampaignPayouts";
@@ -646,7 +647,8 @@ export default function OrgCampaignDetail() {
                         <TableHead>Customer</TableHead>
                         <TableHead>Student</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead>Payment</TableHead>
+                        <TableHead>Fulfillment</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead className="w-24">Action</TableHead>
                       </TableRow>
@@ -667,6 +669,11 @@ export default function OrgCampaignDetail() {
                           <TableCell>{order.customerName}</TableCell>
                           <TableCell>{order.studentName || "—"}</TableCell>
                           <TableCell className="text-right">${order.total.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <Badge variant={order.paymentStatus === "paid" ? "default" : "secondary"} className={order.paymentStatus === "paid" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"}>
+                              {order.paymentStatus === "paid" ? "Paid" : "Pending"}
+                            </Badge>
+                          </TableCell>
                           <TableCell>
                             <OrderFulfillmentBadge status={order.fulfillmentStatus as FulfillmentStatus} />
                           </TableCell>

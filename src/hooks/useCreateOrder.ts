@@ -106,7 +106,7 @@ export function useCreateOrder() {
         await supabase
           .from("bf_campaign_students")
           .update({
-            order_count: (currentStudentStats.order_count || 0) + 1,
+            order_count: Number(currentStudentStats.order_count || 0) + 1,
             total_sales: Number(currentStudentStats.total_sales || 0) + subtotal,
           })
           .eq("campaign_id", campaignId)

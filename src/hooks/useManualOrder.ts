@@ -165,8 +165,8 @@ export function useCreateManualOrder() {
         await supabase
           .from("bf_campaign_students")
           .update({
-            total_sales: (studentRecord.total_sales || 0) + subtotal,
-            order_count: (studentRecord.order_count || 0) + 1,
+            total_sales: Number(studentRecord.total_sales || 0) + subtotal,
+            order_count: Number(studentRecord.order_count || 0) + 1,
           })
           .eq("id", studentRecord.id);
       }
