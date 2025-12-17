@@ -12,8 +12,7 @@ interface OrderDetails {
   total: number;
   campaignName: string;
   organizationName: string;
-  pickupDate: string | null;
-  pickupLocation: string | null;
+  endDate: string;
 }
 
 export default function OrderSuccess() {
@@ -39,8 +38,7 @@ export default function OrderSuccess() {
             total,
             campaign:bf_campaigns(
               name,
-              pickup_date,
-              pickup_location,
+              end_date,
               organization:bf_organizations(name)
             )
           `)
@@ -55,8 +53,7 @@ export default function OrderSuccess() {
             total: Number(order.total),
             campaignName: order.campaign.name,
             organizationName: order.campaign.organization?.name || "Organization",
-            pickupDate: order.campaign.pickup_date,
-            pickupLocation: order.campaign.pickup_location,
+            endDate: order.campaign.end_date,
           });
         }
       } catch (error) {
@@ -123,29 +120,22 @@ export default function OrderSuccess() {
                   <span className="font-bold text-lg">${orderDetails?.total.toFixed(2) || "0.00"}</span>
                 </div>
                 
-                {(orderDetails?.pickupDate || orderDetails?.pickupLocation) && (
+                {orderDetails?.endDate && (
                   <>
                     <Separator className="my-3" />
                     <div className="bg-muted/50 rounded-lg p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Package className="h-4 w-4 text-primary" />
-                        <span className="font-medium">Pickup Information</span>
+                        <span className="font-medium">Delivery Information</span>
                       </div>
-                      {orderDetails?.pickupDate && (
-                        <p className="text-sm text-muted-foreground">
-                          Date: {new Date(orderDetails.pickupDate).toLocaleDateString("en-US", {
-                            weekday: "long",
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric"
-                          })}
-                        </p>
-                      )}
-                      {orderDetails?.pickupLocation && (
-                        <p className="text-sm text-muted-foreground">
-                          Location: {orderDetails.pickupLocation}
-                        </p>
-                      )}
+                      <p className="text-sm text-muted-foreground">
+                        Delivered By: {new Date(new Date(orderDetails.endDate).getTime() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric"
+                        })}
+                      </p>
                     </div>
                   </>
                 )}
