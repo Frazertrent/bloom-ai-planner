@@ -119,6 +119,10 @@ function ProductPricingCard({
                 onChange={(e) =>
                   onUpdate({ orgProfitPercent: parseFloat(e.target.value) || 0 })
                 }
+                onBlur={(e) => {
+                  const cleanValue = parseFloat(e.target.value) || 0;
+                  e.target.value = cleanValue.toString();
+                }}
                 className="h-10 w-20 text-lg font-semibold"
               />
               <span className="text-muted-foreground">%</span>
@@ -184,6 +188,10 @@ function ProductPricingCard({
                 onChange={(e) =>
                   onUpdate({ retailPrice: parseFloat(e.target.value) || 0 })
                 }
+                onBlur={(e) => {
+                  const cleanValue = parseFloat(e.target.value) || 0;
+                  e.target.value = cleanValue.toString();
+                }}
                 className="h-10 w-28 text-lg"
               />
             </div>
