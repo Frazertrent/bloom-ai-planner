@@ -27,14 +27,14 @@ import {
   TrendingUp, 
   DollarSign,
   Package,
-  ClipboardList,
+  // ClipboardList hidden for future iteration
   Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import type { DateRange } from "react-day-picker";
 
-type ReportType = "orders" | "production" | "revenue" | "products";
+type ReportType = "orders" | "revenue" | "products";
 
 export default function FloristReports() {
   const [selectedCampaign, setSelectedCampaign] = useState<string>("all");
@@ -123,30 +123,7 @@ export default function FloristReports() {
         case "orders":
           generateCSV(reportData.orders, getOrdersCSVColumns(), "florist_orders_export");
           break;
-        case "production":
-          // Flatten order items for production list
-          const productionData: any[] = [];
-          reportData.orders
-            .filter((o: any) => o.fulfillment_status !== "delivered")
-            .forEach((order: any) => {
-              order.order_items?.forEach((item: any) => {
-                const product = item.campaign_product?.product;
-                const customizations = item.customizations as any;
-                productionData.push({
-                  order_number: order.order_number,
-                  customer_name: order.customer?.full_name,
-                  product_name: product?.name,
-                  category: product?.category,
-                  quantity: item.quantity,
-                  unit_price: item.unit_price,
-                  recipient_name: item.recipient_name,
-                  ribbon_text: customizations?.ribbon_text || "",
-                  bow_color: customizations?.bow_color || "",
-                });
-              });
-            });
-          generateCSV(productionData, getOrderItemsCSVColumns(), "production_list_export");
-          break;
+        // Production list export hidden for future iteration
         case "revenue":
           const revenueData = (reportData.campaigns || []).map((c: any) => {
             const campaignOrders = reportData.orders.filter((o: any) => o.campaign_id === c.id);
@@ -208,7 +185,6 @@ export default function FloristReports() {
 
   const reportTypes = [
     { value: "orders", label: "Orders Export", icon: FileSpreadsheet, description: "All orders with customer details" },
-    { value: "production", label: "Production List", icon: ClipboardList, description: "Items to produce with customizations" },
     { value: "revenue", label: "Revenue Summary", icon: DollarSign, description: "Revenue by campaign" },
     { value: "products", label: "Product Performance", icon: Package, description: "Units sold by product" },
   ];

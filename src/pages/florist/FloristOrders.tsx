@@ -24,7 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { OrderFulfillmentBadge } from "@/components/bloomfundr/OrderFulfillmentBadge";
-import { PrintableOrderList } from "@/components/bloomfundr/PrintableOrderList";
+// PrintableOrderList hidden for future iteration
 import { 
   useFloristOrdersList, 
   useFloristCampaignsForFilter,
@@ -114,9 +114,7 @@ export default function FloristOrdersPage() {
               Manage and fulfill customer orders
             </p>
           </div>
-          {orders && orders.length > 0 && (
-            <PrintableOrderList orders={orders as BFOrderWithRelations[]} campaignName={selectedCampaignName} />
-          )}
+          {/* PrintableOrderList hidden for future iteration */}
         </div>
 
         {/* Filters */}

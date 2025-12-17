@@ -50,7 +50,7 @@ import {
   ChevronDown,
   Copy,
   Download,
-  Printer,
+  // Printer hidden for future iteration
   StopCircle,
   CheckCircle,
   Trophy,
@@ -210,10 +210,7 @@ export default function OrgCampaignDetail() {
     URL.revokeObjectURL(url);
   };
 
-  // Print summary
-  const handlePrint = () => {
-    window.print();
-  };
+  // Print summary hidden for future iteration
 
   if (isLoading) {
     return (
@@ -1099,10 +1096,7 @@ export default function OrgCampaignDetail() {
                 <Download className="h-4 w-4 mr-2" />
                 Export Orders CSV
               </Button>
-              <Button variant="outline" onClick={handlePrint}>
-                <Printer className="h-4 w-4 mr-2" />
-                Print Summary
-              </Button>
+              {/* Print Summary button hidden for future iteration */}
               {campaign.status === "active" && (
                 <Button
                   variant="outline"
