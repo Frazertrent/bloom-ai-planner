@@ -41,13 +41,13 @@ export function FulfillmentProgressCard({ breakdown, totalOrders }: FulfillmentP
     },
     { 
       icon: Package, 
-      label: "Ready for Pickup", 
+      label: "Ready for Seller Pickup", 
       count: breakdown.ready, 
       color: "text-blue-600" 
     },
     { 
       icon: CheckCircle, 
-      label: "Picked Up", 
+      label: "Picked Up by Sellers", 
       count: breakdown.picked_up, 
       color: "text-emerald-600" 
     },
@@ -62,9 +62,9 @@ export function FulfillmentProgressCard({ breakdown, totalOrders }: FulfillmentP
         {/* Summary Text */}
         <p className="text-sm text-muted-foreground">
           <span className="font-semibold text-foreground">{readyForPickup}</span> of{" "}
-          <span className="font-semibold text-foreground">{totalOrders}</span> orders ready for pickup
+          <span className="font-semibold text-foreground">{totalOrders}</span> orders ready for seller pickup
           {completedCount > 0 && (
-            <span className="text-emerald-600"> • {completedCount} picked up</span>
+            <span className="text-emerald-600"> • {completedCount} picked up by sellers</span>
           )}
         </p>
 

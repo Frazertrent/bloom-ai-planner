@@ -386,13 +386,13 @@ export function Step1BasicInfo({
             )}
           />
 
-          {/* Pickup and Delivery Date */}
+          {/* Seller Pickup Date */}
           <FormField
             control={form.control}
             name="pickupDate"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Pickup and Delivery Date</FormLabel>
+                <FormLabel>Seller Pickup Date</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -426,25 +426,25 @@ export function Step1BasicInfo({
                   </PopoverContent>
                 </Popover>
                 <FormDescription>
-                  When orders will be ready for pickup/delivery
+                  When sellers pick up flowers from the florist for delivery
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          {/* Pickup Location */}
+          {/* Seller Pickup Location */}
           <FormField
             control={form.control}
             name="pickupLocation"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Pickup Location</FormLabel>
+                <FormLabel>Seller Pickup Location</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., School Main Office" {...field} />
+                  <Input placeholder="e.g., Florist Shop, School Main Office" {...field} />
                 </FormControl>
                 <FormDescription>
-                  Where customers will pick up their orders
+                  Where sellers will pick up orders for delivery to customers
                 </FormDescription>
                 <FormMessage />
               </FormItem>

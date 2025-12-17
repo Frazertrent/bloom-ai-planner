@@ -394,7 +394,7 @@ export default function OrgCampaignDetail() {
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex items-center gap-3">
                   <CheckCircle className="h-5 w-5 text-emerald-600" />
-                  <p className="text-sm font-medium">All orders have been picked up!</p>
+                  <p className="text-sm font-medium">All orders have been picked up by sellers!</p>
                 </div>
                 <Button
                   size="sm"
@@ -807,7 +807,7 @@ export default function OrgCampaignDetail() {
 
           {/* Fulfillment Tab */}
           <TabsContent value="fulfillment" className="mt-4 space-y-4">
-            {/* Ready for Pickup Summary */}
+            {/* Ready for Seller Pickup Summary */}
             <Card className={`border-2 ${readyOrders.length > 0 ? "border-blue-500/30 bg-blue-500/5" : "border-border"}`}>
               <CardContent className="py-6">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -816,9 +816,9 @@ export default function OrgCampaignDetail() {
                       <Package className={`h-6 w-6 ${readyOrders.length > 0 ? "text-blue-600" : "text-muted-foreground"}`} />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold">{readyOrders.length} Ready for Pickup</p>
+                      <p className="text-2xl font-bold">{readyOrders.length} Ready for Seller Pickup</p>
                       <p className="text-sm text-muted-foreground">
-                        {florist?.business_name ? `from ${florist.business_name}` : "Orders ready to collect"}
+                        {florist?.business_name ? `from ${florist.business_name}` : "Orders ready for sellers to collect"}
                       </p>
                     </div>
                   </div>
@@ -854,7 +854,7 @@ export default function OrgCampaignDetail() {
                     <Package className="h-5 w-5 text-blue-600" />
                     Ready Orders
                   </CardTitle>
-                  <CardDescription>Select orders as you collect them</CardDescription>
+                  <CardDescription>Select orders as sellers collect them for delivery</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Table>

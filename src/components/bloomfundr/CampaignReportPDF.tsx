@@ -216,7 +216,7 @@ export function CampaignReportPDF({ data }: { data: CampaignReportData }) {
           </View>
           {data.campaign.pickup_date && (
             <View style={styles.row}>
-              <Text style={styles.label}>Pickup/Delivery:</Text>
+              <Text style={styles.label}>Seller Pickup:</Text>
               <Text style={styles.value}>
                 {format(new Date(data.campaign.pickup_date), "MMM d, yyyy")} at{" "}
                 {data.campaign.pickup_location}

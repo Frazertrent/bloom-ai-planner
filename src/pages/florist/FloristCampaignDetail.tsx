@@ -178,14 +178,14 @@ export default function FloristCampaignDetail() {
               </div>
               {campaign.pickup_date && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Pickup/Delivery Date</span>
+                  <span className="text-muted-foreground">Seller Pickup Date</span>
                   <span className="font-medium">{format(new Date(campaign.pickup_date), "MMM d, yyyy")}</span>
                 </div>
               )}
               {campaign.pickup_location && (
                 <div className="flex items-start gap-2 pt-2 border-t">
                   <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                  <span className="text-sm">{campaign.pickup_location}</span>
+                  <span className="text-sm">Seller Pickup: {campaign.pickup_location}</span>
                 </div>
               )}
             </CardContent>
