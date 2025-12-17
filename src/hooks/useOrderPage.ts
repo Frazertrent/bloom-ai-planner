@@ -22,6 +22,7 @@ export interface OrderPageData {
   isActive: boolean;
   isExpired: boolean;
   isNotStarted: boolean;
+  isDraft: boolean; // Campaign exists but hasn't been launched
   trackingMode: 'none' | 'individual' | 'self_register';
 }
 
@@ -131,11 +132,12 @@ export function useOrderPageData(magicLinkCode: string | undefined) {
       const hasStarted = now >= startDate;
       const isPastEndDate = now > endDate;
       const isTerminalStatus = ["closed", "fulfilled", "completed", "cancelled"].includes(campaign.status);
+      const isDraft = campaign.status === "draft";
       
-      // Campaign is active if status is active/draft, has started, not past end, not terminal
-      const isActive = ["active", "draft"].includes(campaign.status) && hasStarted && !isPastEndDate && !isTerminalStatus;
+      // Campaign is active if status is active (not draft!), has started, not past end, not terminal
+      const isActive = campaign.status === "active" && hasStarted && !isPastEndDate && !isTerminalStatus;
       const isExpired = isPastEndDate || isTerminalStatus;
-      const isNotStarted = !hasStarted && !isTerminalStatus;
+      const isNotStarted = !hasStarted && !isTerminalStatus && !isDraft;
 
       // Transform products
       const products: BFCampaignProductWithProduct[] = (campaignProducts || []).map((cp: any) => ({
@@ -165,6 +167,7 @@ export function useOrderPageData(magicLinkCode: string | undefined) {
         isActive,
         isExpired,
         isNotStarted,
+        isDraft,
         trackingMode,
       };
     },

@@ -6,7 +6,7 @@ import { ProductCard } from "@/components/order/ProductCard";
 import { ProductDetailModal } from "@/components/order/ProductDetailModal";
 import { FloatingCart } from "@/components/order/FloatingCart";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, MapPin, Clock, AlertCircle, Flower } from "lucide-react";
+import { Calendar, MapPin, Clock, AlertCircle, Flower, Rocket } from "lucide-react";
 import { format } from "date-fns";
 import type { BFCampaignProductWithProduct } from "@/types/bloomfundr";
 
@@ -59,7 +59,7 @@ export default function OrderPage() {
     );
   }
 
-  const { campaign, organization, student, products, isActive, isExpired, isNotStarted, trackingMode } = data;
+  const { campaign, organization, student, products, isActive, isExpired, isNotStarted, isDraft, trackingMode } = data;
 
   // For 'none' tracking mode, we show "Supporting: {Organization}" instead of a student
   const supportingText = student ? student.name : organization.name;
@@ -82,6 +82,28 @@ export default function OrderPage() {
       </div>
     </header>
   );
+
+  // Show "not launched yet" message for draft campaigns
+  if (isDraft) {
+    return (
+      <div className="min-h-screen bg-background">
+        <CampaignHeader />
+        <div className="flex items-center justify-center py-24">
+          <div className="text-center max-w-md px-4">
+            <Rocket className="h-16 w-16 mx-auto mb-4 text-primary" />
+            <h2 className="text-2xl font-bold mb-2">Campaign Not Launched Yet</h2>
+            <p className="text-muted-foreground mb-6">
+              This fundraiser hasn't been launched yet! Ready to get started? 
+              Just hit <span className="font-semibold text-primary">"Launch"</span> in your campaign settings.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Once launched, customers will be able to place orders here.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Show "coming soon" message for campaigns that haven't started
   if (isNotStarted) {
