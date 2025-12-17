@@ -49,6 +49,7 @@ import {
   useLaunchCampaign,
   useSaveCampaignAsDraft,
 } from "@/hooks/useCampaignReview";
+import { calculateRevenueAtPrice } from "@/lib/pricingCalculator";
 import { CampaignLinksModal } from "@/components/bloomfundr/CampaignLinksModal";
 
 interface Step5ReviewProps {
@@ -91,17 +92,29 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
     }));
   };
 
-  // Calculate estimated revenue
+  // Calculate estimated revenue using actual pricing breakdown
   const calculateEstimatedRevenue = (orderCount: number) => {
-    if (!reviewData) return { total: 0, org: 0 };
-    const avgPrice =
-      reviewData.products.reduce((sum, p) => sum + p.retailPrice, 0) /
-      (reviewData.products.length || 1);
-    const avgBaseCost = avgPrice * 0.4; // Rough estimate
-    const orgRevenue = avgBaseCost * (reviewData.avgOrgMargin / 100) * orderCount;
+    if (!reviewData || reviewData.products.length === 0) return { total: 0, org: 0, avgOrgProfit: 0 };
+    
+    let totalOrgProfit = 0;
+    let totalRevenue = 0;
+    
+    reviewData.products.forEach((product) => {
+      const { orgProfit } = calculateRevenueAtPrice(
+        product.floristPrice,
+        product.retailPrice
+      );
+      totalOrgProfit += orgProfit;
+      totalRevenue += product.retailPrice;
+    });
+    
+    const avgOrgProfit = totalOrgProfit / reviewData.products.length;
+    const avgRevenue = totalRevenue / reviewData.products.length;
+    
     return {
-      total: avgPrice * orderCount,
-      org: orgRevenue,
+      total: avgRevenue * orderCount,
+      org: avgOrgProfit * orderCount,
+      avgOrgProfit,
     };
   };
 
@@ -250,7 +263,7 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
               ${calculateEstimatedRevenue(100).org.toFixed(0)}
             </p>
             <p className="text-xs text-muted-foreground mt-2">
-              Based on your {avgOrgMargin}% profit per sale
+              ~${calculateEstimatedRevenue(1).avgOrgProfit.toFixed(2)} average profit per sale
             </p>
           </div>
         </CardContent>
