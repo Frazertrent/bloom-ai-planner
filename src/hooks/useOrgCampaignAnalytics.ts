@@ -41,6 +41,8 @@ export interface CampaignAnalytics {
     orderNumber: string;
     customerName: string;
     studentName: string | null;
+    studentEmail: string | null;
+    studentPhone: string | null;
     total: number;
     fulfillmentStatus: string;
     paymentStatus: string;
@@ -115,7 +117,7 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
         .select(`
           id,
           magic_link_code,
-          student:bf_students(id, name)
+          student:bf_students(id, name, email, phone)
         `)
         .eq("campaign_id", campaignId);
 
@@ -147,11 +149,15 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
           (productQuantities[item.campaign_product_id] || 0) + item.quantity;
       });
 
-      // Build student name map and campaign student id map
-      const studentNameMap: Record<string, string> = {};
+      // Build student info map
+      const studentInfoMap: Record<string, { name: string; email: string | null; phone: string | null }> = {};
       (campaignStudents || []).forEach(cs => {
         if (cs.student?.id) {
-          studentNameMap[cs.student.id] = cs.student.name;
+          studentInfoMap[cs.student.id] = {
+            name: cs.student.name,
+            email: cs.student.email || null,
+            phone: cs.student.phone || null,
+          };
         }
       });
 
@@ -205,11 +211,14 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
       }).sort((a, b) => b.totalSales - a.totalSales);
 
       // Transform orders (show all orders, include payment status)
+      const studentInfo = (studentId: string | null) => studentId ? studentInfoMap[studentId] : null;
       const transformedOrders = allOrders.map(o => ({
         id: o.id,
         orderNumber: o.order_number,
         customerName: (o.customer as any)?.full_name || "Unknown",
-        studentName: o.attributed_student_id ? studentNameMap[o.attributed_student_id] || null : null,
+        studentName: studentInfo(o.attributed_student_id)?.name || null,
+        studentEmail: studentInfo(o.attributed_student_id)?.email || null,
+        studentPhone: studentInfo(o.attributed_student_id)?.phone || null,
         total: Number(o.total),
         fulfillmentStatus: o.fulfillment_status,
         paymentStatus: o.payment_status,
@@ -236,7 +245,7 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
         id: o.id,
         orderNumber: o.order_number,
         customerName: (o.customer as any)?.full_name || "Unknown",
-        studentName: o.attributed_student_id ? studentNameMap[o.attributed_student_id] || null : null,
+        studentName: studentInfo(o.attributed_student_id)?.name || null,
         total: Number(o.total),
         subtotal: Number(o.subtotal),
         paymentStatus: o.payment_status,

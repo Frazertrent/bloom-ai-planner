@@ -60,6 +60,8 @@ import {
   Package,
   Rocket,
   AlertCircle,
+  Mail,
+  MessageSquare,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -673,8 +675,8 @@ export default function OrgCampaignDetail() {
                         </TableHead>
                         <TableHead>Order #</TableHead>
                         <TableHead>Customer</TableHead>
-                        <TableHead className="hidden md:table-cell">Student</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead>Seller</TableHead>
+                        <TableHead className="text-right hidden sm:table-cell">Amount</TableHead>
                         <TableHead className="hidden sm:table-cell">Payment</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="hidden lg:table-cell">Date</TableHead>
@@ -695,8 +697,34 @@ export default function OrgCampaignDetail() {
                           </TableCell>
                           <TableCell className="font-medium">{order.orderNumber}</TableCell>
                           <TableCell>{order.customerName}</TableCell>
-                          <TableCell className="hidden md:table-cell">{order.studentName || "—"}</TableCell>
-                          <TableCell className="text-right">${order.total.toFixed(2)}</TableCell>
+                          <TableCell>
+                            {order.studentName ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="truncate max-w-[80px] sm:max-w-none">{order.studentName}</span>
+                                <div className="flex gap-0.5">
+                                  {order.studentEmail && (
+                                    <a
+                                      href={`mailto:${order.studentEmail}?subject=Delivery Status - Order ${order.orderNumber}`}
+                                      className="p-1 rounded hover:bg-muted"
+                                      title={`Email ${order.studentName}`}
+                                    >
+                                      <Mail className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                                    </a>
+                                  )}
+                                  {order.studentPhone && (
+                                    <a
+                                      href={`sms:${order.studentPhone}`}
+                                      className="p-1 rounded hover:bg-muted"
+                                      title={`Text ${order.studentName}`}
+                                    >
+                                      <MessageSquare className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            ) : "—"}
+                          </TableCell>
+                          <TableCell className="text-right hidden sm:table-cell">${order.total.toFixed(2)}</TableCell>
                           <TableCell className="hidden sm:table-cell">
                             <Badge variant={order.paymentStatus === "paid" ? "default" : "secondary"} className={order.paymentStatus === "paid" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"}>
                               {order.paymentStatus === "paid" ? "Paid" : "Pending"}
@@ -799,8 +827,8 @@ export default function OrgCampaignDetail() {
                         </TableHead>
                         <TableHead>Order #</TableHead>
                         <TableHead>Customer</TableHead>
-                        <TableHead className="hidden md:table-cell">Student</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead>Seller</TableHead>
+                        <TableHead className="text-right hidden sm:table-cell">Amount</TableHead>
                         <TableHead className="w-24">Action</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -816,8 +844,34 @@ export default function OrgCampaignDetail() {
                           </TableCell>
                           <TableCell className="font-medium">{order.orderNumber}</TableCell>
                           <TableCell>{order.customerName}</TableCell>
-                          <TableCell className="hidden md:table-cell">{order.studentName || "—"}</TableCell>
-                          <TableCell className="text-right">${order.total.toFixed(2)}</TableCell>
+                          <TableCell>
+                            {order.studentName ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="truncate max-w-[80px] sm:max-w-none">{order.studentName}</span>
+                                <div className="flex gap-0.5">
+                                  {order.studentEmail && (
+                                    <a
+                                      href={`mailto:${order.studentEmail}?subject=Ready for Pickup - Order ${order.orderNumber}`}
+                                      className="p-1 rounded hover:bg-muted"
+                                      title={`Email ${order.studentName}`}
+                                    >
+                                      <Mail className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                                    </a>
+                                  )}
+                                  {order.studentPhone && (
+                                    <a
+                                      href={`sms:${order.studentPhone}`}
+                                      className="p-1 rounded hover:bg-muted"
+                                      title={`Text ${order.studentName}`}
+                                    >
+                                      <MessageSquare className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            ) : "—"}
+                          </TableCell>
+                          <TableCell className="text-right hidden sm:table-cell">${order.total.toFixed(2)}</TableCell>
                           <TableCell>
                             <Button
                               variant="ghost"
