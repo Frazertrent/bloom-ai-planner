@@ -215,7 +215,7 @@ export default function OrderPage() {
             {campaign.pickup_date && (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
-                <span>Pickup: {format(new Date(campaign.pickup_date), "MMM d, yyyy")}</span>
+                <span>Delivered By: {format(new Date(campaign.pickup_date), "MMM d, yyyy")}</span>
               </div>
             )}
             

@@ -227,7 +227,7 @@ export default function CheckoutPage() {
                       <p className="text-sm text-destructive">{errors.phone.message}</p>
                     )}
                     <p className="text-xs text-muted-foreground">
-                      For pickup coordination
+                      For delivery coordination
                     </p>
                   </div>
 
