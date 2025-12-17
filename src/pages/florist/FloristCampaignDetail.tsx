@@ -82,8 +82,6 @@ export default function FloristCampaignDetail() {
   // Calculate revenue breakdown
   const totalSales = campaign?.orders?.reduce((sum, o) => sum + Number(o.subtotal), 0) || 0;
   const floristPortion = totalSales * ((campaign?.florist_margin_percent || 0) / 100);
-  const orgPortion = totalSales * ((campaign?.organization_margin_percent || 0) / 100);
-  const platformPortion = totalSales * ((campaign?.platform_fee_percent || 0) / 100);
 
   // Calculate product quantities from orders
   const productQuantities: Record<string, number> = {};
@@ -238,14 +236,14 @@ export default function FloristCampaignDetail() {
           </CardContent>
         </Card>
 
-        {/* Revenue Breakdown */}
+        {/* Your Earnings */}
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
-              Revenue Breakdown
+              Your Earnings
             </CardTitle>
-            <CardDescription>How the revenue is distributed</CardDescription>
+            <CardDescription>Revenue from this campaign</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -253,19 +251,9 @@ export default function FloristCampaignDetail() {
                 <span className="text-muted-foreground">Total Sales</span>
                 <span className="text-xl font-bold">${totalSales.toFixed(2)}</span>
               </div>
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                  <p className="text-sm text-muted-foreground">Your Portion ({campaign.florist_margin_percent}%)</p>
-                  <p className="text-2xl font-bold text-emerald-600">${floristPortion.toFixed(2)}</p>
-                </div>
-                <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                  <p className="text-sm text-muted-foreground">Organization ({campaign.organization_margin_percent}%)</p>
-                  <p className="text-2xl font-bold text-blue-600">${orgPortion.toFixed(2)}</p>
-                </div>
-                <div className="p-4 rounded-lg bg-muted">
-                  <p className="text-sm text-muted-foreground">Platform Fee ({campaign.platform_fee_percent}%)</p>
-                  <p className="text-2xl font-bold text-muted-foreground">${platformPortion.toFixed(2)}</p>
-                </div>
+              <div className="p-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center">
+                <p className="text-sm text-muted-foreground mb-2">Your Earnings</p>
+                <p className="text-4xl font-bold text-emerald-600">${floristPortion.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
@@ -279,6 +267,7 @@ export default function FloristCampaignDetail() {
               floristMarginPercent={campaign.florist_margin_percent}
               orgMarginPercent={campaign.organization_margin_percent}
               platformFeePercent={campaign.platform_fee_percent || 10}
+              viewType="florist"
             />
             <PayoutStatusCard
               campaignStatus={campaign.status}
@@ -289,6 +278,7 @@ export default function FloristCampaignDetail() {
               onCreatePayouts={() => createPayouts.mutate({ campaignId: id! })}
               isCreating={createPayouts.isPending}
               isLoading={payoutsLoading}
+              viewType="florist"
             />
             <div className="flex justify-end">
               <Button variant="outline" onClick={() => setShowPayoutDetail(true)}>

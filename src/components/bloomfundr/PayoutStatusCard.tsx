@@ -14,6 +14,7 @@ interface PayoutStatusCardProps {
   onCreatePayouts: () => void;
   isCreating: boolean;
   isLoading?: boolean;
+  viewType: "florist" | "organization";
 }
 
 const statusConfig = {
@@ -48,11 +49,17 @@ export function PayoutStatusCard({
   onCreatePayouts,
   isCreating,
   isLoading,
+  viewType,
 }: PayoutStatusCardProps) {
+  const isFlorist = viewType === "florist";
+  const payout = isFlorist ? floristPayout : orgPayout;
+  const total = isFlorist ? floristTotal : orgTotal;
+  const Icon = isFlorist ? Store : Building2;
+  const colorClass = isFlorist ? "text-emerald-600" : "text-blue-600";
+
   const canProcessPayouts = campaignStatus === "closed" || campaignStatus === "fulfilled";
-  const hasNoPayouts = !floristPayout && !orgPayout;
-  const allPayoutsComplete =
-    floristPayout?.status === "completed" && orgPayout?.status === "completed";
+  const hasNoPayout = !payout;
+  const payoutComplete = payout?.status === "completed";
 
   if (isLoading) {
     return (
@@ -62,10 +69,7 @@ export function PayoutStatusCard({
           <Skeleton className="h-4 w-60" />
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            <Skeleton className="h-24" />
-            <Skeleton className="h-24" />
-          </div>
+          <Skeleton className="h-24" />
         </CardContent>
       </Card>
     );
@@ -79,77 +83,49 @@ export function PayoutStatusCard({
           Payout Status
         </CardTitle>
         <CardDescription>
-          {allPayoutsComplete
-            ? "All payouts have been processed"
-            : hasNoPayouts
-            ? "Payout records have not been created yet"
-            : "Track the status of payouts for this campaign"}
+          {payoutComplete
+            ? "Your payout has been processed"
+            : hasNoPayout
+            ? "Payout record has not been created yet"
+            : "Track the status of your payout"}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Payout Cards */}
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* Florist Payout */}
-          <div className="p-4 rounded-lg border bg-card">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Store className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium">Florist</span>
-              </div>
-              {floristPayout ? (
-                <PayoutBadge status={floristPayout.status} />
-              ) : (
-                <Badge variant="outline" className="text-muted-foreground">
-                  Not Created
-                </Badge>
-              )}
+        {/* Your Payout Card */}
+        <div className="p-4 rounded-lg border bg-card">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Icon className={`h-5 w-5 ${colorClass}`} />
+              <span className="font-medium">Your Payout</span>
             </div>
-            <p className="text-2xl font-bold">
-              ${floristPayout ? floristPayout.amount.toFixed(2) : floristTotal.toFixed(2)}
-            </p>
-            {floristPayout?.processed_at && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Processed: {new Date(floristPayout.processed_at).toLocaleDateString()}
-              </p>
+            {payout ? (
+              <PayoutBadge status={payout.status} />
+            ) : (
+              <Badge variant="outline" className="text-muted-foreground">
+                Not Created
+              </Badge>
             )}
           </div>
-
-          {/* Organization Payout */}
-          <div className="p-4 rounded-lg border bg-card">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium">Organization</span>
-              </div>
-              {orgPayout ? (
-                <PayoutBadge status={orgPayout.status} />
-              ) : (
-                <Badge variant="outline" className="text-muted-foreground">
-                  Not Created
-                </Badge>
-              )}
-            </div>
-            <p className="text-2xl font-bold">
-              ${orgPayout ? orgPayout.amount.toFixed(2) : orgTotal.toFixed(2)}
+          <p className={`text-2xl font-bold ${colorClass}`}>
+            ${payout ? payout.amount.toFixed(2) : total.toFixed(2)}
+          </p>
+          {payout?.processed_at && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Processed: {new Date(payout.processed_at).toLocaleDateString()}
             </p>
-            {orgPayout?.processed_at && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Processed: {new Date(orgPayout.processed_at).toLocaleDateString()}
-              </p>
-            )}
-          </div>
+          )}
         </div>
 
         {/* Actions */}
-        {hasNoPayouts && (
+        {hasNoPayout && (
           <div className="pt-4 border-t">
             {canProcessPayouts ? (
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  Ready to create payout records for this campaign
+                  Ready to create payout record
                 </p>
                 <Button onClick={onCreatePayouts} disabled={isCreating}>
-                  {isCreating ? "Creating..." : "Create Payout Records"}
+                  {isCreating ? "Creating..." : "Create Payout Record"}
                 </Button>
               </div>
             ) : (
@@ -160,10 +136,10 @@ export function PayoutStatusCard({
           </div>
         )}
 
-        {!hasNoPayouts && !allPayoutsComplete && (
+        {!hasNoPayout && !payoutComplete && (
           <div className="pt-4 border-t">
             <p className="text-sm text-muted-foreground">
-              Payouts will be processed automatically via Stripe Connect once configured.
+              Payout will be processed automatically via Stripe Connect once configured.
             </p>
           </div>
         )}
