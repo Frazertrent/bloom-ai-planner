@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { format } from "date-fns";
+import { format, startOfDay, isBefore } from "date-fns";
 import {
   ArrowLeft,
   Loader2,
@@ -17,6 +17,7 @@ import {
   Check,
   Link as LinkIcon,
   PartyPopper,
+  CalendarClock,
 } from "lucide-react";
 import { generateOrderLink, generateCampaignLink } from "@/lib/linkGenerator";
 import { Button } from "@/components/ui/button";
@@ -71,9 +72,13 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
   const [agreedToTerms] = useState(true); // Always ready to launch
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showLinksModal, setShowLinksModal] = useState(false);
+  const [hasLaunched, setHasLaunched] = useState(false);
+  const [launchWasFuture, setLaunchWasFuture] = useState(false);
 
   const handleLaunch = async () => {
-    await launchCampaign.mutateAsync(campaignId);
+    const result = await launchCampaign.mutateAsync(campaignId);
+    setHasLaunched(true);
+    setLaunchWasFuture(result?.isFutureCampaign ?? false);
     setShowSuccessModal(true);
   };
 
@@ -129,6 +134,13 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
 
   const { campaign, florist, products, students, avgFloristMargin, avgOrgMargin, trackingMode, campaignLinkCode } = reviewData;
   const campaignLink = campaignLinkCode ? generateCampaignLink(campaignLinkCode) : null;
+  
+  // Determine if this is a future campaign
+  const today = startOfDay(new Date());
+  const startDate = startOfDay(new Date(campaign.start_date));
+  const isFutureCampaign = isBefore(today, startDate);
+  const isAlreadyLaunched = campaign.status === 'active' || campaign.status === 'scheduled';
+  const showAsLaunched = hasLaunched || isAlreadyLaunched;
 
   return (
     <div className="space-y-6">
@@ -362,18 +374,38 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
       )}
 
       {/* Launch Button - Big and Prominent */}
-      <div className="py-6">
+      <div className="py-6 space-y-3">
+        {/* Helper text above button */}
+        {!showAsLaunched && (
+          <p className="text-sm text-center text-muted-foreground">
+            {isFutureCampaign ? (
+              <>💡 Ready when you are! Hit Launch and your campaign will automatically go live on <span className="font-medium">{format(startDate, "MMM d, yyyy")}</span>.</>
+            ) : (
+              <>💡 Your campaign starts today! Hit Launch to go live immediately.</>
+            )}
+          </p>
+        )}
+        
         <Button
           onClick={handleLaunch}
-          disabled={launchCampaign.isPending || products.length === 0}
-          className="w-full h-16 text-xl font-bold bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg hover:shadow-xl transition-all"
+          disabled={launchCampaign.isPending || products.length === 0 || showAsLaunched}
+          className={`w-full h-16 text-xl font-bold shadow-lg transition-all ${
+            showAsLaunched 
+              ? 'bg-emerald-600 cursor-default' 
+              : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 hover:shadow-xl'
+          }`}
         >
           {launchCampaign.isPending ? (
             <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+          ) : showAsLaunched ? (
+            <Check className="mr-3 h-6 w-6" />
           ) : (
             <Rocket className="mr-3 h-6 w-6" />
           )}
-          Launch Campaign!
+          {showAsLaunched 
+            ? (launchWasFuture || campaign.status === 'scheduled' ? 'Scheduled!' : 'Campaign is Live!') 
+            : 'Launch Campaign!'
+          }
         </Button>
       </div>
 
@@ -397,16 +429,30 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader className="text-center">
-            <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              <PartyPopper className="h-8 w-8 text-emerald-600" />
+            <div className={`mx-auto mb-4 h-16 w-16 rounded-full flex items-center justify-center ${
+              launchWasFuture 
+                ? 'bg-indigo-100 dark:bg-indigo-900/30' 
+                : 'bg-emerald-100 dark:bg-emerald-900/30'
+            }`}>
+              {launchWasFuture ? (
+                <CalendarClock className="h-8 w-8 text-indigo-600" />
+              ) : (
+                <PartyPopper className="h-8 w-8 text-emerald-600" />
+              )}
             </div>
-            <DialogTitle className="text-xl">Campaign is Live!</DialogTitle>
+            <DialogTitle className="text-xl">
+              {launchWasFuture ? 'Campaign Scheduled!' : 'Campaign is Live!'}
+            </DialogTitle>
             <DialogDescription>
-              Your campaign "{campaign.name}" is now active and ready to receive orders.
-              {trackingMode === 'none' 
-                ? ' Share the campaign link to start fundraising!'
-                : ' Share the seller links to start fundraising!'
-              }
+              {launchWasFuture ? (
+                <>Your campaign "{campaign.name}" will automatically go live on <span className="font-medium">{format(startDate, "MMM d, yyyy")}</span>. Seller links are ready to share now!</>
+              ) : (
+                <>Your campaign "{campaign.name}" is now active and ready to receive orders.
+                {trackingMode === 'none' 
+                  ? ' Share the campaign link to start fundraising!'
+                  : ' Share the seller links to start fundraising!'
+                }</>
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col sm:flex-col gap-2 mt-4">

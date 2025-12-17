@@ -10,6 +10,10 @@ const statusConfig: Record<CampaignStatus, { label: string; className: string }>
     label: "Draft",
     className: "bg-muted text-muted-foreground hover:bg-muted",
   },
+  scheduled: {
+    label: "Scheduled",
+    className: "bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/20 border-indigo-500/20",
+  },
   active: {
     label: "Active",
     className: "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20",

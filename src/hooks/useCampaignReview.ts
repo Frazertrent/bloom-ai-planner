@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { BFCampaign, BFFlorist } from "@/types/bloomfundr";
 import { notifyFloristCampaignInvitation } from "@/lib/notifications";
-import { format } from "date-fns";
+import { format, startOfDay, isBefore } from "date-fns";
 
 export interface CampaignReviewData {
   campaign: BFCampaign;
@@ -112,10 +112,25 @@ export function useLaunchCampaign() {
 
   return useMutation({
     mutationFn: async (campaignId: string) => {
+      // First fetch campaign to check start date
+      const { data: campaignData, error: fetchError } = await supabase
+        .from("bf_campaigns")
+        .select("start_date")
+        .eq("id", campaignId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Determine status based on start date
+      const today = startOfDay(new Date());
+      const startDate = startOfDay(new Date(campaignData.start_date));
+      const isFutureCampaign = isBefore(today, startDate);
+      const newStatus = isFutureCampaign ? "scheduled" : "active";
+
       // Update campaign status
       const { data, error } = await supabase
         .from("bf_campaigns")
-        .update({ status: "active" })
+        .update({ status: newStatus })
         .eq("id", campaignId)
         .select("*, organization:bf_organizations(name)")
         .single();
@@ -135,16 +150,20 @@ export function useLaunchCampaign() {
         });
       }
 
-      return data;
+      return { ...data, isFutureCampaign };
     },
-    onSuccess: (_, campaignId) => {
+    onSuccess: (data, campaignId) => {
       queryClient.invalidateQueries({ queryKey: ["bf-campaign-review", campaignId] });
       queryClient.invalidateQueries({ queryKey: ["bf-org-campaigns"] });
       queryClient.invalidateQueries({ queryKey: ["florist-notifications"] });
       queryClient.invalidateQueries({ queryKey: ["florist-notification-count"] });
+      
+      const isFuture = data?.isFutureCampaign;
       toast({
-        title: "Campaign launched!",
-        description: "Your campaign is now live and ready for orders.",
+        title: isFuture ? "Campaign scheduled!" : "Campaign launched!",
+        description: isFuture 
+          ? `Your campaign will automatically go live on ${format(new Date(data.start_date), "MMM d, yyyy")}.`
+          : "Your campaign is now live and ready for orders.",
       });
     },
     onError: (error) => {
