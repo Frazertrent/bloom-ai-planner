@@ -97,8 +97,8 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
           )}
         </div>
 
-        {/* Product Info */}
-        <div className="space-y-4">
+        {/* Product Info - with solid background for contrast */}
+        <div className="space-y-4 bg-background rounded-t-xl relative z-10 -mt-6 pt-6 px-1">
           <div>
             <h2 className="text-2xl font-bold">{productDetails?.name}</h2>
             <p className="text-2xl font-bold text-primary mt-1">${price.toFixed(2)}</p>
