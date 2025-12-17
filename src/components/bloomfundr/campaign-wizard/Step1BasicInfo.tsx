@@ -131,7 +131,7 @@ export function Step1BasicInfo({
         trackingMode: wizardState.trackingMode,
       });
     }
-  }, [wizardState.name, wizardState.floristId, wizardState.startDate]);
+  }, [wizardState.name, wizardState.floristId, wizardState.startDate, wizardState.trackingMode]);
 
   const handleSaveDraft = async () => {
     const values = form.getValues();

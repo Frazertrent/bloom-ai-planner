@@ -75,11 +75,14 @@ export function useSaveCampaignPricing() {
 
       if (campaignError) throw campaignError;
 
-      // Update each product's retail price
+      // Update each product's retail price AND per-product org profit percent
       for (const pricing of productPricing) {
         const { error } = await supabase
           .from("bf_campaign_products")
-          .update({ retail_price: pricing.retailPrice })
+          .update({ 
+            retail_price: pricing.retailPrice,
+            org_profit_percent: pricing.orgProfitPercent,
+          })
           .eq("campaign_id", campaignId)
           .eq("product_id", pricing.productId);
 
@@ -121,13 +124,17 @@ export function usePricingState(campaignId: string | undefined) {
   // Initialize pricing state from campaign data
   useEffect(() => {
     if (campaignProducts && campaignProducts.length > 0) {
-      const initialPricing = campaignProducts.map((cp) => ({
-        productId: cp.product_id,
-        floristPrice: cp.product?.base_cost || 0,  // base_cost is now the florist's price point
-        orgProfitPercent: campaignMargins?.organization_margin_percent || 25,
-        retailPrice: cp.retail_price || 0,
-        isCustomPrice: cp.retail_price > 0,
-      }));
+      const initialPricing = campaignProducts.map((cp) => {
+        // Use per-product org_profit_percent if available, fall back to campaign default
+        const productOrgProfit = (cp as any).org_profit_percent ?? campaignMargins?.organization_margin_percent ?? 25;
+        return {
+          productId: cp.product_id,
+          floristPrice: cp.product?.base_cost || 0,  // base_cost is now the florist's price point
+          orgProfitPercent: productOrgProfit,
+          retailPrice: cp.retail_price || 0,
+          isCustomPrice: cp.retail_price > 0,
+        };
+      });
       setProductPricing(initialPricing);
     }
 

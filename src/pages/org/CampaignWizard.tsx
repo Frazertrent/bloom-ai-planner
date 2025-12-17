@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
@@ -30,6 +30,7 @@ export default function CampaignWizard() {
   const [searchParams] = useSearchParams();
   const stepParam = searchParams.get("step");
   const initialStep = stepParam ? parseInt(stepParam, 10) : 1;
+  const hasPopulatedState = useRef(false);
 
   const {
     currentStep,
@@ -58,9 +59,10 @@ export default function CampaignWizard() {
     enabled: !!id,
   });
 
-  // Populate wizard state from campaign data
+  // Populate wizard state from campaign data - only once per campaign load
   useEffect(() => {
-    if (campaignData && !wizardState.name) {
+    if (campaignData && !hasPopulatedState.current) {
+      hasPopulatedState.current = true;
       updateWizardState({
         name: campaignData.name,
         description: campaignData.description || "",
