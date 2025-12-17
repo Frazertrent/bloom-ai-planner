@@ -128,6 +128,7 @@ export function useCreateManualOrder() {
           campaign_id: campaignId,
           customer_id: customerId,
           attributed_student_id: studentId || null,
+          customer_name: customerName,
           subtotal,
           platform_fee: platformFee,
           processing_fee: processingFee,

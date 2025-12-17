@@ -180,7 +180,7 @@ export default function FloristOrderDetail() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-lg font-medium">{order.customer?.full_name || "Unknown"}</p>
+              <p className="text-lg font-medium">{order.customer_name || order.customer?.full_name || "Unknown"}</p>
               {order.customer?.email && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Mail className="h-4 w-4" />

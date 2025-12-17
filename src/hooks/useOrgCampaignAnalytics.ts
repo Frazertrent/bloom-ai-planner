@@ -107,6 +107,7 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
           notes,
           created_at,
           attributed_student_id,
+          customer_name,
           customer:bf_customers(full_name, email, phone)
         `)
         .eq("campaign_id", campaignId)
@@ -219,7 +220,7 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
       const transformedOrders = allOrders.map(o => ({
         id: o.id,
         orderNumber: o.order_number,
-        customerName: (o.customer as any)?.full_name || "Unknown",
+        customerName: (o as any).customer_name || (o.customer as any)?.full_name || "Unknown",
         customerEmail: (o.customer as any)?.email || null,
         customerPhone: (o.customer as any)?.phone || null,
         studentName: studentInfo(o.attributed_student_id)?.name || null,
@@ -250,7 +251,7 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
       const allOrdersForPayments = allOrders.map(o => ({
         id: o.id,
         orderNumber: o.order_number,
-        customerName: (o.customer as any)?.full_name || "Unknown",
+        customerName: (o as any).customer_name || (o.customer as any)?.full_name || "Unknown",
         studentName: studentInfo(o.attributed_student_id)?.name || null,
         total: Number(o.total),
         subtotal: Number(o.subtotal),
