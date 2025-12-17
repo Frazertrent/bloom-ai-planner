@@ -21,7 +21,6 @@ import {
 import { generateOrderLink, generateCampaignLink } from "@/lib/linkGenerator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -69,7 +68,7 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
 
   const [productsOpen, setProductsOpen] = useState(true);
   const [studentsOpen, setStudentsOpen] = useState(true);
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [agreedToTerms] = useState(true); // Always ready to launch
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showLinksModal, setShowLinksModal] = useState(false);
 
@@ -362,50 +361,36 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
         </Card>
       )}
 
-      {/* Terms Agreement */}
-      <Card className="border-primary/20">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-3">
-            <Checkbox
-              id="terms"
-              checked={agreedToTerms}
-              onCheckedChange={(checked) => setAgreedToTerms(!!checked)}
-            />
-            <label htmlFor="terms" className="text-sm cursor-pointer font-medium">
-              I'm ready to launch this campaign and start fundraising.
-            </label>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Launch Button - Big and Prominent */}
+      <div className="py-6">
+        <Button
+          onClick={handleLaunch}
+          disabled={launchCampaign.isPending || products.length === 0}
+          className="w-full h-16 text-xl font-bold bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg hover:shadow-xl transition-all"
+        >
+          {launchCampaign.isPending ? (
+            <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+          ) : (
+            <Rocket className="mr-3 h-6 w-6" />
+          )}
+          Launch Campaign!
+        </Button>
+      </div>
 
-      {/* Action Buttons */}
-      <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 pt-6 border-t">
+      {/* Secondary Action Buttons */}
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 pt-4 border-t">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           {trackingMode === 'none' ? 'Back to Pricing' : 'Back to Sellers'}
         </Button>
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={handleSaveDraft}
-            disabled={saveDraft.isPending || launchCampaign.isPending}
-          >
-            {saveDraft.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save as Draft
-          </Button>
-          <Button
-            onClick={handleLaunch}
-            disabled={!agreedToTerms || launchCampaign.isPending || products.length === 0}
-            className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700"
-          >
-            {launchCampaign.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Rocket className="mr-2 h-4 w-4" />
-            )}
-            Launch Campaign
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          onClick={handleSaveDraft}
+          disabled={saveDraft.isPending || launchCampaign.isPending}
+        >
+          {saveDraft.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Save as Draft
+        </Button>
       </div>
 
       {/* Success Modal */}
