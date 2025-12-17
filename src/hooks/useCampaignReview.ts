@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { BFCampaign, BFFlorist } from "@/types/bloomfundr";
 import { notifyFloristCampaignInvitation } from "@/lib/notifications";
-import { format, startOfDay, isBefore } from "date-fns";
+import { format, startOfDay, isBefore, parseISO } from "date-fns";
 
 export interface CampaignReviewData {
   campaign: BFCampaign;
@@ -123,7 +123,7 @@ export function useLaunchCampaign() {
 
       // Determine status based on start date
       const today = startOfDay(new Date());
-      const startDate = startOfDay(new Date(campaignData.start_date));
+      const startDate = startOfDay(parseISO(campaignData.start_date));
       const isFutureCampaign = isBefore(today, startDate);
       const newStatus = isFutureCampaign ? "scheduled" : "active";
 
