@@ -778,6 +778,7 @@ export default function OrgCampaignDetail() {
               floristMarginPercent={campaign.florist_margin_percent}
               orgMarginPercent={campaign.organization_margin_percent}
               platformFeePercent={campaign.platform_fee_percent || 10}
+              viewType="organization"
             />
             <PayoutStatusCard
               campaignStatus={campaign.status}
@@ -788,6 +789,7 @@ export default function OrgCampaignDetail() {
               onCreatePayouts={() => createPayouts.mutate({ campaignId: id! })}
               isCreating={createPayouts.isPending}
               isLoading={payoutsLoading}
+              viewType="organization"
             />
             <div className="flex justify-end">
               <Button variant="outline" onClick={() => setShowPayoutDetail(true)}>
