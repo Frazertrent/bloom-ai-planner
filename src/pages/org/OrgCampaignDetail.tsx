@@ -271,22 +271,22 @@ export default function OrgCampaignDetail() {
           </div>
           <div className="flex gap-2 flex-wrap">
             {campaign.status === "draft" && (
-              <>
-                <Button 
-                  onClick={() => launchCampaign.mutate(id!)}
-                  disabled={launchCampaign.isPending}
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                >
-                  <Rocket className="h-4 w-4 mr-2" />
-                  {launchCampaign.isPending ? "Launching..." : "Launch Campaign"}
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link to={`/org/campaigns/${id}/edit`}>
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Edit
-                  </Link>
-                </Button>
-              </>
+              <Button 
+                onClick={() => launchCampaign.mutate(id!)}
+                disabled={launchCampaign.isPending}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                <Rocket className="h-4 w-4 mr-2" />
+                {launchCampaign.isPending ? "Launching..." : "Launch Campaign"}
+              </Button>
+            )}
+            {!["fulfilled", "completed", "cancelled"].includes(campaign.status) && (
+              <Button variant="outline" asChild>
+                <Link to={`/org/campaigns/${id}/edit`}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit
+                </Link>
+              </Button>
             )}
             {(campaign.status === "active" || campaign.status === "closed") && (
               <Button variant="outline" asChild>
@@ -1092,6 +1092,14 @@ export default function OrgCampaignDetail() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-3">
+              {!["fulfilled", "completed", "cancelled"].includes(campaign.status) && (
+                <Button variant="outline" asChild>
+                  <Link to={`/org/campaigns/${id}/edit`}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit Campaign
+                  </Link>
+                </Button>
+              )}
               <Button variant="outline" onClick={handleExportCSV}>
                 <Download className="h-4 w-4 mr-2" />
                 Export Orders CSV
