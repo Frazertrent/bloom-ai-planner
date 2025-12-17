@@ -42,6 +42,8 @@ export interface CampaignAnalytics {
     id: string;
     orderNumber: string;
     customerName: string;
+    customerEmail: string | null;
+    customerPhone: string | null;
     studentName: string | null;
     studentEmail: string | null;
     studentPhone: string | null;
@@ -105,7 +107,7 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
           notes,
           created_at,
           attributed_student_id,
-          customer:bf_customers(full_name)
+          customer:bf_customers(full_name, email, phone)
         `)
         .eq("campaign_id", campaignId)
         .order("created_at", { ascending: false });
@@ -218,6 +220,8 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
         id: o.id,
         orderNumber: o.order_number,
         customerName: (o.customer as any)?.full_name || "Unknown",
+        customerEmail: (o.customer as any)?.email || null,
+        customerPhone: (o.customer as any)?.phone || null,
         studentName: studentInfo(o.attributed_student_id)?.name || null,
         studentEmail: studentInfo(o.attributed_student_id)?.email || null,
         studentPhone: studentInfo(o.attributed_student_id)?.phone || null,

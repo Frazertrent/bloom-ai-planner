@@ -41,6 +41,14 @@ export function useCreateOrder() {
       let customerId: string;
 
       if (existingCustomer) {
+        // Update customer info to latest values from form
+        await supabase
+          .from("bf_customers")
+          .update({
+            full_name: customerData.fullName,
+            phone: customerData.phone,
+          })
+          .eq("id", existingCustomer.id);
         customerId = existingCustomer.id;
       } else {
         const { data: newCustomer, error: customerError } = await supabase

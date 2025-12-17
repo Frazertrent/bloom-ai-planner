@@ -71,6 +71,14 @@ export function useCreateManualOrder() {
           .single();
 
         if (existingCustomer) {
+          // Update customer info to latest values
+          await supabase
+            .from("bf_customers")
+            .update({
+              full_name: customerName,
+              phone: customerPhone,
+            })
+            .eq("id", existingCustomer.id);
           customerId = existingCustomer.id;
         } else {
           const { data: newCustomer, error: customerError } = await supabase

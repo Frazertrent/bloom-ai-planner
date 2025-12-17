@@ -712,7 +712,31 @@ export default function OrgCampaignDetail() {
                             )}
                           </TableCell>
                           <TableCell className="font-medium">{order.orderNumber}</TableCell>
-                          <TableCell>{order.customerName}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1.5">
+                              <span className="truncate max-w-[80px] sm:max-w-none">{order.customerName}</span>
+                              <div className="flex gap-0.5">
+                                {order.customerEmail && (
+                                  <a
+                                    href={`mailto:${order.customerEmail}?subject=Your Order ${order.orderNumber}`}
+                                    className="p-1 rounded hover:bg-muted"
+                                    title={`Email ${order.customerName}`}
+                                  >
+                                    <Mail className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                                  </a>
+                                )}
+                                {order.customerPhone && (
+                                  <a
+                                    href={`sms:${order.customerPhone}`}
+                                    className="p-1 rounded hover:bg-muted"
+                                    title={`Text ${order.customerName}`}
+                                  >
+                                    <MessageSquare className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
                           {showSellerInfo && (
                             <TableCell>
                               {order.studentName ? (
@@ -861,7 +885,31 @@ export default function OrgCampaignDetail() {
                             />
                           </TableCell>
                           <TableCell className="font-medium">{order.orderNumber}</TableCell>
-                          <TableCell>{order.customerName}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1.5">
+                              <span className="truncate max-w-[80px] sm:max-w-none">{order.customerName}</span>
+                              <div className="flex gap-0.5">
+                                {order.customerEmail && (
+                                  <a
+                                    href={`mailto:${order.customerEmail}?subject=Your Order ${order.orderNumber}`}
+                                    className="p-1 rounded hover:bg-muted"
+                                    title={`Email ${order.customerName}`}
+                                  >
+                                    <Mail className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                                  </a>
+                                )}
+                                {order.customerPhone && (
+                                  <a
+                                    href={`sms:${order.customerPhone}`}
+                                    className="p-1 rounded hover:bg-muted"
+                                    title={`Text ${order.customerName}`}
+                                  >
+                                    <MessageSquare className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
                           {showSellerInfo && (
                             <TableCell>
                               {order.studentName ? (
