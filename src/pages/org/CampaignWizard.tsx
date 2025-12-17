@@ -230,6 +230,7 @@ export default function CampaignWizard() {
         return campaignId ? (
           <Step3Pricing
             campaignId={campaignId}
+            trackingMode={trackingMode as 'none' | 'individual' | 'self_register'}
             onBack={handleStep3Back}
             onContinue={handleStep3Continue}
           />
