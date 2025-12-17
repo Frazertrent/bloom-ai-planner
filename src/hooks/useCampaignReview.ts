@@ -12,6 +12,7 @@ export interface CampaignReviewData {
     id: string;
     name: string;
     retailPrice: number;
+    floristPrice: number;
     maxQuantity: number | null;
   }[];
   students: {
@@ -54,7 +55,7 @@ export function useCampaignReviewData(campaignId: string | undefined) {
           id,
           retail_price,
           max_quantity,
-          product:bf_products(id, name)
+          product:bf_products(id, name, base_cost)
         `)
         .eq("campaign_id", campaignId);
 
@@ -77,6 +78,7 @@ export function useCampaignReviewData(campaignId: string | undefined) {
         id: cp.product?.id || cp.id,
         name: cp.product?.name || "Unknown Product",
         retailPrice: cp.retail_price,
+        floristPrice: cp.product?.base_cost || 0,
         maxQuantity: cp.max_quantity,
       }));
 
