@@ -32,8 +32,8 @@ import type { FulfillmentStatus } from "@/types/bloomfundr";
 const statusTimeline: { status: FulfillmentStatus; label: string; icon: React.ReactNode }[] = [
   { status: "pending", label: "Order Placed", icon: <Clock className="h-4 w-4" /> },
   { status: "in_production", label: "In Production", icon: <Play className="h-4 w-4" /> },
-  { status: "ready", label: "Ready for Pickup", icon: <CheckCircle className="h-4 w-4" /> },
-  { status: "picked_up", label: "Picked Up", icon: <Package className="h-4 w-4" /> },
+  { status: "ready", label: "Ready for Seller Pickup", icon: <CheckCircle className="h-4 w-4" /> },
+  { status: "picked_up", label: "Picked Up by Seller", icon: <Package className="h-4 w-4" /> },
 ];
 
 const statusOrder: FulfillmentStatus[] = ["pending", "in_production", "ready", "picked_up"];
@@ -119,12 +119,12 @@ export default function FloristOrderDetail() {
             )}
             {order.fulfillment_status === "ready" && (
               <div className="text-sm text-muted-foreground bg-muted px-3 py-2 rounded-lg">
-                Awaiting pickup by organization
+                Awaiting seller pickup
               </div>
             )}
             {order.fulfillment_status === "picked_up" && (
               <div className="text-sm text-emerald-600 bg-emerald-500/10 px-3 py-2 rounded-lg">
-                ✓ Picked up
+                ✓ Picked up by seller
               </div>
             )}
           </div>
@@ -212,12 +212,12 @@ export default function FloristOrderDetail() {
               <p className="text-lg font-medium">{order.campaign?.name || "Unknown"}</p>
               {order.campaign?.pickup_date && (
                 <p className="text-sm text-muted-foreground">
-                  Pickup: {format(new Date(order.campaign.pickup_date), "MMMM d, yyyy")}
+                  Seller Pickup: {format(new Date(order.campaign.pickup_date), "MMMM d, yyyy")}
                 </p>
               )}
               {order.campaign?.pickup_location && (
                 <p className="text-sm text-muted-foreground">
-                  Location: {order.campaign.pickup_location}
+                  Seller Pickup Location: {order.campaign.pickup_location}
                 </p>
               )}
               <Button variant="outline" size="sm" asChild>

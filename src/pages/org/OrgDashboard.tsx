@@ -135,7 +135,7 @@ export default function OrgDashboard() {
           </Card>
         </div>
 
-        {/* Orders Ready for Pickup Widget */}
+        {/* Orders Ready for Seller Pickup Widget */}
         {readyOrders && readyOrders.totalReady > 0 && (
           <Card className="border-2 border-blue-500/30 bg-blue-500/5">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -144,8 +144,8 @@ export default function OrgDashboard() {
                   <Package className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg">Orders Ready for Pickup</CardTitle>
-                  <CardDescription>{readyOrders.totalReady} orders ready to collect</CardDescription>
+                  <CardTitle className="text-lg">Orders Ready for Seller Pickup</CardTitle>
+                  <CardDescription>{readyOrders.totalReady} orders ready for sellers to collect</CardDescription>
                 </div>
               </div>
             </CardHeader>

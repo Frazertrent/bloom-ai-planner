@@ -172,15 +172,15 @@ export async function notifyFloristFulfillmentReminder(params: {
 
   await createFloristNotification({
     floristId,
-    title: `Pickup Tomorrow: ${campaignName}`,
-    message: `${orderCount} order(s) ready for pickup on ${pickupDate}. Ensure all items are prepared!`,
+    title: `Seller Pickup Tomorrow: ${campaignName}`,
+    message: `${orderCount} order(s) need to be ready for seller pickup on ${pickupDate}. Ensure all items are prepared!`,
     notificationType: "fulfillment",
     linkUrl: `/florist/campaigns/${campaignId}`,
   });
 }
 
 /**
- * Notifies organization that orders are ready for pickup
+ * Notifies organization that orders are ready for seller pickup
  */
 export async function notifyOrgOrdersReady(params: {
   organizationId: string;
@@ -194,14 +194,14 @@ export async function notifyOrgOrdersReady(params: {
   await createOrgNotification({
     organizationId,
     title: `Orders Ready: ${campaignName}`,
-    message: `${orderCount} order(s) are ready for pickup from ${floristName}!`,
+    message: `${orderCount} order(s) are ready for seller pickup from ${floristName}!`,
     notificationType: "success",
     linkUrl: `/org/campaigns/${campaignId}?tab=fulfillment`,
   });
 }
 
 /**
- * Notifies organization when ALL orders for a campaign are ready
+ * Notifies organization when ALL orders for a campaign are ready for seller pickup
  */
 export async function notifyOrgAllOrdersReady(params: {
   organizationId: string;
@@ -215,7 +215,7 @@ export async function notifyOrgAllOrdersReady(params: {
   await createOrgNotification({
     organizationId,
     title: `🎉 All Orders Ready: ${campaignName}`,
-    message: `All ${orderCount} orders are ready for pickup from ${floristName}! Time to collect!`,
+    message: `All ${orderCount} orders are ready for seller pickup from ${floristName}! Time to collect and deliver!`,
     notificationType: "success",
     linkUrl: `/org/campaigns/${campaignId}?tab=fulfillment`,
   });
