@@ -51,6 +51,7 @@ import {
 } from "@/hooks/useCampaignReview";
 import { calculateRevenueAtPrice } from "@/lib/pricingCalculator";
 import { CampaignLinksModal } from "@/components/bloomfundr/CampaignLinksModal";
+import { useToast } from "@/hooks/use-toast";
 
 interface Step5ReviewProps {
   campaignId: string;
@@ -60,6 +61,7 @@ interface Step5ReviewProps {
 
 export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps) {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { data: reviewData, isLoading } = useCampaignReviewData(campaignId);
   const launchCampaign = useLaunchCampaign();
   const saveDraft = useSaveCampaignAsDraft();
@@ -126,7 +128,9 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
     );
   }
 
-  const { campaign, florist, products, students, avgFloristMargin, avgOrgMargin } = reviewData;
+  const { campaign, florist, products, students, avgFloristMargin, avgOrgMargin, trackingMode, campaignLinkCode } = reviewData;
+  const baseUrl = window.location.origin;
+  const campaignLink = campaignLinkCode ? `${baseUrl}/shop/${campaignLinkCode}` : null;
 
   return (
     <div className="space-y-6">
@@ -269,59 +273,95 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
         </CardContent>
       </Card>
 
-      {/* Students Section */}
-      <Card>
-        <Collapsible open={studentsOpen} onOpenChange={setStudentsOpen}>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CollapsibleTrigger className="flex items-center gap-2 hover:text-primary transition-colors">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Students
-                <Badge variant="secondary">{students.length}</Badge>
-              </CardTitle>
-              {studentsOpen ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </CollapsibleTrigger>
-            <Button variant="ghost" size="sm" onClick={() => onEditStep(4)}>
-              <Edit className="h-4 w-4 mr-1" />
-              Edit
-            </Button>
+      {/* Students Section OR Campaign Link Card based on tracking mode */}
+      {trackingMode === 'none' ? (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <LinkIcon className="h-5 w-5" />
+              Campaign Link
+            </CardTitle>
           </CardHeader>
-          <CollapsibleContent>
-            <CardContent className="pt-0">
-              <div className="flex flex-wrap gap-2 mb-4">
-                {students.slice(0, 10).map((student) => (
-                  <Badge key={student.id} variant="outline">
-                    {student.name}
-                  </Badge>
-                ))}
-                {students.length > 10 && (
-                  <Badge variant="secondary">+{students.length - 10} more</Badge>
-                )}
-              </div>
-              {students.length > 0 && (
-                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg text-center">
-                  <p className="text-sm font-medium mb-1">Each seller gets their own unique link to share</p>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Links are ready and will be available after launch
-                  </p>
-                  <Button 
-                    variant="outline" 
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              This campaign uses a single shared link. No individual seller tracking.
+            </p>
+            {campaignLink && (
+              <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg">
+                <p className="text-sm font-medium mb-2">Share this link to start fundraising:</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs bg-background p-2 rounded border truncate">
+                    {campaignLink}
+                  </code>
+                  <Button
+                    variant="outline"
                     size="sm"
-                    onClick={() => setShowLinksModal(true)}
+                    onClick={() => {
+                      navigator.clipboard.writeText(campaignLink);
+                      toast({ title: "Link copied!", description: "Campaign link copied to clipboard." });
+                    }}
                   >
-                    <LinkIcon className="mr-2 h-4 w-4" />
-                    Preview Seller Links
+                    Copy
                   </Button>
                 </div>
-              )}
-            </CardContent>
-          </CollapsibleContent>
-        </Collapsible>
-      </Card>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <Collapsible open={studentsOpen} onOpenChange={setStudentsOpen}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CollapsibleTrigger className="flex items-center gap-2 hover:text-primary transition-colors">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  {trackingMode === 'self_register' ? 'Sellers' : 'Students'}
+                  <Badge variant="secondary">{students.length}</Badge>
+                </CardTitle>
+                {studentsOpen ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </CollapsibleTrigger>
+              <Button variant="ghost" size="sm" onClick={() => onEditStep(4)}>
+                <Edit className="h-4 w-4 mr-1" />
+                Edit
+              </Button>
+            </CardHeader>
+            <CollapsibleContent>
+              <CardContent className="pt-0">
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {students.slice(0, 10).map((student) => (
+                    <Badge key={student.id} variant="outline">
+                      {student.name}
+                    </Badge>
+                  ))}
+                  {students.length > 10 && (
+                    <Badge variant="secondary">+{students.length - 10} more</Badge>
+                  )}
+                </div>
+                {students.length > 0 && (
+                  <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg text-center">
+                    <p className="text-sm font-medium mb-1">Each seller gets their own unique link to share</p>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Links are ready and will be available after launch
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setShowLinksModal(true)}
+                    >
+                      <LinkIcon className="mr-2 h-4 w-4" />
+                      Preview Seller Links
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+      )}
 
       {/* Terms Agreement */}
       <Card className="border-primary/20">
@@ -343,7 +383,7 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
       <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 pt-6 border-t">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Students
+          {trackingMode === 'none' ? 'Back to Pricing' : 'Back to Sellers'}
         </Button>
         <div className="flex gap-3">
           <Button
@@ -379,20 +419,36 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
             <DialogTitle className="text-xl">Campaign is Live!</DialogTitle>
             <DialogDescription>
               Your campaign "{campaign.name}" is now active and ready to receive orders.
-              Share the student links to start fundraising!
+              {trackingMode === 'none' 
+                ? ' Share the campaign link to start fundraising!'
+                : ' Share the seller links to start fundraising!'
+              }
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col sm:flex-col gap-2 mt-4">
-            <Button
-              className="w-full"
-              onClick={() => {
-                setShowSuccessModal(false);
-                setShowLinksModal(true);
-              }}
-            >
-              <LinkIcon className="mr-2 h-4 w-4" />
-              Share Student Links
-            </Button>
+            {trackingMode === 'none' && campaignLink ? (
+              <Button
+                className="w-full"
+                onClick={() => {
+                  navigator.clipboard.writeText(campaignLink);
+                  toast({ title: "Link copied!", description: "Campaign link copied to clipboard." });
+                }}
+              >
+                <LinkIcon className="mr-2 h-4 w-4" />
+                Copy Campaign Link
+              </Button>
+            ) : (
+              <Button
+                className="w-full"
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  setShowLinksModal(true);
+                }}
+              >
+                <LinkIcon className="mr-2 h-4 w-4" />
+                Share Seller Links
+              </Button>
+            )}
             <Button
               variant="outline"
               className="w-full"
