@@ -83,20 +83,21 @@ export function ProductDetailSheet({
 
         <div className="mt-6 space-y-6">
           {/* Product Image */}
-          <div className="aspect-video rounded-lg bg-muted/30 overflow-hidden">
-            {product.image_url ? (
+          <div className="aspect-video rounded-lg bg-muted/30 overflow-hidden relative">
+            {/* Fallback always rendered underneath */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <ImageOff className="h-16 w-16 text-muted-foreground/30" />
+            </div>
+            {/* Image overlays fallback - if fails, becomes transparent */}
+            {product.image_url && (
               <img
                 src={product.image_url}
                 alt={product.name}
-                className="w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-cover"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
+                  (e.target as HTMLImageElement).style.opacity = "0";
                 }}
               />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <ImageOff className="h-16 w-16 text-muted-foreground/30" />
-              </div>
             )}
           </div>
 
