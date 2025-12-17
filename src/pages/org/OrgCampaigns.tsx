@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { OrgLayout } from "@/components/bloomfundr/OrgLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,12 +16,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { CampaignStatusBadge } from "@/components/bloomfundr/CampaignStatusBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrgProfile } from "@/hooks/useOrgData";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { useLaunchCampaign } from "@/hooks/useCampaignReview";
-import { Calendar, Eye, Plus, Rocket } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Calendar, Eye, Plus, Rocket, Trash2 } from "lucide-react";
 import { format, isWithinInterval } from "date-fns";
 import type { BFCampaign, BFFlorist, CampaignStatus } from "@/types/bloomfundr";
 
@@ -36,13 +48,38 @@ export default function OrgCampaigns() {
   const { getFilter, getDateRangeFilter, setFilter, setDateRangeFilter } = useUrlFilters({
     defaultValues: { tab: "all" },
   });
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const search = getFilter("search");
   const activeTab = (getFilter("tab") || "all") as FilterTab;
   const dateRange = getDateRangeFilter("date");
 
+  const [campaignToDelete, setCampaignToDelete] = useState<CampaignWithFlorist | null>(null);
+
   const { data: org } = useOrgProfile();
   const launchCampaign = useLaunchCampaign();
+
+  const deleteCampaign = useMutation({
+    mutationFn: async (campaignId: string) => {
+      // Delete related records first
+      await supabase.from("bf_campaign_students").delete().eq("campaign_id", campaignId);
+      await supabase.from("bf_campaign_products").delete().eq("campaign_id", campaignId);
+      
+      // Delete the campaign
+      const { error } = await supabase.from("bf_campaigns").delete().eq("id", campaignId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["org-campaigns-with-florists"] });
+      toast({ title: "Campaign deleted", description: "Draft campaign has been deleted." });
+      setCampaignToDelete(null);
+    },
+    onError: (error) => {
+      console.error("Error deleting campaign:", error);
+      toast({ title: "Error", description: "Failed to delete campaign.", variant: "destructive" });
+    },
+  });
 
   const { data: allCampaigns, isLoading } = useQuery({
     queryKey: ["org-campaigns-with-florists", org?.id, activeTab],
@@ -240,18 +277,28 @@ export default function OrgCampaigns() {
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
                             {campaign.status === "draft" && (
-                              <Button 
-                                size="sm" 
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  launchCampaign.mutate(campaign.id);
-                                }}
-                                disabled={launchCampaign.isPending}
-                                className="bg-emerald-600 hover:bg-emerald-700"
-                              >
-                                <Rocket className="h-3 w-3 mr-1" />
-                                Launch
-                              </Button>
+                              <>
+                                <Button 
+                                  size="sm" 
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    launchCampaign.mutate(campaign.id);
+                                  }}
+                                  disabled={launchCampaign.isPending}
+                                  className="bg-emerald-600 hover:bg-emerald-700"
+                                >
+                                  <Rocket className="h-3 w-3 mr-1" />
+                                  Launch
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => setCampaignToDelete(campaign)}
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </>
                             )}
                             <Button variant="ghost" size="sm" asChild>
                               <Link to={`/org/campaigns/${campaign.id}`}>
@@ -290,6 +337,27 @@ export default function OrgCampaigns() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!campaignToDelete} onOpenChange={(open) => !open && setCampaignToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Draft Campaign?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{campaignToDelete?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => campaignToDelete && deleteCampaign.mutate(campaignToDelete.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </OrgLayout>
   );
 }
