@@ -177,29 +177,18 @@ export default function OrgCampaignDetail() {
     if (!analytics) return;
 
     const trackingMode = analytics.trackingMode;
-    const showSellerColumn = trackingMode !== 'none';
+    const isSellerCampaign = trackingMode !== 'none';
 
-    const headers = showSellerColumn
-      ? ["Order #", "Customer", "Seller", "Amount", "Status", "Date"]
-      : ["Order #", "Customer", "Amount", "Status", "Date"];
+    const headers = ["Order #", "Customer", "Seller", "Amount", "Status", "Date"];
 
-    const rows = analytics.orders.map(o => showSellerColumn
-      ? [
-          o.orderNumber,
-          o.customerName,
-          o.studentName || "—",
-          `$${o.total.toFixed(2)}`,
-          o.fulfillmentStatus,
-          format(new Date(o.createdAt), "yyyy-MM-dd HH:mm"),
-        ]
-      : [
-          o.orderNumber,
-          o.customerName,
-          `$${o.total.toFixed(2)}`,
-          o.fulfillmentStatus,
-          format(new Date(o.createdAt), "yyyy-MM-dd HH:mm"),
-        ]
-    );
+    const rows = analytics.orders.map(o => [
+      o.orderNumber,
+      o.customerName,
+      isSellerCampaign ? (o.studentName || "—") : "N/A",
+      `$${o.total.toFixed(2)}`,
+      o.fulfillmentStatus,
+      format(new Date(o.createdAt), "yyyy-MM-dd HH:mm"),
+    ]);
 
     const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -707,7 +696,7 @@ export default function OrgCampaignDetail() {
                         </TableHead>
                         <TableHead>Order #</TableHead>
                         <TableHead>Customer</TableHead>
-                        {showSellerInfo && <TableHead>Seller</TableHead>}
+                        <TableHead>Seller</TableHead>
                         <TableHead className="text-right hidden sm:table-cell">Amount</TableHead>
                         <TableHead className="hidden sm:table-cell">Payment</TableHead>
                         <TableHead>Status</TableHead>
@@ -753,9 +742,9 @@ export default function OrgCampaignDetail() {
                               </div>
                             </div>
                           </TableCell>
-                          {showSellerInfo && (
-                            <TableCell>
-                              {order.studentName ? (
+                          <TableCell>
+                            {showSellerInfo ? (
+                              order.studentName ? (
                                 <div className="flex items-center gap-1.5">
                                   <span className="truncate max-w-[80px] sm:max-w-none">{order.studentName}</span>
                                   <div className="flex gap-0.5">
@@ -779,9 +768,11 @@ export default function OrgCampaignDetail() {
                                     )}
                                   </div>
                                 </div>
-                              ) : "—"}
-                            </TableCell>
-                          )}
+                              ) : "—"
+                            ) : (
+                              <span className="text-muted-foreground">N/A</span>
+                            )}
+                          </TableCell>
                           <TableCell className="text-right hidden sm:table-cell">${order.total.toFixed(2)}</TableCell>
                           <TableCell className="hidden sm:table-cell">
                             <Badge variant={order.paymentStatus === "paid" ? "default" : "secondary"} className={order.paymentStatus === "paid" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"}>
@@ -885,7 +876,7 @@ export default function OrgCampaignDetail() {
                         </TableHead>
                         <TableHead>Order #</TableHead>
                         <TableHead>Customer</TableHead>
-                        {showSellerInfo && <TableHead>Seller</TableHead>}
+                        <TableHead>Seller</TableHead>
                         <TableHead className="text-right hidden sm:table-cell">Amount</TableHead>
                         <TableHead className="w-24">Action</TableHead>
                       </TableRow>
@@ -926,9 +917,9 @@ export default function OrgCampaignDetail() {
                               </div>
                             </div>
                           </TableCell>
-                          {showSellerInfo && (
-                            <TableCell>
-                              {order.studentName ? (
+                          <TableCell>
+                            {showSellerInfo ? (
+                              order.studentName ? (
                                 <div className="flex items-center gap-1.5">
                                   <span className="truncate max-w-[80px] sm:max-w-none">{order.studentName}</span>
                                   <div className="flex gap-0.5">
@@ -952,9 +943,11 @@ export default function OrgCampaignDetail() {
                                     )}
                                   </div>
                                 </div>
-                              ) : "—"}
-                            </TableCell>
-                          )}
+                              ) : "—"
+                            ) : (
+                              <span className="text-muted-foreground">N/A</span>
+                            )}
+                          </TableCell>
                           <TableCell className="text-right hidden sm:table-cell">${order.total.toFixed(2)}</TableCell>
                           <TableCell>
                             <Button
