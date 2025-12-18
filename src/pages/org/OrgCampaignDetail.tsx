@@ -74,6 +74,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
 } from "recharts";
 
@@ -424,16 +425,26 @@ export default function OrgCampaignDetail() {
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis
                       dataKey="date"
-                      tickFormatter={(d) => format(new Date(d), "MMM d")}
+                      tickFormatter={(d) => format(parseISO(d), "MMM d")}
                       className="text-xs"
                     />
-                    <YAxis className="text-xs" />
+                    <YAxis 
+                      yAxisId="left"
+                      className="text-xs"
+                      allowDecimals={false}
+                    />
+                    <YAxis 
+                      yAxisId="right"
+                      orientation="right"
+                      className="text-xs"
+                      tickFormatter={(v) => `$${v}`}
+                    />
                     <Tooltip
                       content={({ active, payload, label }) => {
                         if (active && payload?.length) {
                           return (
                             <div className="bg-popover border border-border rounded-lg p-3 shadow-lg">
-                              <p className="font-medium">{format(new Date(label), "MMM d, yyyy")}</p>
+                              <p className="font-medium">{format(parseISO(label), "MMM d, yyyy")}</p>
                               <p className="text-sm text-muted-foreground">
                                 Orders: {payload[0]?.value}
                               </p>
@@ -446,19 +457,24 @@ export default function OrgCampaignDetail() {
                         return null;
                       }}
                     />
+                    <Legend />
                     <Line
+                      yAxisId="left"
                       type="monotone"
                       dataKey="orders"
+                      name="Orders"
                       stroke="hsl(var(--primary))"
                       strokeWidth={2}
-                      dot={false}
+                      dot={{ r: 4 }}
                     />
                     <Line
+                      yAxisId="right"
                       type="monotone"
                       dataKey="revenue"
+                      name="Revenue ($)"
                       stroke="hsl(var(--chart-2))"
                       strokeWidth={2}
-                      dot={false}
+                      dot={{ r: 4 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
