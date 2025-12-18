@@ -109,12 +109,18 @@ export function useSaveCampaignStudents() {
 
       // Get student codes for new students
       if (toAdd.length > 0) {
+        console.log("Fetching student data for IDs:", toAdd);
         const { data: studentsData, error: fetchError } = await supabase
           .from("bf_students")
           .select("id, unique_code")
           .in("id", toAdd);
 
-        if (fetchError) throw fetchError;
+        if (fetchError) {
+          console.error("Error fetching students:", fetchError);
+          throw fetchError;
+        }
+
+        console.log("Students data:", studentsData);
 
         // Create new campaign_students with magic links
         const newRecords = studentsData.map((student) => ({
@@ -125,11 +131,17 @@ export function useSaveCampaignStudents() {
           order_count: 0,
         }));
 
+        console.log("Inserting records:", newRecords);
+
         const { error: insertError } = await supabase
           .from("bf_campaign_students")
           .insert(newRecords);
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error("Insert error:", insertError);
+          throw insertError;
+        }
+        console.log("Insert successful");
       }
 
       return { added: toAdd.length, removed: toRemove.length };
