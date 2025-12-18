@@ -389,7 +389,7 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
         {!showAsLaunched && (
           <p className="text-sm text-center text-muted-foreground">
             {isFutureCampaign ? (
-              <>💡 Ready when you are! Hit Launch and your campaign will automatically go live on <span className="font-medium">{format(startDate, "MMM d, yyyy")}</span>.</>
+              <>💡 Ready when you are! Your campaign will auto-activate on <span className="font-medium">{format(startDate, "MMM d, yyyy")}</span>, or you can activate it manually anytime.</>
             ) : (
               <>💡 Your campaign starts today! Hit Launch to go live immediately.</>
             )}
@@ -466,7 +466,7 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
             </DialogTitle>
             <DialogDescription>
               {launchWasFuture ? (
-                <>Your campaign "{campaign.name}" will automatically go live on <span className="font-medium">{format(startDate, "MMM d, yyyy")}</span>. Seller links are ready to share now!</>
+                <>Your campaign "{campaign.name}" is scheduled for <span className="font-medium">{format(startDate, "MMM d, yyyy")}</span>. It will auto-activate at midnight, or you can activate it manually from the campaign page. Seller links are ready to share now!</>
               ) : (
                 <>Your campaign "{campaign.name}" is now active and ready to receive orders.
                 {trackingMode === 'none' 
