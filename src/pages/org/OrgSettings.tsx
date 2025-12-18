@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Phone, MapPin, Bell, Mail, ShoppingCart, Calendar, AlertTriangle, Info } from "lucide-react";
+import { Building2, Phone, MapPin, Bell, Mail, ShoppingCart, Calendar, AlertTriangle, Info, CreditCard, CheckCircle2, DollarSign } from "lucide-react";
+import { TestModeBanner } from "@/components/bloomfundr/TestModeBanner";
 
 const PRESET_ORG_TYPES = ["school", "sports", "dance", "cheer", "church", "other"];
 
@@ -160,6 +161,49 @@ export default function OrgSettings() {
     }
   };
 
+  const handleSimulateStripeConnect = async () => {
+    if (!org?.id) return;
+    
+    try {
+      const testAccountId = `test_acct_${Date.now()}`;
+      const { error } = await supabase
+        .from("bf_organizations")
+        .update({ stripe_account_id: testAccountId })
+        .eq("id", org.id);
+
+      if (error) throw error;
+      
+      queryClient.invalidateQueries({ queryKey: ["org-profile"] });
+      toast.success("Stripe account connected (test mode)");
+    } catch (error) {
+      console.error("Error simulating Stripe connect:", error);
+      toast.error("Failed to simulate connection");
+    }
+  };
+
+  const handleDisconnectStripe = async () => {
+    if (!org?.id) return;
+    
+    try {
+      const { error } = await supabase
+        .from("bf_organizations")
+        .update({ stripe_account_id: null })
+        .eq("id", org.id);
+
+      if (error) throw error;
+      
+      queryClient.invalidateQueries({ queryKey: ["org-profile"] });
+      toast.success("Stripe account disconnected");
+    } catch (error) {
+      console.error("Error disconnecting Stripe:", error);
+      toast.error("Failed to disconnect");
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+  };
+
   return (
     <OrgLayout>
       <div className="space-y-6">
@@ -266,6 +310,81 @@ export default function OrgSettings() {
                   Save Changes
                 </Button>
               </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Payment Settings Card */}
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Payment Settings
+            </CardTitle>
+            <CardDescription>Connect your payment account to receive payouts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TestModeBanner />
+            
+            {isLoading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-10 w-32" />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Lifetime Earnings */}
+                <div className="p-4 bg-muted/50 rounded-lg border border-border">
+                  <div className="flex items-center gap-2 mb-1">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Lifetime Earnings</span>
+                  </div>
+                  <p className="text-2xl font-bold text-emerald-600">
+                    {formatCurrency(org?.total_lifetime_earnings || 0)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Total earned across all campaigns</p>
+                </div>
+
+                {/* Connection Status */}
+                {org?.stripe_account_id ? (
+                  <div className="p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                      <span className="font-medium text-emerald-600">Payment Account Connected (Test Mode)</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Account ID: <code className="text-xs bg-muted px-1 py-0.5 rounded">{org.stripe_account_id}</code>
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleDisconnectStripe}
+                    >
+                      Disconnect (Test Only)
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertTriangle className="h-5 w-5 text-amber-600" />
+                      <span className="font-medium text-amber-600">Payment Account Not Connected</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Connect your payment account to receive payouts from your fundraising campaigns.
+                    </p>
+                    <Button onClick={handleSimulateStripeConnect}>
+                      Simulate Stripe Connect
+                    </Button>
+                  </div>
+                )}
+
+                {/* Production Note */}
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-medium">In production:</span> Clicking "Connect Stripe Account" would redirect you to Stripe's secure onboarding where you enter your bank details directly with Stripe.
+                  </p>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>

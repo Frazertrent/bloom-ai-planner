@@ -11,11 +11,12 @@ import {
 } from "@/hooks/useFloristNotifications";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Mail, ShoppingCart, Package, CheckCircle2, Clock, ShieldCheck } from "lucide-react";
+import { Bell, Mail, ShoppingCart, Package, CheckCircle2, Clock, ShieldCheck, CreditCard, DollarSign, AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { TestModeBanner } from "@/components/bloomfundr/TestModeBanner";
 
 export default function FloristSettingsPage() {
   const queryClient = useQueryClient();
@@ -131,6 +132,49 @@ export default function FloristSettingsPage() {
     } finally {
       setIsVerifying(false);
     }
+  };
+
+  const handleSimulateStripeConnect = async () => {
+    if (!florist?.id) return;
+    
+    try {
+      const testAccountId = `test_acct_${Date.now()}`;
+      const { error } = await supabase
+        .from("bf_florists")
+        .update({ stripe_account_id: testAccountId })
+        .eq("id", florist.id);
+
+      if (error) throw error;
+      
+      queryClient.invalidateQueries({ queryKey: ["florist-profile"] });
+      toast.success("Stripe account connected (test mode)");
+    } catch (error) {
+      console.error("Error simulating Stripe connect:", error);
+      toast.error("Failed to simulate connection");
+    }
+  };
+
+  const handleDisconnectStripe = async () => {
+    if (!florist?.id) return;
+    
+    try {
+      const { error } = await supabase
+        .from("bf_florists")
+        .update({ stripe_account_id: null })
+        .eq("id", florist.id);
+
+      if (error) throw error;
+      
+      queryClient.invalidateQueries({ queryKey: ["florist-profile"] });
+      toast.success("Stripe account disconnected");
+    } catch (error) {
+      console.error("Error disconnecting Stripe:", error);
+      toast.error("Failed to disconnect");
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
   };
 
   return (
@@ -293,6 +337,84 @@ export default function FloristSettingsPage() {
           </CardContent>
         </Card>
 
+        {/* Payment Settings Card */}
+        <Card className="bg-bloomfundr-card border-bloomfundr-muted">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <CreditCard className="h-5 w-5" />
+              Payment Settings
+            </CardTitle>
+            <CardDescription>Connect your payment account to receive payouts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TestModeBanner />
+            
+            {isLoading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-10 w-32" />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Lifetime Earnings */}
+                <div className="p-4 bg-muted/50 rounded-lg border border-border">
+                  <div className="flex items-center gap-2 mb-1">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Lifetime Earnings</span>
+                  </div>
+                  <p className="text-2xl font-bold text-emerald-600">
+                    {formatCurrency(florist?.total_lifetime_earnings || 0)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Total earned across all campaigns</p>
+                </div>
+
+                {/* Connection Status */}
+                {florist?.stripe_account_id ? (
+                  <div className="p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                      <span className="font-medium text-emerald-600">Payment Account Connected (Test Mode)</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Account ID: <code className="text-xs bg-muted px-1 py-0.5 rounded">{florist.stripe_account_id}</code>
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleDisconnectStripe}
+                    >
+                      Disconnect (Test Only)
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertTriangle className="h-5 w-5 text-amber-600" />
+                      <span className="font-medium text-amber-600">Payment Account Not Connected</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Connect your payment account to receive payouts for fulfilled orders.
+                    </p>
+                    <Button 
+                      onClick={handleSimulateStripeConnect}
+                      className="bg-bloomfundr-primary hover:bg-bloomfundr-primary-light"
+                    >
+                      Simulate Stripe Connect
+                    </Button>
+                  </div>
+                )}
+
+                {/* Production Note */}
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-medium">In production:</span> Clicking "Connect Stripe Account" would redirect you to Stripe's secure onboarding where you enter your bank details directly with Stripe.
+                  </p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Notification Preferences Card */}
         <Card className="bg-bloomfundr-card border-bloomfundr-muted">
           <CardHeader>
@@ -385,33 +507,6 @@ export default function FloristSettingsPage() {
                   {updatePrefs.isPending ? "Saving..." : "Save Notification Preferences"}
                 </Button>
               </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Payment Settings Card */}
-        <Card className="bg-bloomfundr-card border-bloomfundr-muted">
-          <CardHeader>
-            <CardTitle className="text-foreground">Payment Settings</CardTitle>
-            <CardDescription>Connect your payment account to receive payouts</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {florist?.stripe_account_id ? (
-              <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
-                <p className="text-green-600 font-medium">Stripe Connected</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Your payment account is set up and ready to receive payouts.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-muted-foreground">
-                  Connect your Stripe account to receive payouts for fulfilled orders.
-                </p>
-                <Button variant="outline" className="border-bloomfundr-primary text-bloomfundr-primary">
-                  Connect Stripe Account
-                </Button>
-              </div>
             )}
           </CardContent>
         </Card>
