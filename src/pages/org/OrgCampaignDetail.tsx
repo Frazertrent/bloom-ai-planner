@@ -63,6 +63,7 @@ import {
   Mail,
   MessageSquare,
   Truck,
+  UserPlus,
 } from "lucide-react";
 import { generateOrderLink, generateCampaignLink, generateSellerJoinLink } from "@/lib/linkGenerator";
 import { format, parseISO } from "date-fns";
@@ -89,6 +90,17 @@ export default function OrgCampaignDetail() {
   const [showAllStudents, setShowAllStudents] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>("all");
+  const [joinLinkCopied, setJoinLinkCopied] = useState(false);
+
+  // Helper for copying seller join link
+  const handleCopyJoinLink = () => {
+    if (!analytics?.campaign.self_register_code) return;
+    const joinLink = generateSellerJoinLink(analytics.campaign.self_register_code);
+    navigator.clipboard.writeText(joinLink);
+    setJoinLinkCopied(true);
+    toast({ title: "Link copied!", description: "Seller registration link copied to clipboard." });
+    setTimeout(() => setJoinLinkCopied(false), 2000);
+  };
 
   const { data: analytics, isLoading, refetch } = useOrgCampaignAnalytics(id);
   const { data: payoutData, isLoading: payoutsLoading } = useCampaignPayouts(id);
@@ -327,9 +339,18 @@ export default function OrgCampaignDetail() {
                 </Link>
               </Button>
             )}
-            <Button onClick={() => setShowLinksModal(true)}>
+            {trackingMode === 'self_register' && campaign.self_register_code && (
+              <Button 
+                onClick={handleCopyJoinLink}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                {joinLinkCopied ? "Copied!" : "Invite Sellers"}
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setShowLinksModal(true)}>
               <Share2 className="h-4 w-4 mr-2" />
-              Share Links
+              All Links
             </Button>
           </div>
         </div>
@@ -372,6 +393,46 @@ export default function OrgCampaignDetail() {
               </Button>
             </AlertDescription>
           </Alert>
+        )}
+
+        {/* Prominent Seller Registration Link Section - Only for self_register campaigns */}
+        {trackingMode === 'self_register' && campaign.self_register_code && (
+          <Card className="border-2 border-emerald-500/30 bg-emerald-500/5">
+            <CardContent className="py-5">
+              <div className="flex flex-col md:flex-row md:items-center gap-4">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="p-3 rounded-full bg-emerald-500/20">
+                    <UserPlus className="h-6 w-6 text-emerald-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-foreground">Seller Registration Link</h3>
+                    <p className="text-sm text-muted-foreground mb-2">Share this link with sellers so they can join your campaign and get their own selling links.</p>
+                    <div className="flex items-center gap-2 p-2 bg-background rounded-md border border-border">
+                      <code className="text-xs text-muted-foreground truncate flex-1">
+                        {generateSellerJoinLink(campaign.self_register_code)}
+                      </code>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <Button 
+                    onClick={handleCopyJoinLink}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    {joinLinkCopied ? "Copied!" : "Copy Link"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => window.open(generateSellerJoinLink(campaign.self_register_code!), '_blank')}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Open
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Stats Cards */}
