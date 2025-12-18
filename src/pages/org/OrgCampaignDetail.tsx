@@ -64,7 +64,7 @@ import {
   MessageSquare,
   Truck,
 } from "lucide-react";
-import { generateOrderLink, generateCampaignLink } from "@/lib/linkGenerator";
+import { generateOrderLink, generateCampaignLink, generateSellerJoinLink } from "@/lib/linkGenerator";
 import { format, parseISO } from "date-fns";
 import {
   LineChart,
@@ -1335,6 +1335,7 @@ export default function OrgCampaignDetail() {
           }))}
           trackingMode={trackingMode}
           campaignLink={campaignLinkCode ? generateCampaignLink(campaignLinkCode) : null}
+          selfRegisterLink={campaign.self_register_code ? generateSellerJoinLink(campaign.self_register_code) : null}
         />
 
         {/* Payout Detail Sheet */}

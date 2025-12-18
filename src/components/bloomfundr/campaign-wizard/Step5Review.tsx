@@ -19,7 +19,7 @@ import {
   PartyPopper,
   CalendarClock,
 } from "lucide-react";
-import { generateOrderLink, generateCampaignLink } from "@/lib/linkGenerator";
+import { generateOrderLink, generateCampaignLink, generateSellerJoinLink } from "@/lib/linkGenerator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -134,6 +134,7 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
 
   const { campaign, florist, products, students, avgFloristMargin, avgOrgMargin, trackingMode, campaignLinkCode } = reviewData;
   const campaignLink = campaignLinkCode ? generateCampaignLink(campaignLinkCode) : null;
+  const selfRegisterLink = campaign.self_register_code ? generateSellerJoinLink(campaign.self_register_code) : null;
   
   // Determine if this is a future campaign
   const today = startOfDay(new Date());
@@ -517,6 +518,9 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
         onOpenChange={setShowLinksModal}
         campaignName={campaign.name}
         studentLinks={getStudentLinks()}
+        trackingMode={trackingMode as 'none' | 'individual' | 'self_register'}
+        campaignLink={campaignLink}
+        selfRegisterLink={selfRegisterLink}
       />
     </div>
   );
