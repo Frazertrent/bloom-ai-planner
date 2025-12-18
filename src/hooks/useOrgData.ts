@@ -63,35 +63,28 @@ export function useOrgStats() {
         .eq("organization_id", org.id)
         .eq("status", "active");
 
-      // Get campaign IDs for order queries
+      // Get total paid orders count
       const { data: campaigns } = await supabase
         .from("bf_campaigns")
-        .select("id, organization_margin_percent")
+        .select("id")
         .eq("organization_id", org.id);
 
       let totalOrders = 0;
-      let totalRaised = 0;
 
       if (campaigns && campaigns.length > 0) {
         const campaignIds = campaigns.map((c) => c.id);
 
-        // Get paid orders
-        const { data: orders } = await supabase
+        const { count: orderCount } = await supabase
           .from("bf_orders")
-          .select("campaign_id, subtotal")
+          .select("*", { count: "exact", head: true })
           .in("campaign_id", campaignIds)
           .eq("payment_status", "paid");
 
-        if (orders) {
-          totalOrders = orders.length;
-          // Calculate org portion
-          orders.forEach((order) => {
-            const campaign = campaigns.find((c) => c.id === order.campaign_id);
-            const marginPercent = campaign?.organization_margin_percent || 0;
-            totalRaised += Number(order.subtotal) * (marginPercent / 100);
-          });
-        }
+        totalOrders = orderCount || 0;
       }
+
+      // Use persistent lifetime earnings from org profile
+      const totalRaised = Number(org.total_lifetime_earnings) || 0;
 
       return {
         total_students: studentCount || 0,

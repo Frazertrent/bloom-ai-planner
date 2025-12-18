@@ -399,6 +399,7 @@ export type Database = {
           notification_new_orders: boolean | null
           state: string | null
           stripe_account_id: string | null
+          total_lifetime_earnings: number | null
           updated_at: string | null
           user_id: string
         }
@@ -415,6 +416,7 @@ export type Database = {
           notification_new_orders?: boolean | null
           state?: string | null
           stripe_account_id?: string | null
+          total_lifetime_earnings?: number | null
           updated_at?: string | null
           user_id: string
         }
@@ -431,6 +433,7 @@ export type Database = {
           notification_new_orders?: boolean | null
           state?: string | null
           stripe_account_id?: string | null
+          total_lifetime_earnings?: number | null
           updated_at?: string | null
           user_id?: string
         }
@@ -626,6 +629,7 @@ export type Database = {
           notification_new_orders: boolean | null
           org_type: string
           stripe_account_id: string | null
+          total_lifetime_earnings: number | null
           updated_at: string | null
           user_id: string
         }
@@ -641,6 +645,7 @@ export type Database = {
           notification_new_orders?: boolean | null
           org_type: string
           stripe_account_id?: string | null
+          total_lifetime_earnings?: number | null
           updated_at?: string | null
           user_id: string
         }
@@ -656,6 +661,7 @@ export type Database = {
           notification_new_orders?: boolean | null
           org_type?: string
           stripe_account_id?: string | null
+          total_lifetime_earnings?: number | null
           updated_at?: string | null
           user_id?: string
         }

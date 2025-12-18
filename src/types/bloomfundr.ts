@@ -46,11 +46,14 @@ export interface BFFlorist {
   business_name: string;
   business_address: string | null;
   business_phone: string | null;
+  city: string | null;
+  state: string | null;
   stripe_account_id: string | null;
   is_verified: boolean;
   notification_new_orders: boolean;
   notification_fulfillment_reminders: boolean;
   notification_email: string | null;
+  total_lifetime_earnings: number;
   created_at: string;
   updated_at: string;
 }
@@ -80,6 +83,7 @@ export interface BFOrganization {
   notification_daily_summary: boolean;
   notification_campaign_alerts: boolean;
   notification_email: string | null;
+  total_lifetime_earnings: number;
   created_at: string;
   updated_at: string;
 }
