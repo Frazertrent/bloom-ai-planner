@@ -28,10 +28,11 @@ import { OrderFulfillmentBadge } from "@/components/bloomfundr/OrderFulfillmentB
 import { 
   useFloristOrdersList, 
   useFloristCampaignsForFilter,
-  useBulkUpdateOrderStatus 
+  useBulkUpdateOrderStatus,
+  useUpdateOrderStatus
 } from "@/hooks/useFloristOrders";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
-import { ShoppingCart, Eye, CheckCircle, ChevronDown, ChevronRight, Play } from "lucide-react";
+import { ShoppingCart, Eye, CheckCircle, ChevronDown, ChevronRight, Play, Mail, MessageCircle } from "lucide-react";
 import { format, isWithinInterval } from "date-fns";
 import type { FulfillmentStatus, BFOrderWithRelations } from "@/types/bloomfundr";
 import React from "react";
@@ -69,6 +70,7 @@ export default function FloristOrdersPage() {
     statusTab === "all" ? undefined : statusTab as FulfillmentStatus
   );
   const bulkUpdate = useBulkUpdateOrderStatus();
+  const updateStatus = useUpdateOrderStatus();
 
   // Apply client-side filtering
   const orders = allOrders?.filter((order) => {
@@ -307,21 +309,102 @@ export default function FloristOrdersPage() {
                             </Button>
                           </TableCell>
                         </TableRow>
-                        {expandedOrders.has(order.id) && order.order_items && order.order_items.length > 0 && (
+                        {expandedOrders.has(order.id) && (
                           <TableRow className="bg-muted/50 hover:bg-muted/50">
                             <TableCell colSpan={10} className="py-3 px-4">
-                              <div className="pl-10 space-y-1">
-                                <p className="text-xs font-medium text-muted-foreground mb-2">Products:</p>
-                                {order.order_items.map((item, idx) => (
-                                  <div key={idx} className="flex items-center gap-2 text-sm">
-                                    <span className="text-muted-foreground">•</span>
-                                    <span className="font-medium">
-                                      {item.campaign_product?.product?.name || "Unknown Product"}
-                                    </span>
-                                    <span className="text-muted-foreground">×</span>
-                                    <span className="font-semibold">{item.quantity}</span>
+                              <div className="pl-10 space-y-3">
+                                {/* Products Section */}
+                                {order.order_items && order.order_items.length > 0 && (
+                                  <div className="space-y-1">
+                                    <p className="text-xs font-medium text-muted-foreground mb-2">Products:</p>
+                                    {order.order_items.map((item, idx) => (
+                                      <div key={idx} className="flex items-center gap-2 text-sm">
+                                        <span className="text-muted-foreground">•</span>
+                                        <span className="font-medium">
+                                          {item.campaign_product?.product?.name || "Unknown Product"}
+                                        </span>
+                                        <span className="text-muted-foreground">×</span>
+                                        <span className="font-semibold">{item.quantity}</span>
+                                      </div>
+                                    ))}
                                   </div>
-                                ))}
+                                )}
+                                
+                                {/* Quick Actions Section */}
+                                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/50">
+                                  {/* Status Actions */}
+                                  {order.fulfillment_status === "pending" && (
+                                    <Button
+                                      size="sm"
+                                      variant="secondary"
+                                      className="min-h-[44px]"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        updateStatus.mutate({ orderId: order.id, status: "in_production" });
+                                      }}
+                                      disabled={updateStatus.isPending}
+                                    >
+                                      <Play className="h-4 w-4 mr-2" />
+                                      Mark In Production
+                                    </Button>
+                                  )}
+                                  {order.fulfillment_status === "in_production" && (
+                                    <Button
+                                      size="sm"
+                                      className="min-h-[44px]"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        updateStatus.mutate({ orderId: order.id, status: "ready" });
+                                      }}
+                                      disabled={updateStatus.isPending}
+                                    >
+                                      <CheckCircle className="h-4 w-4 mr-2" />
+                                      Mark Ready
+                                    </Button>
+                                  )}
+                                  {order.fulfillment_status === "ready" && (
+                                    <span className="text-sm text-muted-foreground px-2">
+                                      Awaiting Seller Pickup
+                                    </span>
+                                  )}
+                                  {order.fulfillment_status === "picked_up" && (
+                                    <span className="text-sm text-emerald-600 font-medium px-2">
+                                      ✓ Complete
+                                    </span>
+                                  )}
+                                  
+                                  {/* Contact Actions */}
+                                  {(order.customer?.email || order.customer?.phone) && (
+                                    <div className="flex items-center gap-1 ml-auto">
+                                      {order.customer?.email && (
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="min-h-[44px] px-3"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            window.location.href = `mailto:${order.customer?.email}?subject=Order ${order.order_number}`;
+                                          }}
+                                        >
+                                          <Mail className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                      {order.customer?.phone && (
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="min-h-[44px] px-3"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            window.location.href = `sms:${order.customer?.phone}`;
+                                          }}
+                                        >
+                                          <MessageCircle className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </TableCell>
                           </TableRow>
