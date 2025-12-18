@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, Check, Download, Link as LinkIcon, ExternalLink } from "lucide-react";
+import { Copy, Check, Download, Link as LinkIcon, ExternalLink, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,6 +27,7 @@ interface CampaignLinksModalProps {
   studentLinks: StudentLink[];
   trackingMode?: 'none' | 'individual' | 'self_register';
   campaignLink?: string | null;
+  selfRegisterLink?: string | null;
 }
 
 export function CampaignLinksModal({
@@ -36,10 +37,31 @@ export function CampaignLinksModal({
   studentLinks,
   trackingMode = 'individual',
   campaignLink,
+  selfRegisterLink,
 }: CampaignLinksModalProps) {
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [campaignLinkCopied, setCampaignLinkCopied] = useState(false);
+  const [selfRegisterCopied, setSelfRegisterCopied] = useState(false);
+
+  const copySelfRegisterLink = async () => {
+    if (!selfRegisterLink) return;
+    try {
+      await navigator.clipboard.writeText(selfRegisterLink);
+      setSelfRegisterCopied(true);
+      setTimeout(() => setSelfRegisterCopied(false), 2000);
+      toast({
+        title: "Link copied!",
+        description: "The registration link has been copied to your clipboard.",
+      });
+    } catch (err) {
+      toast({
+        title: "Failed to copy",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const copyToClipboard = async (text: string, studentId: string) => {
     try {
@@ -201,7 +223,142 @@ export function CampaignLinksModal({
     );
   }
 
-  // For 'individual' and 'self_register' modes, show student links
+  // For 'self_register' mode, show registration link prominently + any registered sellers
+  if (trackingMode === 'self_register') {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LinkIcon className="h-5 w-5" />
+              Campaign Links
+            </DialogTitle>
+            <DialogDescription>
+              Share the registration link with your sellers so they can sign up and get their own selling links.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Self-Registration Link - Prominent */}
+          {selfRegisterLink && (
+            <Card className="bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800">
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200 mb-2 flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Seller Registration Link
+                    </p>
+                    <p className="text-xs text-emerald-700 dark:text-emerald-300 mb-3">
+                      Send this to your sellers so they can register and get their own unique selling link.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        readOnly
+                        value={selfRegisterLink}
+                        className="bg-background text-sm"
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={copySelfRegisterLink}
+                      >
+                        {selfRegisterCopied ? (
+                          <Check className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={copySelfRegisterLink}
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copy Link
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      asChild
+                    >
+                      <a href={selfRegisterLink} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Open Link
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Registered Sellers Section */}
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-muted-foreground">
+              Registered Sellers ({studentLinks.length})
+            </p>
+            {studentLinks.length > 0 ? (
+              <>
+                <div className="flex gap-2 mb-2">
+                  <Button variant="outline" size="sm" onClick={copyAllLinks}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Copy All Links
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={downloadCSV}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download CSV
+                  </Button>
+                </div>
+                <ScrollArea className="h-[200px] pr-4">
+                  <div className="space-y-2">
+                    {studentLinks.map((link) => (
+                      <div
+                        key={link.studentId}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm">{link.studentName}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Input
+                              readOnly
+                              value={link.fullUrl}
+                              className="h-8 text-xs bg-background"
+                            />
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => copyToClipboard(link.fullUrl, link.studentId)}
+                        >
+                          {copiedId === link.studentId ? (
+                            <Check className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </>
+            ) : (
+              <div className="text-center py-6 text-muted-foreground bg-muted/30 rounded-lg">
+                <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No sellers have registered yet.</p>
+                <p className="text-xs mt-1">They'll appear here after joining via the registration link above.</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // For 'individual' mode, show student links
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh]">
@@ -261,9 +418,6 @@ export function CampaignLinksModal({
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <p>No sellers assigned to this campaign yet.</p>
-                {trackingMode === 'self_register' && (
-                  <p className="text-sm mt-1">Sellers will appear here after they self-register.</p>
-                )}
               </div>
             )}
           </div>
