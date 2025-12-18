@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { format } from "date-fns";
+import { format, startOfDay } from "date-fns";
 import { AlertTriangle, CalendarIcon, Link, Loader2, UserPlus, Users } from "lucide-react";
 import { Link as RouterLink } from "react-router-dom";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -330,7 +330,7 @@ export function Step1BasicInfo({
                       mode="single"
                       selected={field.value}
                       onSelect={field.onChange}
-                      disabled={(date) => date < new Date()}
+                      disabled={(date) => date < startOfDay(new Date())}
                       initialFocus
                       className="p-3 pointer-events-auto"
                     />
@@ -373,7 +373,7 @@ export function Step1BasicInfo({
                       selected={field.value}
                       onSelect={field.onChange}
                       disabled={(date) =>
-                        date < new Date() ||
+                        date < startOfDay(new Date()) ||
                         (form.getValues("startDate") && date <= form.getValues("startDate"))
                       }
                       initialFocus
