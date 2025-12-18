@@ -84,14 +84,23 @@ export default function TestPayment() {
     if (!orderId) return;
     
     setIsProcessing(true);
+    console.log("Starting payment completion for order:", orderId);
+    
     try {
       // Call the complete-payment edge function
+      console.log("Invoking complete-payment edge function...");
       const { data, error } = await supabase.functions.invoke("complete-payment", {
         body: { orderId }
       });
 
-      if (error) throw error;
+      console.log("Edge function response:", { data, error });
 
+      if (error) {
+        console.error("Edge function error:", error);
+        throw error;
+      }
+
+      console.log("Payment completed successfully:", data);
       toast.success("Payment completed successfully!");
       navigate(`/order/${magicLinkCode}/success?orderId=${orderId}`, { replace: true });
     } catch (error) {
