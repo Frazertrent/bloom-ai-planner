@@ -37,7 +37,7 @@ import { format, isWithinInterval } from "date-fns";
 import type { FulfillmentStatus, BFOrderWithRelations } from "@/types/bloomfundr";
 import React from "react";
 
-type StatusTab = "all" | "pending" | "in_production" | "ready";
+type StatusTab = "all" | "pending" | "in_production" | "ready" | "picked_up" | "delivered";
 
 export default function FloristOrdersPage() {
   const { getFilter, getDateRangeFilter, setFilter, setDateRangeFilter } = useUrlFilters({
@@ -171,11 +171,13 @@ export default function FloristOrdersPage() {
           </div>
 
           <Tabs value={statusTab} onValueChange={(v) => setFilter("status", v)}>
-            <TabsList>
+            <TabsList className="flex-wrap h-auto gap-1">
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="pending">Pending</TabsTrigger>
               <TabsTrigger value="in_production">In Production</TabsTrigger>
               <TabsTrigger value="ready">Ready</TabsTrigger>
+              <TabsTrigger value="picked_up">Picked Up</TabsTrigger>
+              <TabsTrigger value="delivered">Delivered</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>

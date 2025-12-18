@@ -73,6 +73,7 @@ const OrderSuccess = lazy(() => import("./pages/order/OrderSuccess"));
 const OrderCancel = lazy(() => import("./pages/order/OrderCancel"));
 const TestPayment = lazy(() => import("./pages/order/TestPayment"));
 const SellerJoinPage = lazy(() => import("./pages/order/SellerJoinPage"));
+const SellerPortal = lazy(() => import("./pages/order/SellerPortal"));
 
 const queryClient = new QueryClient();
 
@@ -447,6 +448,13 @@ const AppContent = () => (
     <Route path="/join/:code" element={
       <Suspense fallback={<PageFallback />}>
         <SellerJoinPage />
+      </Suspense>
+    } />
+    
+    {/* Seller Portal Route */}
+    <Route path="/seller/:magicLinkCode" element={
+      <Suspense fallback={<PageFallback />}>
+        <SellerPortal />
       </Suspense>
     } />
     

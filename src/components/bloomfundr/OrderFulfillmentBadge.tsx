@@ -22,6 +22,10 @@ const statusConfig: Record<FulfillmentStatus, { label: string; className: string
     label: "Picked Up",
     className: "bg-purple-500/10 text-purple-600 hover:bg-purple-500/20 border-purple-500/20",
   },
+  delivered: {
+    label: "Delivered",
+    className: "bg-green-600/10 text-green-700 hover:bg-green-600/20 border-green-600/20",
+  },
 };
 
 export function OrderFulfillmentBadge({ status }: OrderFulfillmentBadgeProps) {

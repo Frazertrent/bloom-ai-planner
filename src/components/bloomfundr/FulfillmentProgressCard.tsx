@@ -1,11 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, Wrench, Package, CheckCircle } from "lucide-react";
+import { Clock, Wrench, Package, CheckCircle, Truck } from "lucide-react";
 
 export interface FulfillmentBreakdown {
   pending: number;
   in_production: number;
   ready: number;
   picked_up: number;
+  delivered: number;
 }
 
 interface FulfillmentProgressCardProps {
@@ -17,13 +18,14 @@ export function FulfillmentProgressCard({ breakdown, totalOrders }: FulfillmentP
   if (totalOrders === 0) return null;
 
   const readyForPickup = breakdown.ready;
-  const completedCount = breakdown.picked_up;
+  const completedCount = breakdown.picked_up + breakdown.delivered;
   
   const segments = [
     { key: "pending", count: breakdown.pending, color: "bg-muted-foreground/40", label: "Pending" },
     { key: "in_production", count: breakdown.in_production, color: "bg-amber-500", label: "In Production" },
     { key: "ready", count: breakdown.ready, color: "bg-blue-500", label: "Ready" },
-    { key: "picked_up", count: breakdown.picked_up, color: "bg-emerald-500", label: "Picked Up" },
+    { key: "picked_up", count: breakdown.picked_up, color: "bg-purple-500", label: "Picked Up" },
+    { key: "delivered", count: breakdown.delivered, color: "bg-green-600", label: "Delivered" },
   ];
 
   const statusItems = [
@@ -49,7 +51,13 @@ export function FulfillmentProgressCard({ breakdown, totalOrders }: FulfillmentP
       icon: CheckCircle, 
       label: "Picked Up by Sellers", 
       count: breakdown.picked_up, 
-      color: "text-emerald-600" 
+      color: "text-purple-600" 
+    },
+    { 
+      icon: Truck, 
+      label: "Delivered to Customers", 
+      count: breakdown.delivered, 
+      color: "text-green-700" 
     },
   ];
 
@@ -64,7 +72,7 @@ export function FulfillmentProgressCard({ breakdown, totalOrders }: FulfillmentP
           <span className="font-semibold text-foreground">{readyForPickup}</span> of{" "}
           <span className="font-semibold text-foreground">{totalOrders}</span> orders ready for seller pickup
           {completedCount > 0 && (
-            <span className="text-emerald-600"> • {completedCount} picked up by sellers</span>
+            <span className="text-emerald-600"> • {completedCount} completed</span>
           )}
         </p>
 
@@ -85,13 +93,13 @@ export function FulfillmentProgressCard({ breakdown, totalOrders }: FulfillmentP
         </div>
 
         {/* Status Breakdown */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {statusItems.map((item) => (
             <div key={item.label} className="flex items-center gap-2">
               <item.icon className={`h-4 w-4 ${item.color}`} />
               <span className="text-sm">
                 <span className="font-medium">{item.count}</span>
-                <span className="text-muted-foreground ml-1 hidden sm:inline">{item.label}</span>
+                <span className="text-muted-foreground ml-1 hidden sm:inline">{item.label.split(' ')[0]}</span>
               </span>
             </div>
           ))}
