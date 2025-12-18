@@ -359,11 +359,17 @@ export function Step4Students({ campaignId, trackingMode, onBack, onContinue }: 
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-12">
-                  <Checkbox
-                    checked={isAllSelected}
-                    onCheckedChange={handleSelectAll}
-                  />
+                <TableHead className="w-16">
+                  <div 
+                    className="flex items-center justify-center min-w-[44px] min-h-[44px] -m-2 cursor-pointer"
+                    onClick={handleSelectAll}
+                  >
+                    <Checkbox
+                      checked={isAllSelected}
+                      onCheckedChange={() => {}}
+                      className="pointer-events-none"
+                    />
+                  </div>
                 </TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Team/Group</TableHead>
@@ -377,11 +383,20 @@ export function Step4Students({ campaignId, trackingMode, onBack, onContinue }: 
                   className="cursor-pointer"
                   onClick={() => toggleStudent(student.id)}
                 >
-                  <TableCell>
-                    <Checkbox
-                      checked={isStudentSelected(student.id)}
-                      onCheckedChange={() => toggleStudent(student.id)}
-                    />
+                  <TableCell className="w-16">
+                    <div 
+                      className="flex items-center justify-center min-w-[44px] min-h-[44px] -m-2 cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleStudent(student.id);
+                      }}
+                    >
+                      <Checkbox
+                        checked={isStudentSelected(student.id)}
+                        onCheckedChange={() => {}}
+                        className="pointer-events-none"
+                      />
+                    </div>
                   </TableCell>
                   <TableCell className="font-medium">
                     {student.name}
