@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet, Font } from "@react-pdf/renderer";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 // Register a font for better typography
 Font.register({
@@ -206,8 +206,8 @@ export function CampaignReportPDF({ data }: { data: CampaignReportData }) {
           <View style={styles.row}>
             <Text style={styles.label}>Campaign Period:</Text>
             <Text style={styles.value}>
-              {format(new Date(data.campaign.start_date), "MMM d")} -{" "}
-              {format(new Date(data.campaign.end_date), "MMM d, yyyy")}
+              {format(parseISO(data.campaign.start_date), "MMM d")} -{" "}
+              {format(parseISO(data.campaign.end_date), "MMM d, yyyy")}
             </Text>
           </View>
           <View style={styles.row}>
@@ -218,7 +218,7 @@ export function CampaignReportPDF({ data }: { data: CampaignReportData }) {
             <View style={styles.row}>
               <Text style={styles.label}>Seller Pickup:</Text>
               <Text style={styles.value}>
-                {format(new Date(data.campaign.pickup_date), "MMM d, yyyy")} at{" "}
+                {format(parseISO(data.campaign.pickup_date), "MMM d, yyyy")} at{" "}
                 {data.campaign.pickup_location}
               </Text>
             </View>

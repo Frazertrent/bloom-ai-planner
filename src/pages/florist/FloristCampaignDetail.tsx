@@ -20,7 +20,7 @@ import { PayoutDetailSheet } from "@/components/bloomfundr/PayoutDetailSheet";
 import { useCampaignPayouts, useCreatePayouts } from "@/hooks/useCampaignPayouts";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Building2, Calendar, MapPin, Package, DollarSign, Wallet } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import type { BFCampaignWithRelations, BFOrganization, CampaignStatus } from "@/types/bloomfundr";
 
 export default function FloristCampaignDetail() {
@@ -170,16 +170,16 @@ export default function FloristCampaignDetail() {
             <CardContent className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Start Date</span>
-                <span className="font-medium">{format(new Date(campaign.start_date), "MMM d, yyyy")}</span>
+                <span className="font-medium">{format(parseISO(campaign.start_date), "MMM d, yyyy")}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">End Date</span>
-                <span className="font-medium">{format(new Date(campaign.end_date), "MMM d, yyyy")}</span>
+                <span className="font-medium">{format(parseISO(campaign.end_date), "MMM d, yyyy")}</span>
               </div>
               {campaign.pickup_date && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Seller Pickup Date</span>
-                  <span className="font-medium">{format(new Date(campaign.pickup_date), "MMM d, yyyy")}</span>
+                  <span className="font-medium">{format(parseISO(campaign.pickup_date), "MMM d, yyyy")}</span>
                 </div>
               )}
               {campaign.pickup_location && (

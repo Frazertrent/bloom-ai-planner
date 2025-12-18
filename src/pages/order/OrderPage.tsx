@@ -7,7 +7,7 @@ import { ProductDetailModal } from "@/components/order/ProductDetailModal";
 import { FloatingCart } from "@/components/order/FloatingCart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Clock, AlertCircle, Flower, Rocket } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import type { BFCampaignProductWithProduct } from "@/types/bloomfundr";
 
 export default function OrderPage() {
@@ -115,7 +115,7 @@ export default function OrderPage() {
             <Calendar className="h-16 w-16 mx-auto mb-4 text-primary" />
             <h2 className="text-2xl font-bold mb-2">Campaign Coming Soon</h2>
             <p className="text-muted-foreground mb-6">
-              This fundraiser opens on {format(new Date(campaign.start_date), "MMMM d, yyyy")}.
+              This fundraiser opens on {format(parseISO(campaign.start_date), "MMMM d, yyyy")}.
               Check back then to place your order!
             </p>
             {trackingMode !== 'none' && student && (
@@ -139,7 +139,7 @@ export default function OrderPage() {
             <Clock className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
             <h2 className="text-2xl font-bold mb-2">Campaign Has Ended</h2>
             <p className="text-muted-foreground mb-6">
-              This fundraiser ended on {format(new Date(campaign.end_date), "MMMM d, yyyy")}.
+              This fundraiser ended on {format(parseISO(campaign.end_date), "MMMM d, yyyy")}.
               Thank you for your interest in supporting {organization.name}!
             </p>
             <p className="text-sm text-muted-foreground">
@@ -209,12 +209,12 @@ export default function OrderPage() {
           <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 md:gap-4 text-xs md:text-sm">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
-              <span>Order by {format(new Date(campaign.end_date), "MMM d, yyyy")}</span>
+              <span>Order by {format(parseISO(campaign.end_date), "MMM d, yyyy")}</span>
             </div>
             
             <div className="flex items-center gap-2 text-muted-foreground">
               <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
-              <span>Delivered By: {format(new Date(new Date(campaign.end_date).getTime() + 2 * 24 * 60 * 60 * 1000), "MMM d, yyyy")}</span>
+              <span>Delivered By: {format(new Date(parseISO(campaign.end_date).getTime() + 2 * 24 * 60 * 60 * 1000), "MMM d, yyyy")}</span>
             </div>
           </div>
         </div>
