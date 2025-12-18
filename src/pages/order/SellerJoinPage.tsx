@@ -4,9 +4,9 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, CheckCircle, AlertCircle, Copy, Share2, ExternalLink, Flower } from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle, Copy, Share2, ExternalLink, Flower, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { generateOrderLink } from "@/lib/linkGenerator";
+import { generateOrderLink, generateSellerPortalLink } from "@/lib/linkGenerator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -284,6 +284,15 @@ export default function SellerJoinPage() {
             >
               <ExternalLink className="mr-2 h-4 w-4" />
               Preview Your Selling Page
+            </Button>
+
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => window.open(generateSellerPortalLink(registrationResult.magicLinkCode), '_blank')}
+            >
+              <Package className="mr-2 h-4 w-4" />
+              Go to Your Seller Dashboard
             </Button>
 
             <div className="text-center pt-4 border-t">

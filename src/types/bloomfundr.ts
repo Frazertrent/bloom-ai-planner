@@ -10,7 +10,7 @@ export type CampaignStatus = 'draft' | 'scheduled' | 'active' | 'closed' | 'fulf
 
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 
-export type FulfillmentStatus = 'pending' | 'in_production' | 'ready' | 'picked_up';
+export type FulfillmentStatus = 'pending' | 'in_production' | 'ready' | 'picked_up' | 'delivered';
 
 export type EntryMethod = 'online' | 'manual';
 

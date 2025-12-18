@@ -31,3 +31,11 @@ export const generateSellerJoinLink = (selfRegisterCode: string): string => {
 export const generateCampaignLink = (campaignLinkCode: string): string => {
   return generateOrderLink(campaignLinkCode);
 };
+
+/**
+ * Generate a seller portal link for sellers to manage their orders
+ * Used for: sellers to view and mark orders as delivered
+ */
+export const generateSellerPortalLink = (magicLinkCode: string): string => {
+  return `${window.location.origin}/seller/${magicLinkCode}`;
+};

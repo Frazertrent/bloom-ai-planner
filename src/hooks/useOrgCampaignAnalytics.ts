@@ -8,6 +8,7 @@ export interface FulfillmentBreakdown {
   in_production: number;
   ready: number;
   picked_up: number;
+  delivered: number;
 }
 
 export interface CampaignAnalytics {
@@ -192,6 +193,7 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
         in_production: allOrders.filter(o => o.fulfillment_status === "in_production").length,
         ready: allOrders.filter(o => o.fulfillment_status === "ready").length,
         picked_up: allOrders.filter(o => o.fulfillment_status === "picked_up").length,
+        delivered: allOrders.filter(o => o.fulfillment_status === "delivered").length,
       };
 
       // Transform products

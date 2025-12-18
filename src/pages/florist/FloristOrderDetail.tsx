@@ -29,14 +29,17 @@ import {
 import { format, parseISO } from "date-fns";
 import type { FulfillmentStatus } from "@/types/bloomfundr";
 
+import { Truck } from "lucide-react";
+
 const statusTimeline: { status: FulfillmentStatus; label: string; icon: React.ReactNode }[] = [
   { status: "pending", label: "Order Placed", icon: <Clock className="h-4 w-4" /> },
   { status: "in_production", label: "In Production", icon: <Play className="h-4 w-4" /> },
   { status: "ready", label: "Ready for Seller Pickup", icon: <CheckCircle className="h-4 w-4" /> },
   { status: "picked_up", label: "Picked Up by Seller", icon: <Package className="h-4 w-4" /> },
+  { status: "delivered", label: "Delivered to Customer", icon: <Truck className="h-4 w-4" /> },
 ];
 
-const statusOrder: FulfillmentStatus[] = ["pending", "in_production", "ready", "picked_up"];
+const statusOrder: FulfillmentStatus[] = ["pending", "in_production", "ready", "picked_up", "delivered"];
 
 export default function FloristOrderDetail() {
   const { id } = useParams<{ id: string }>();
@@ -123,8 +126,13 @@ export default function FloristOrderDetail() {
               </div>
             )}
             {order.fulfillment_status === "picked_up" && (
-              <div className="text-sm text-emerald-600 bg-emerald-500/10 px-3 py-2 rounded-lg">
+              <div className="text-sm text-purple-600 bg-purple-500/10 px-3 py-2 rounded-lg">
                 ✓ Picked up by seller
+              </div>
+            )}
+            {order.fulfillment_status === "delivered" && (
+              <div className="text-sm text-green-700 bg-green-600/10 px-3 py-2 rounded-lg">
+                ✓ Delivered to customer
               </div>
             )}
           </div>

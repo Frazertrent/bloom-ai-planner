@@ -62,6 +62,7 @@ import {
   AlertCircle,
   Mail,
   MessageSquare,
+  Truck,
 } from "lucide-react";
 import { generateOrderLink, generateCampaignLink } from "@/lib/linkGenerator";
 import { format, parseISO } from "date-fns";
@@ -130,9 +131,20 @@ export default function OrgCampaignDetail() {
     setSelectedOrders(prev => prev.filter(id => id !== orderId));
   };
 
+  const handleMarkDelivered = (orderId: string) => {
+    updateOrderStatus.mutate({ orderId, status: "delivered" });
+    setSelectedOrders(prev => prev.filter(id => id !== orderId));
+  };
+
   const handleBulkMarkPickedUp = () => {
     if (selectedOrders.length === 0) return;
     bulkUpdateOrderStatus.mutate({ orderIds: selectedOrders, status: "picked_up" });
+    setSelectedOrders([]);
+  };
+
+  const handleBulkMarkDelivered = () => {
+    if (selectedOrders.length === 0) return;
+    bulkUpdateOrderStatus.mutate({ orderIds: selectedOrders, status: "delivered" });
     setSelectedOrders([]);
   };
 
@@ -643,6 +655,7 @@ export default function OrgCampaignDetail() {
                 <TabsTrigger value="in_production" className="text-xs">In Production ({stats.fulfillmentBreakdown.in_production})</TabsTrigger>
                 <TabsTrigger value="ready" className="text-xs">Ready ({stats.fulfillmentBreakdown.ready})</TabsTrigger>
                 <TabsTrigger value="picked_up" className="text-xs">Picked Up ({stats.fulfillmentBreakdown.picked_up})</TabsTrigger>
+                <TabsTrigger value="delivered" className="text-xs">Delivered ({stats.fulfillmentBreakdown.delivered})</TabsTrigger>
               </TabsList>
             </Tabs>
 
@@ -795,6 +808,17 @@ export default function OrgCampaignDetail() {
                               >
                                 <Package className="h-4 w-4 mr-1" />
                                 Pickup
+                              </Button>
+                            )}
+                            {order.fulfillmentStatus === "picked_up" && !showSellerInfo && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleMarkDelivered(order.id)}
+                                disabled={updateOrderStatus.isPending}
+                              >
+                                <Truck className="h-4 w-4 mr-1" />
+                                Delivered
                               </Button>
                             )}
                           </TableCell>
@@ -980,14 +1004,75 @@ export default function OrgCampaignDetail() {
               </Card>
             )}
 
-            {/* Picked Up Orders Summary */}
-            {stats.fulfillmentBreakdown.picked_up > 0 && (
-              <Card className="bg-emerald-500/5 border-emerald-500/20">
+            {/* Picked Up Orders - For Non-Seller Campaigns to Mark as Delivered */}
+            {!showSellerInfo && stats.fulfillmentBreakdown.picked_up > 0 && (
+              <Card className="bg-purple-500/5 border-purple-500/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5 text-purple-600" />
+                    Picked Up - Ready to Deliver
+                  </CardTitle>
+                  <CardDescription>Mark orders as delivered once customers receive them</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {orders.filter(o => o.fulfillmentStatus === "picked_up").map((order) => (
+                    <div key={order.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div>
+                        <p className="font-medium">{order.customerName}</p>
+                        <p className="text-sm text-muted-foreground">{order.orderNumber}</p>
+                        <p className="text-sm font-medium text-primary">${order.total.toFixed(2)}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => handleMarkDelivered(order.id)}
+                        disabled={updateOrderStatus.isPending}
+                        className="min-h-[44px]"
+                      >
+                        <Truck className="h-4 w-4 mr-2" />
+                        Mark Delivered
+                      </Button>
+                    </div>
+                  ))}
+                  {orders.filter(o => o.fulfillmentStatus === "picked_up").length > 1 && (
+                    <Button
+                      className="w-full"
+                      onClick={() => {
+                        const pickedUpIds = orders.filter(o => o.fulfillmentStatus === "picked_up").map(o => o.id);
+                        setSelectedOrders(pickedUpIds);
+                        handleBulkMarkDelivered();
+                      }}
+                      disabled={bulkUpdateOrderStatus.isPending}
+                    >
+                      <Truck className="h-4 w-4 mr-2" />
+                      Mark All as Delivered
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Picked Up Orders Summary - For Seller Campaigns */}
+            {showSellerInfo && stats.fulfillmentBreakdown.picked_up > 0 && (
+              <Card className="bg-purple-500/5 border-purple-500/20">
                 <CardContent className="py-4">
                   <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-emerald-600" />
-                    <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                      {stats.fulfillmentBreakdown.picked_up} of {stats.totalOrders} orders picked up
+                    <Package className="h-5 w-5 text-purple-600" />
+                    <p className="text-sm font-medium text-purple-700 dark:text-purple-400">
+                      {stats.fulfillmentBreakdown.picked_up} of {stats.totalOrders} orders picked up by sellers
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Delivered Orders Summary */}
+            {stats.fulfillmentBreakdown.delivered > 0 && (
+              <Card className="bg-green-500/5 border-green-500/20">
+                <CardContent className="py-4">
+                  <div className="flex items-center gap-3">
+                    <Truck className="h-5 w-5 text-green-700" />
+                    <p className="text-sm font-medium text-green-800 dark:text-green-400">
+                      {stats.fulfillmentBreakdown.delivered} of {stats.totalOrders} orders delivered to customers
                     </p>
                   </div>
                 </CardContent>
