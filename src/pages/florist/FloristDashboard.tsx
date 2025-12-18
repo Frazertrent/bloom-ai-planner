@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useFloristProfile, useFloristStats, useFloristCampaigns, useFloristOrders } from "@/hooks/useFloristData";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 
 const statusColors: Record<string, string> = {
@@ -235,7 +235,7 @@ export default function FloristDashboardPage() {
                       <div className="space-y-1">
                         <p className="font-medium text-foreground">{campaign.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          Ends {format(new Date(campaign.end_date), "MMM d, yyyy")}
+                          Ends {format(parseISO(campaign.end_date), "MMM d, yyyy")}
                         </p>
                       </div>
                       <Badge variant="outline" className={statusColors[campaign.status]}>

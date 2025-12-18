@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 interface CSVColumn<T> {
   header: string;
@@ -101,8 +101,8 @@ export function getStudentsCSVColumns() {
 export function getFinancialCSVColumns() {
   return [
     { header: "Campaign", accessor: "campaign_name" as const },
-    { header: "Start Date", accessor: (f: any) => format(new Date(f.start_date), "yyyy-MM-dd") },
-    { header: "End Date", accessor: (f: any) => format(new Date(f.end_date), "yyyy-MM-dd") },
+    { header: "Start Date", accessor: (f: any) => format(parseISO(f.start_date), "yyyy-MM-dd") },
+    { header: "End Date", accessor: (f: any) => format(parseISO(f.end_date), "yyyy-MM-dd") },
     { header: "Total Orders", accessor: "order_count" as const },
     { header: "Gross Revenue", accessor: (f: any) => Number(f.gross_revenue).toFixed(2) },
     { header: "Platform Fees", accessor: (f: any) => Number(f.platform_fees).toFixed(2) },

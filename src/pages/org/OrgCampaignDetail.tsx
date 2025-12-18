@@ -64,7 +64,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { generateOrderLink, generateCampaignLink } from "@/lib/linkGenerator";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import {
   LineChart,
   Line,
@@ -264,7 +264,7 @@ export default function OrgCampaignDetail() {
             <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
-                {format(new Date(campaign.start_date), "MMM d")} - {format(new Date(campaign.end_date), "MMM d, yyyy")}
+                {format(parseISO(campaign.start_date), "MMM d")} - {format(parseISO(campaign.end_date), "MMM d, yyyy")}
               </span>
               {florist && <span>• {florist.business_name}</span>}
             </div>

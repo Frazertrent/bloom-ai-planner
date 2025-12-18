@@ -26,7 +26,7 @@ import {
   Play,
   StickyNote
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import type { FulfillmentStatus } from "@/types/bloomfundr";
 
 const statusTimeline: { status: FulfillmentStatus; label: string; icon: React.ReactNode }[] = [
@@ -212,7 +212,7 @@ export default function FloristOrderDetail() {
               <p className="text-lg font-medium">{order.campaign?.name || "Unknown"}</p>
               {order.campaign?.pickup_date && (
                 <p className="text-sm text-muted-foreground">
-                  Seller Pickup: {format(new Date(order.campaign.pickup_date), "MMMM d, yyyy")}
+                  Seller Pickup: {format(parseISO(order.campaign.pickup_date), "MMMM d, yyyy")}
                 </p>
               )}
               {order.campaign?.pickup_location && (

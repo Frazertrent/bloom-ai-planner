@@ -22,7 +22,7 @@ import {
   Share2,
   Eye
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 export default function OrgDashboard() {
   const { data: org, isLoading: orgLoading } = useOrgProfile();
@@ -205,7 +205,7 @@ export default function OrgDashboard() {
                         <div>
                           <h3 className="font-medium text-foreground">{campaign.name}</h3>
                           <p className="text-sm text-muted-foreground">
-                            {format(new Date(campaign.start_date), "MMM d")} - {format(new Date(campaign.end_date), "MMM d, yyyy")}
+                            {format(parseISO(campaign.start_date), "MMM d")} - {format(parseISO(campaign.end_date), "MMM d, yyyy")}
                           </p>
                         </div>
                         <CampaignStatusBadge status={campaign.status} />

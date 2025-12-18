@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { startOfDay, isBefore, isAfter } from "date-fns";
+import { startOfDay, isBefore, isAfter, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import type { 
   BFCampaign, 
@@ -127,8 +127,8 @@ export function useOrderPageData(magicLinkCode: string | undefined) {
 
       // Check campaign state - use day-level comparison to avoid timezone issues
       const today = startOfDay(new Date());
-      const startDate = startOfDay(new Date(campaign.start_date));
-      const endDate = startOfDay(new Date(campaign.end_date));
+      const startDate = startOfDay(parseISO(campaign.start_date));
+      const endDate = startOfDay(parseISO(campaign.end_date));
       
       const hasStarted = !isBefore(today, startDate); // today >= startDate
       const isPastEndDate = isAfter(today, endDate);  // today > endDate

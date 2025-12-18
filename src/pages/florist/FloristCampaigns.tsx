@@ -20,7 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useFloristProfile } from "@/hooks/useFloristData";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { Calendar, Eye } from "lucide-react";
-import { format, isWithinInterval } from "date-fns";
+import { format, isWithinInterval, parseISO } from "date-fns";
 import type { BFCampaign, BFOrganization, CampaignStatus } from "@/types/bloomfundr";
 
 interface CampaignWithOrg extends BFCampaign {
@@ -132,8 +132,8 @@ export default function FloristCampaignsPage() {
 
     // Date range filter
     if (dateRange?.from) {
-      const campaignStart = new Date(campaign.start_date);
-      const campaignEnd = new Date(campaign.end_date);
+      const campaignStart = parseISO(campaign.start_date);
+      const campaignEnd = parseISO(campaign.end_date);
       const to = dateRange.to || dateRange.from;
       // Check if campaign overlaps with date range
       const overlaps =
@@ -216,9 +216,9 @@ export default function FloristCampaignsPage() {
                         <TableCell className="hidden md:table-cell">{campaign.organization?.name || "Unknown"}</TableCell>
                         <TableCell className="hidden lg:table-cell">
                           <div className="text-sm">
-                            <span>{format(new Date(campaign.start_date), "MMM d")}</span>
+                            <span>{format(parseISO(campaign.start_date), "MMM d")}</span>
                             <span className="text-muted-foreground"> - </span>
-                            <span>{format(new Date(campaign.end_date), "MMM d, yyyy")}</span>
+                            <span>{format(parseISO(campaign.end_date), "MMM d, yyyy")}</span>
                           </div>
                         </TableCell>
                         <TableCell>

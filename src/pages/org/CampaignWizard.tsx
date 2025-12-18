@@ -14,6 +14,7 @@ import { Step5Review } from "@/components/bloomfundr/campaign-wizard/Step5Review
 import { useCampaignWizard } from "@/hooks/useCampaignWizard";
 import { supabase } from "@/integrations/supabase/client";
 import { BFCampaign } from "@/types/bloomfundr";
+import { parseISO } from "date-fns";
 
 // Base wizard steps - Step 4 name changes based on tracking mode
 const getWizardSteps = (trackingMode: string): Step[] => [
@@ -67,9 +68,9 @@ export default function CampaignWizard() {
         name: campaignData.name,
         description: campaignData.description || "",
         floristId: campaignData.florist_id,
-        startDate: campaignData.start_date ? new Date(campaignData.start_date) : undefined,
-        endDate: campaignData.end_date ? new Date(campaignData.end_date) : undefined,
-        pickupDate: campaignData.pickup_date ? new Date(campaignData.pickup_date) : undefined,
+        startDate: campaignData.start_date ? parseISO(campaignData.start_date) : undefined,
+        endDate: campaignData.end_date ? parseISO(campaignData.end_date) : undefined,
+        pickupDate: campaignData.pickup_date ? parseISO(campaignData.pickup_date) : undefined,
         pickupLocation: campaignData.pickup_location || "",
         trackingMode: (campaignData.tracking_mode as 'none' | 'individual' | 'self_register') || "individual",
       });
