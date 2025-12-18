@@ -31,7 +31,7 @@ import {
   useBulkUpdateOrderStatus 
 } from "@/hooks/useFloristOrders";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
-import { ShoppingCart, Eye, CheckCircle, ChevronDown, ChevronRight } from "lucide-react";
+import { ShoppingCart, Eye, CheckCircle, ChevronDown, ChevronRight, Play } from "lucide-react";
 import { format, isWithinInterval } from "date-fns";
 import type { FulfillmentStatus, BFOrderWithRelations } from "@/types/bloomfundr";
 import React from "react";
@@ -111,6 +111,12 @@ export default function FloristOrdersPage() {
     }
   };
 
+  const handleBulkMarkInProduction = () => {
+    if (selectedOrders.length === 0) return;
+    bulkUpdate.mutate({ orderIds: selectedOrders, status: "in_production" });
+    setSelectedOrders([]);
+  };
+
   const handleBulkMarkReady = () => {
     if (selectedOrders.length === 0) return;
     bulkUpdate.mutate({ orderIds: selectedOrders, status: "ready" });
@@ -174,24 +180,33 @@ export default function FloristOrdersPage() {
 
         {/* Bulk Actions */}
         {selectedOrders.length > 0 && (
-          <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
+          <div className="flex flex-wrap items-center gap-3 p-4 bg-muted rounded-lg">
             <span className="text-sm font-medium">
               {selectedOrders.length} order{selectedOrders.length > 1 ? "s" : ""} selected
             </span>
+            <Button 
+              size="sm" 
+              variant="secondary"
+              onClick={handleBulkMarkInProduction}
+              disabled={bulkUpdate.isPending}
+            >
+              <Play className="h-4 w-4 mr-2" />
+              Mark In Production
+            </Button>
             <Button 
               size="sm" 
               onClick={handleBulkMarkReady}
               disabled={bulkUpdate.isPending}
             >
               <CheckCircle className="h-4 w-4 mr-2" />
-              Mark Selected as Ready
+              Mark Ready
             </Button>
             <Button 
               size="sm" 
               variant="ghost"
               onClick={() => setSelectedOrders([])}
             >
-              Clear Selection
+              Clear
             </Button>
           </div>
         )}
