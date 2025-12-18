@@ -184,6 +184,25 @@ export default function OrgCampaignDetail() {
     },
   });
 
+  // Activate scheduled campaign mutation
+  const activateCampaignMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("bf_campaigns")
+        .update({ status: "active", updated_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["org-campaign-analytics", id] });
+      queryClient.invalidateQueries({ queryKey: ["bf-org-campaigns"] });
+      toast({ title: "Campaign activated!", description: "Your campaign is now live and accepting orders." });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to activate campaign.", variant: "destructive" });
+    },
+  });
+
   // Export CSV
   const handleExportCSV = () => {
     if (!analytics) return;
@@ -282,6 +301,16 @@ export default function OrgCampaignDetail() {
                 {launchCampaign.isPending ? "Launching..." : "Launch Campaign"}
               </Button>
             )}
+            {campaign.status === "scheduled" && new Date(campaign.start_date) <= new Date() && (
+              <Button 
+                onClick={() => activateCampaignMutation.mutate()}
+                disabled={activateCampaignMutation.isPending}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                <Rocket className="h-4 w-4 mr-2" />
+                {activateCampaignMutation.isPending ? "Activating..." : "Activate Now"}
+              </Button>
+            )}
             {!["fulfilled", "completed", "cancelled"].includes(campaign.status) && (
               <Button variant="outline" asChild>
                 <Link to={`/org/campaigns/${id}/edit`}>
@@ -320,6 +349,26 @@ export default function OrgCampaignDetail() {
               >
                 <Rocket className="h-3 w-3 mr-1" />
                 Launch Now
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Scheduled Campaign Alert - Ready to Activate */}
+        {campaign.status === "scheduled" && new Date(campaign.start_date) <= new Date() && (
+          <Alert className="bg-indigo-50 border-indigo-200 dark:bg-indigo-950/20 dark:border-indigo-800">
+            <Rocket className="h-4 w-4 text-indigo-600" />
+            <AlertTitle className="text-indigo-800 dark:text-indigo-200">Ready to Go Live!</AlertTitle>
+            <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-2 text-indigo-700 dark:text-indigo-300">
+              <span>Your campaign's start date has arrived! Activate it now to start accepting orders.</span>
+              <Button 
+                size="sm" 
+                onClick={() => activateCampaignMutation.mutate()}
+                disabled={activateCampaignMutation.isPending}
+                className="bg-emerald-600 hover:bg-emerald-700 w-fit"
+              >
+                <Rocket className="h-3 w-3 mr-1" />
+                {activateCampaignMutation.isPending ? "Activating..." : "Activate Now"}
               </Button>
             </AlertDescription>
           </Alert>

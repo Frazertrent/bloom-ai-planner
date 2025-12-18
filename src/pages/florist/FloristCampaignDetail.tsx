@@ -114,6 +114,9 @@ export default function FloristCampaignDetail() {
     );
   }
 
+  // Check if campaign is scheduled and ready to activate
+  const isReadyToActivate = campaign.status === "scheduled" && new Date(campaign.start_date) <= new Date();
+
   return (
     <FloristLayout>
       <div className="space-y-6">
@@ -134,6 +137,19 @@ export default function FloristCampaignDetail() {
             )}
           </div>
         </div>
+
+        {/* Scheduled Campaign Alert - Ready to Activate */}
+        {isReadyToActivate && (
+          <div className="p-4 rounded-lg bg-indigo-50 border border-indigo-200 dark:bg-indigo-950/20 dark:border-indigo-800">
+            <div className="flex items-center gap-2 text-indigo-800 dark:text-indigo-200">
+              <Calendar className="h-4 w-4" />
+              <span className="font-medium">This campaign's start date has arrived.</span>
+            </div>
+            <p className="text-sm text-indigo-700 dark:text-indigo-300 mt-1">
+              The organization can activate this campaign to start accepting orders.
+            </p>
+          </div>
+        )}
 
         {/* Info Cards */}
         <div className="grid gap-6 md:grid-cols-2">

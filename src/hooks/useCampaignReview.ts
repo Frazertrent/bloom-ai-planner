@@ -162,7 +162,7 @@ export function useLaunchCampaign() {
       toast({
         title: isFuture ? "Campaign scheduled!" : "Campaign launched!",
         description: isFuture 
-          ? `Your campaign will automatically go live on ${format(new Date(data.start_date), "MMM d, yyyy")}.`
+          ? `Your campaign is scheduled for ${format(new Date(data.start_date), "MMM d, yyyy")}. It will auto-activate at midnight, or you can activate it manually from the campaign page.`
           : "Your campaign is now live and ready for orders.",
       });
     },
