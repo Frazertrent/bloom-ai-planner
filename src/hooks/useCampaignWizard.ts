@@ -116,9 +116,12 @@ export function useSaveCampaignDraft() {
         return result as BFCampaign;
       } else {
         // Create new draft - generate codes based on tracking mode
+        // For 'none': only campaign_link_code
+        // For 'self_register': BOTH campaign_link_code (for direct orders) AND self_register_code (for seller registration)
+        // For 'individual': neither (sellers are manually assigned)
         const campaignData = {
           ...baseCampaignData,
-          campaign_link_code: data.trackingMode === 'none' ? generateCode() : null,
+          campaign_link_code: (data.trackingMode === 'none' || data.trackingMode === 'self_register') ? generateCode() : null,
           self_register_code: data.trackingMode === 'self_register' ? generateCode() : null,
         };
         
