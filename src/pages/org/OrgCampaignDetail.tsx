@@ -91,6 +91,7 @@ export default function OrgCampaignDetail() {
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>("all");
   const [joinLinkCopied, setJoinLinkCopied] = useState(false);
+  const [campaignLinkCopied, setCampaignLinkCopied] = useState(false);
 
   // Helper for copying seller join link
   const handleCopyJoinLink = () => {
@@ -100,6 +101,16 @@ export default function OrgCampaignDetail() {
     setJoinLinkCopied(true);
     toast({ title: "Link copied!", description: "Seller registration link copied to clipboard." });
     setTimeout(() => setJoinLinkCopied(false), 2000);
+  };
+
+  // Helper for copying general campaign link
+  const handleCopyCampaignLink = () => {
+    if (!analytics?.campaign.campaign_link_code) return;
+    const link = generateCampaignLink(analytics.campaign.campaign_link_code);
+    navigator.clipboard.writeText(link);
+    setCampaignLinkCopied(true);
+    toast({ title: "Link copied!", description: "Campaign link copied to clipboard." });
+    setTimeout(() => setCampaignLinkCopied(false), 2000);
   };
 
   const { data: analytics, isLoading, refetch } = useOrgCampaignAnalytics(id);
@@ -339,18 +350,9 @@ export default function OrgCampaignDetail() {
                 </Link>
               </Button>
             )}
-            {trackingMode === 'self_register' && campaign.self_register_code && (
-              <Button 
-                onClick={handleCopyJoinLink}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              >
-                <UserPlus className="h-4 w-4 mr-2" />
-                {joinLinkCopied ? "Copied!" : "Invite Sellers"}
-              </Button>
-            )}
             <Button variant="outline" onClick={() => setShowLinksModal(true)}>
               <Share2 className="h-4 w-4 mr-2" />
-              All Links
+              Share Links
             </Button>
           </div>
         </div>
@@ -395,44 +397,92 @@ export default function OrgCampaignDetail() {
           </Alert>
         )}
 
-        {/* Prominent Seller Registration Link Section - Only for self_register campaigns */}
-        {trackingMode === 'self_register' && campaign.self_register_code && (
-          <Card className="border-2 border-emerald-500/30 bg-emerald-500/5">
-            <CardContent className="py-5">
-              <div className="flex flex-col md:flex-row md:items-center gap-4">
-                <div className="flex items-center gap-3 flex-1">
-                  <div className="p-3 rounded-full bg-emerald-500/20">
-                    <UserPlus className="h-6 w-6 text-emerald-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-foreground">Seller Registration Link</h3>
-                    <p className="text-sm text-muted-foreground mb-2">Share this link with sellers so they can join your campaign and get their own selling links.</p>
+        {/* Link Cards for self_register campaigns - Seller Registration + General Campaign Link */}
+        {trackingMode === 'self_register' && (
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Seller Registration Link */}
+            {campaign.self_register_code && (
+              <Card className="border-2 border-emerald-500/30 bg-emerald-500/5">
+                <CardContent className="py-5">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-emerald-500/20">
+                        <UserPlus className="h-5 w-5 text-emerald-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground">Seller Registration Link</h3>
+                        <p className="text-xs text-muted-foreground">Share with sellers to join & get their own links</p>
+                      </div>
+                    </div>
                     <div className="flex items-center gap-2 p-2 bg-background rounded-md border border-border">
                       <code className="text-xs text-muted-foreground truncate flex-1">
                         {generateSellerJoinLink(campaign.self_register_code)}
                       </code>
                     </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={handleCopyJoinLink}
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1"
+                      >
+                        <Copy className="h-4 w-4 mr-2" />
+                        {joinLinkCopied ? "Copied!" : "Copy"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(generateSellerJoinLink(campaign.self_register_code!), '_blank')}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-2 flex-shrink-0">
-                  <Button 
-                    onClick={handleCopyJoinLink}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                  >
-                    <Copy className="h-4 w-4 mr-2" />
-                    {joinLinkCopied ? "Copied!" : "Copy Link"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => window.open(generateSellerJoinLink(campaign.self_register_code!), '_blank')}
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Open
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* General Campaign Link */}
+            {campaign.campaign_link_code && (
+              <Card className="border-2 border-primary/30 bg-primary/5">
+                <CardContent className="py-5">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-primary/20">
+                        <Share2 className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground">General Campaign Link</h3>
+                        <p className="text-xs text-muted-foreground">For direct orders (not tied to a seller)</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 p-2 bg-background rounded-md border border-border">
+                      <code className="text-xs text-muted-foreground truncate flex-1">
+                        {generateCampaignLink(campaign.campaign_link_code)}
+                      </code>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={handleCopyCampaignLink}
+                        size="sm"
+                        variant="default"
+                        className="flex-1"
+                      >
+                        <Copy className="h-4 w-4 mr-2" />
+                        {campaignLinkCopied ? "Copied!" : "Copy"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(generateCampaignLink(campaign.campaign_link_code!), '_blank')}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
 
         {/* Stats Cards */}

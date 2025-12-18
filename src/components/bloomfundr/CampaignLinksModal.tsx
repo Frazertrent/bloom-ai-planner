@@ -223,7 +223,7 @@ export function CampaignLinksModal({
     );
   }
 
-  // For 'self_register' mode, show registration link prominently + any registered sellers
+  // For 'self_register' mode, show both campaign link and registered sellers
   if (trackingMode === 'self_register') {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -234,61 +234,41 @@ export function CampaignLinksModal({
               Campaign Links
             </DialogTitle>
             <DialogDescription>
-              Share the registration link with your sellers so they can sign up and get their own selling links.
+              View all links for your campaign.
             </DialogDescription>
           </DialogHeader>
 
-          {/* Self-Registration Link - Prominent */}
-          {selfRegisterLink && (
-            <Card className="bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800">
+          {/* General Campaign Link */}
+          {campaignLink && (
+            <Card className="bg-muted/50">
               <CardContent className="pt-6">
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div>
-                    <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200 mb-2 flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Seller Registration Link
+                    <p className="text-sm font-semibold mb-1 flex items-center gap-2">
+                      <LinkIcon className="h-4 w-4" />
+                      General Campaign Link
                     </p>
-                    <p className="text-xs text-emerald-700 dark:text-emerald-300 mb-3">
-                      Send this to your sellers so they can register and get their own unique selling link.
+                    <p className="text-xs text-muted-foreground mb-2">
+                      For direct customer orders (not tied to any seller)
                     </p>
                     <div className="flex items-center gap-2">
                       <Input
                         readOnly
-                        value={selfRegisterLink}
+                        value={campaignLink}
                         className="bg-background text-sm"
                       />
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={copySelfRegisterLink}
+                        onClick={copyCampaignLink}
                       >
-                        {selfRegisterCopied ? (
+                        {campaignLinkCopied ? (
                           <Check className="h-4 w-4 text-green-600" />
                         ) : (
                           <Copy className="h-4 w-4" />
                         )}
                       </Button>
                     </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={copySelfRegisterLink}
-                    >
-                      <Copy className="mr-2 h-4 w-4" />
-                      Copy Link
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      asChild
-                    >
-                      <a href={selfRegisterLink} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        Open Link
-                      </a>
-                    </Button>
                   </div>
                 </div>
               </CardContent>
