@@ -31,9 +31,10 @@ import {
   useBulkUpdateOrderStatus 
 } from "@/hooks/useFloristOrders";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
-import { ShoppingCart, Eye, CheckCircle } from "lucide-react";
+import { ShoppingCart, Eye, CheckCircle, ChevronDown, ChevronRight } from "lucide-react";
 import { format, isWithinInterval } from "date-fns";
 import type { FulfillmentStatus, BFOrderWithRelations } from "@/types/bloomfundr";
+import React from "react";
 
 type StatusTab = "all" | "pending" | "in_production" | "ready";
 
@@ -48,6 +49,19 @@ export default function FloristOrdersPage() {
   const dateRange = getDateRangeFilter("date");
 
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
+
+  const toggleOrderExpanded = (orderId: string) => {
+    setExpandedOrders(prev => {
+      const next = new Set(prev);
+      if (next.has(orderId)) {
+        next.delete(orderId);
+      } else {
+        next.add(orderId);
+      }
+      return next;
+    });
+  };
 
   const { data: campaigns } = useFloristCampaignsForFilter();
   const { data: allOrders, isLoading } = useFloristOrdersList(
@@ -200,6 +214,7 @@ export default function FloristOrdersPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-10"></TableHead>
                       <TableHead className="w-12">
                         <Checkbox 
                           checked={orders.length > 0 && selectedOrders.length === orders.length}
@@ -218,43 +233,85 @@ export default function FloristOrdersPage() {
                   </TableHeader>
                   <TableBody>
                     {orders.map((order) => (
-                      <TableRow key={order.id}>
-                        <TableCell>
-                          <Checkbox 
-                            checked={selectedOrders.includes(order.id)}
-                            onCheckedChange={(checked) => handleSelectOrder(order.id, !!checked)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Link 
-                            to={`/florist/orders/${order.id}`}
-                            className="font-medium text-primary hover:underline"
-                          >
-                            {order.order_number}
-                          </Link>
-                        </TableCell>
-                        <TableCell>{order.customer_name || order.customer?.full_name || "Unknown"}</TableCell>
-                        <TableCell className="hidden md:table-cell">{order.campaign?.name || "Unknown"}</TableCell>
-                        <TableCell className="text-center hidden sm:table-cell">
-                          {order.order_items?.reduce((sum, i) => sum + i.quantity, 0) || 0}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          ${Number(order.total).toFixed(2)}
-                        </TableCell>
-                        <TableCell>
-                          <OrderFulfillmentBadge status={order.fulfillment_status} />
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          {format(new Date(order.created_at), "MMM d, yyyy")}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link to={`/florist/orders/${order.id}`}>
-                              <Eye className="h-4 w-4" />
+                      <React.Fragment key={order.id}>
+                        <TableRow 
+                          className="cursor-pointer"
+                          onClick={() => toggleOrderExpanded(order.id)}
+                        >
+                          <TableCell className="p-0">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-10 w-10 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleOrderExpanded(order.id);
+                              }}
+                            >
+                              {expandedOrders.has(order.id) ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <Checkbox 
+                              checked={selectedOrders.includes(order.id)}
+                              onCheckedChange={(checked) => handleSelectOrder(order.id, !!checked)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Link 
+                              to={`/florist/orders/${order.id}`}
+                              className="font-medium text-primary hover:underline"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {order.order_number}
                             </Link>
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+                          </TableCell>
+                          <TableCell>{order.customer_name || order.customer?.full_name || "Unknown"}</TableCell>
+                          <TableCell className="hidden md:table-cell">{order.campaign?.name || "Unknown"}</TableCell>
+                          <TableCell className="text-center hidden sm:table-cell">
+                            {order.order_items?.reduce((sum, i) => sum + i.quantity, 0) || 0}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            ${Number(order.total).toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <OrderFulfillmentBadge status={order.fulfillment_status} />
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            {format(new Date(order.created_at), "MMM d, yyyy")}
+                          </TableCell>
+                          <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="sm" asChild>
+                              <Link to={`/florist/orders/${order.id}`}>
+                                <Eye className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                        {expandedOrders.has(order.id) && order.order_items && order.order_items.length > 0 && (
+                          <TableRow className="bg-muted/50 hover:bg-muted/50">
+                            <TableCell colSpan={10} className="py-3 px-4">
+                              <div className="pl-10 space-y-1">
+                                <p className="text-xs font-medium text-muted-foreground mb-2">Products:</p>
+                                {order.order_items.map((item, idx) => (
+                                  <div key={idx} className="flex items-center gap-2 text-sm">
+                                    <span className="text-muted-foreground">•</span>
+                                    <span className="font-medium">
+                                      {item.campaign_product?.product?.name || "Unknown Product"}
+                                    </span>
+                                    <span className="text-muted-foreground">×</span>
+                                    <span className="font-semibold">{item.quantity}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
                     ))}
                   </TableBody>
                 </Table>
