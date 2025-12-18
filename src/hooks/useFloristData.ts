@@ -64,7 +64,6 @@ export function useFloristStats() {
         .eq("florist_id", florist.id);
 
       let pendingOrderCount = 0;
-      let totalEarnings = 0;
 
       if (campaignIds && campaignIds.length > 0) {
         const ids = campaignIds.map((c) => c.id);
@@ -77,19 +76,10 @@ export function useFloristStats() {
           .in("fulfillment_status", ["pending", "in_production"]);
 
         pendingOrderCount = orderCount || 0;
-
-        // Get total earnings (simplified - sum of florist margin from paid orders)
-        const { data: orders } = await supabase
-          .from("bf_orders")
-          .select("subtotal")
-          .in("campaign_id", ids)
-          .eq("payment_status", "paid");
-
-        if (orders) {
-          // Approximate earnings as 50% of subtotal (florist margin)
-          totalEarnings = orders.reduce((sum, o) => sum + (Number(o.subtotal) * 0.5), 0);
-        }
       }
+
+      // Use persistent lifetime earnings from florist profile
+      const totalEarnings = Number(florist.total_lifetime_earnings) || 0;
 
       return {
         total_products: productCount || 0,
