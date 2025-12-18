@@ -29,6 +29,15 @@ export function useFloristOrdersList(campaignId?: string, statusFilter?: Fulfill
 
       if (!campaigns || campaigns.length === 0) return [];
 
+      // Fetch organizations for all campaigns
+      const orgIds = [...new Set(campaigns.map((c) => c.organization_id))];
+      const { data: organizations } = await supabase
+        .from("bf_organizations")
+        .select("id, name, org_type")
+        .in("id", orgIds);
+
+      const orgMap = new Map(organizations?.map((o) => [o.id, o]) || []);
+
       let campaignIds = campaigns.map((c) => c.id);
       
       // Filter by specific campaign if provided
@@ -66,7 +75,8 @@ export function useFloristOrdersList(campaignId?: string, statusFilter?: Fulfill
         .in("id", customerIds);
 
       const customerMap = new Map(customers?.map((c) => [c.id, c]) || []);
-      const campaignMap = new Map(campaigns.map((c) => [c.id, c]));
+      // Attach organization data to campaigns
+      const campaignMap = new Map(campaigns.map((c) => [c.id, { ...c, organization: orgMap.get(c.organization_id) }]));
 
       // Fetch order items with products
       const orderIds = orders.map((o) => o.id);

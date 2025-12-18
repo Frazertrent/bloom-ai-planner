@@ -313,6 +313,25 @@ export default function FloristOrdersPage() {
                           <TableRow className="bg-muted/50 hover:bg-muted/50">
                             <TableCell colSpan={10} className="py-3 px-4">
                               <div className="pl-10 space-y-3">
+                                {/* Organization & Campaign Context */}
+                                <div className="flex items-center gap-2 text-sm pb-2 border-b border-border/50">
+                                  <span className="text-muted-foreground">
+                                    {(order.campaign as any)?.organization?.org_type === 'school' && '🏫'}
+                                    {(order.campaign as any)?.organization?.org_type === 'sports' && '⚽'}
+                                    {(order.campaign as any)?.organization?.org_type === 'dance' && '💃'}
+                                    {(order.campaign as any)?.organization?.org_type === 'cheer' && '📣'}
+                                    {(order.campaign as any)?.organization?.org_type === 'church' && '⛪'}
+                                    {!['school', 'sports', 'dance', 'cheer', 'church'].includes((order.campaign as any)?.organization?.org_type) && '🏢'}
+                                  </span>
+                                  <span className="font-semibold">
+                                    {(order.campaign as any)?.organization?.name || 'Unknown Organization'}
+                                  </span>
+                                  <span className="text-muted-foreground">—</span>
+                                  <span className="text-muted-foreground">
+                                    {order.campaign?.name || 'Unknown Campaign'}
+                                  </span>
+                                </div>
+
                                 {/* Products Section */}
                                 {order.order_items && order.order_items.length > 0 && (
                                   <div className="space-y-1">
