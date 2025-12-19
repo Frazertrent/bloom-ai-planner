@@ -335,19 +335,51 @@ export default function FloristOrdersPage() {
                                 </div>
 
                                 {/* Products Section */}
+                                {/* Products Section with Customizations */}
                                 {order.order_items && order.order_items.length > 0 && (
-                                  <div className="space-y-1">
+                                  <div className="space-y-2">
                                     <p className="text-xs font-medium text-muted-foreground mb-2">Products:</p>
-                                    {order.order_items.map((item, idx) => (
-                                      <div key={idx} className="flex items-center gap-2 text-sm">
-                                        <span className="text-muted-foreground">•</span>
-                                        <span className="font-medium">
-                                          {item.campaign_product?.product?.name || "Unknown Product"}
-                                        </span>
-                                        <span className="text-muted-foreground">×</span>
-                                        <span className="font-semibold">{item.quantity}</span>
-                                      </div>
-                                    ))}
+                                    {order.order_items.map((item, idx) => {
+                                      const customizations = item.customizations as Record<string, string> | null;
+                                      return (
+                                        <div key={idx} className="text-sm space-y-1">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-muted-foreground">•</span>
+                                            <span className="font-medium">
+                                              {item.campaign_product?.product?.name || "Unknown Product"}
+                                            </span>
+                                            <span className="text-muted-foreground">×</span>
+                                            <span className="font-semibold">{item.quantity}</span>
+                                          </div>
+                                          {/* Show customizations inline */}
+                                          {customizations && Object.keys(customizations).length > 0 && (
+                                            <div className="ml-4 flex flex-wrap gap-2">
+                                              {customizations.flowerColor && (
+                                                <span className="text-xs px-2 py-0.5 bg-rose-100 text-rose-700 rounded-full">
+                                                  🌸 {customizations.flowerColor}
+                                                </span>
+                                              )}
+                                              {customizations.ribbonColor && (
+                                                <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
+                                                  🎀 {customizations.ribbonColor}
+                                                </span>
+                                              )}
+                                              {customizations.specialInstructions && (
+                                                <span className="text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full">
+                                                  📝 {customizations.specialInstructions}
+                                                </span>
+                                              )}
+                                            </div>
+                                          )}
+                                          {/* Show recipient if specified */}
+                                          {item.recipient_name && (
+                                            <div className="ml-4 text-xs text-muted-foreground">
+                                              For: <span className="font-medium">{item.recipient_name}</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 )}
                                 

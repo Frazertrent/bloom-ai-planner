@@ -26,6 +26,7 @@ const registerSchema = z.object({
   // Organization-specific fields
   organizationName: z.string().optional(),
   orgType: z.enum(["school", "sports", "dance", "cheer", "church", "other"]).optional(),
+  customOrgType: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -53,6 +54,14 @@ const registerSchema = z.object({
 }, {
   message: "Organization type is required",
   path: ["orgType"],
+}).refine((data) => {
+  if (data.role === "org_admin" && data.orgType === "other" && (!data.customOrgType || data.customOrgType.length < 2)) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Please specify your organization type",
+  path: ["customOrgType"],
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -63,6 +72,9 @@ const Register = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const defaultRole = searchParams.get("role") as "florist" | "organization" | null;
+  
+  // Determine if role is pre-set from URL (hide dropdown if so)
+  const isRolePreset = defaultRole === "florist" || defaultRole === "organization";
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -75,10 +87,12 @@ const Register = () => {
       businessName: "",
       organizationName: "",
       orgType: undefined,
+      customOrgType: "",
     },
   });
 
   const selectedRole = form.watch("role");
+  const selectedOrgType = form.watch("orgType");
 
   const onSubmit = async (values: RegisterFormValues) => {
     setIsLoading(true);
@@ -116,12 +130,17 @@ const Register = () => {
             console.error("Error creating florist record:", floristError);
           }
         } else if (values.role === "org_admin" && values.organizationName && values.orgType) {
+          // Use custom org type if "other" is selected
+          const finalOrgType = values.orgType === "other" && values.customOrgType 
+            ? values.customOrgType 
+            : values.orgType;
+          
           const { error: orgError } = await supabase
             .from("bf_organizations")
             .insert({
               user_id: user.id,
               name: values.organizationName,
-              org_type: values.orgType,
+              org_type: finalOrgType,
             });
           
           if (orgError) {
@@ -197,27 +216,30 @@ const Register = () => {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>I am a...</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="bg-bloomfundr-background border-bloomfundr-muted">
-                          <SelectValue placeholder="Select your role" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="florist">Florist</SelectItem>
-                        <SelectItem value="org_admin">School / Organization</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Only show role dropdown if role is not preset from URL */}
+              {!isRolePreset && (
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>I am a...</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="bg-bloomfundr-background border-bloomfundr-muted">
+                            <SelectValue placeholder="Select your role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="bg-popover">
+                          <SelectItem value="florist">Florist</SelectItem>
+                          <SelectItem value="org_admin">School / Organization</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               {/* Florist-specific fields */}
               {selectedRole === "florist" && (
@@ -273,7 +295,7 @@ const Register = () => {
                               <SelectValue placeholder="Select type" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
+                          <SelectContent className="bg-popover">
                             <SelectItem value="school">School</SelectItem>
                             <SelectItem value="sports">Sports Team</SelectItem>
                             <SelectItem value="dance">Dance Team</SelectItem>
@@ -286,6 +308,27 @@ const Register = () => {
                       </FormItem>
                     )}
                   />
+
+                  {/* Custom org type input when "other" is selected */}
+                  {selectedOrgType === "other" && (
+                    <FormField
+                      control={form.control}
+                      name="customOrgType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Specify Organization Type</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="e.g., Youth Group, Non-profit"
+                              className="bg-bloomfundr-background border-bloomfundr-muted focus:border-bloomfundr-primary"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </>
               )}
 

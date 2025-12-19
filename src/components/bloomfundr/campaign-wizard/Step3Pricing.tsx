@@ -116,13 +116,23 @@ function ProductPricingCard({
                 type="number"
                 min={0}
                 max={50}
-                value={pricing.orgProfitPercent}
-                onChange={(e) =>
-                  onUpdate({ orgProfitPercent: parseFloat(e.target.value) || 0 })
-                }
+                value={pricing.orgProfitPercent || ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  // Allow empty string while typing
+                  if (val === '') {
+                    onUpdate({ orgProfitPercent: 0 });
+                  } else {
+                    onUpdate({ orgProfitPercent: parseFloat(val) || 0 });
+                  }
+                }}
+                onFocus={(e) => {
+                  // Select all text on focus for easy replacement
+                  e.target.select();
+                }}
                 onBlur={(e) => {
                   const cleanValue = parseFloat(e.target.value) || 0;
-                  e.target.value = cleanValue.toString();
+                  onUpdate({ orgProfitPercent: cleanValue });
                 }}
                 className="h-10 w-20 text-lg font-semibold"
               />
@@ -137,6 +147,9 @@ function ProductPricingCard({
           <p className="font-bold text-2xl sm:text-3xl text-primary">${effectivePrice.toFixed(2)}</p>
           <p className="text-sm font-medium text-rose-600 mt-1">
             You earn ${(actualBreakdown?.orgProfit ?? breakdown.orgProfit).toFixed(2)} per sale
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            (after platform & processing fees)
           </p>
         </div>
 

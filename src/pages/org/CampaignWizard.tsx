@@ -88,6 +88,11 @@ export default function CampaignWizard() {
     }
   }, [initialStep]);
 
+  // Scroll to top when step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentStep]);
+
   const handleSave = (savedCampaignId: string) => {
     setCampaignId(savedCampaignId);
     // Update URL to include campaign ID
