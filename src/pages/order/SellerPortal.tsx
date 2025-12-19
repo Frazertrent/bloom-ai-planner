@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Loader2, AlertCircle, Package, Truck, CheckCircle, Flower, ExternalLink, 
   Copy, Clock, MapPin, Mail, Phone, ChevronDown, ChevronUp, Calendar,
-  Info, ShoppingBag
+  Info, ShoppingBag, Trophy, Target, Award
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,16 @@ import { generateOrderLink } from "@/lib/linkGenerator";
 import { format, parseISO, isPast } from "date-fns";
 import type { FulfillmentStatus } from "@/types/bloomfundr";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Progress } from "@/components/ui/progress";
+
+// Badge definitions
+const MILESTONE_BADGES = [
+  { emoji: "🌱", name: "Seedling", threshold: 1, description: "First sale!" },
+  { emoji: "🌸", name: "Bloomer", threshold: 50, description: "$50 in sales" },
+  { emoji: "💐", name: "Bouquet Boss", threshold: 150, description: "$150 in sales" },
+  { emoji: "🌺", name: "Champion", threshold: 300, description: "$300 in sales" },
+  { emoji: "👑", name: "Legend", threshold: 500, description: "$500 in sales" },
+];
 
 export default function SellerPortal() {
   const { magicLinkCode } = useParams<{ magicLinkCode: string }>();
@@ -118,6 +128,7 @@ export default function SellerPortal() {
       return {
         seller: campaignStudent.bf_students,
         campaign: campaignStudent.bf_campaigns,
+        campaignId: campaignStudent.campaign_id,
         organization: (campaignStudent.bf_campaigns as any)?.bf_organizations,
         stats: {
           totalSales: campaignStudent.total_sales,
@@ -129,6 +140,94 @@ export default function SellerPortal() {
     },
     enabled: !!magicLinkCode,
   });
+
+  // Fetch leaderboard data for gamification
+  const { data: leaderboardData } = useQuery({
+    queryKey: ["seller-leaderboard", data?.campaignId],
+    queryFn: async () => {
+      if (!data?.campaignId) return null;
+      
+      const { data: allSellers, error } = await supabase
+        .from("bf_campaign_students")
+        .select(`
+          id,
+          total_sales,
+          order_count,
+          magic_link_code,
+          bf_students (name)
+        `)
+        .eq("campaign_id", data.campaignId)
+        .order("total_sales", { ascending: false })
+        .order("order_count", { ascending: false });
+      
+      if (error) return null;
+      return allSellers || [];
+    },
+    enabled: !!data?.campaignId,
+  });
+
+  // Gamification helpers
+  const gamificationStats = useMemo(() => {
+    const totalSales = Number(data?.stats?.totalSales || 0);
+    
+    // Leaderboard position
+    let rank = 0;
+    let totalSellers = 0;
+    let nextSellerGap = 0;
+    let leadAmount = 0;
+    let isOnlyPlayer = true;
+
+    if (leaderboardData && leaderboardData.length > 0) {
+      totalSellers = leaderboardData.length;
+      isOnlyPlayer = totalSellers === 1;
+      
+      const currentSellerIndex = leaderboardData.findIndex(
+        (s: any) => s.magic_link_code === magicLinkCode
+      );
+      
+      if (currentSellerIndex !== -1) {
+        rank = currentSellerIndex + 1;
+        
+        // Gap to next rank (person ahead)
+        if (currentSellerIndex > 0) {
+          const personAhead = leaderboardData[currentSellerIndex - 1];
+          nextSellerGap = Number(personAhead.total_sales) - totalSales;
+        }
+        
+        // Lead amount if #1
+        if (rank === 1 && leaderboardData.length > 1) {
+          const personBehind = leaderboardData[1];
+          leadAmount = totalSales - Number(personBehind.total_sales);
+        }
+      }
+    }
+
+    // Dynamic goal based on seller count (min $150, max $500, in $50 increments)
+    const baseGoal = Math.min(150 + (totalSellers * 25), 500);
+    const goal = Math.ceil(baseGoal / 50) * 50;
+    const goalProgress = Math.min((totalSales / goal) * 100, 100);
+    const goalExceeded = totalSales >= goal;
+
+    // Badges
+    const earnedBadges = MILESTONE_BADGES.filter(b => totalSales >= b.threshold);
+    const nextBadge = MILESTONE_BADGES.find(b => totalSales < b.threshold);
+    const nextBadgeProgress = nextBadge ? totalSales / nextBadge.threshold * 100 : 100;
+
+    return {
+      rank,
+      totalSellers,
+      nextSellerGap,
+      leadAmount,
+      isOnlyPlayer,
+      totalSales,
+      goal,
+      goalProgress,
+      goalExceeded,
+      earnedBadges,
+      nextBadge,
+      nextBadgeProgress,
+    };
+  }, [data?.stats?.totalSales, leaderboardData, magicLinkCode]);
 
   // Mark order as picked up mutation
   const markPickedUpMutation = useMutation({
@@ -367,6 +466,107 @@ export default function SellerPortal() {
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <p className="text-2xl font-bold text-emerald-600">${Number(stats.totalSales || 0).toFixed(2)}</p>
                 <p className="text-sm text-muted-foreground">Total Sales</p>
+              </div>
+            </div>
+
+            {/* Gamification Section */}
+            <div className="space-y-4 p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border border-primary/20">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <Trophy className="h-4 w-4 text-primary" />
+                Your Performance
+              </div>
+
+              {/* Leaderboard Position */}
+              <div className="text-center p-3 bg-background/80 rounded-lg">
+                {gamificationStats.totalSales === 0 ? (
+                  <p className="text-sm text-muted-foreground">🚀 Make your first sale to join the leaderboard!</p>
+                ) : gamificationStats.isOnlyPlayer ? (
+                  <p className="text-sm font-medium">⭐ You're the first seller! Lead the way!</p>
+                ) : gamificationStats.rank === 1 ? (
+                  <div>
+                    <p className="text-lg font-bold text-amber-500">🥇 You're in FIRST PLACE!</p>
+                    {gamificationStats.leadAmount > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        You're ahead by ${gamificationStats.leadAmount.toFixed(2)}!
+                      </p>
+                    )}
+                  </div>
+                ) : gamificationStats.rank === 2 ? (
+                  <div>
+                    <p className="text-lg font-bold text-slate-400">🥈 #{gamificationStats.rank} of {gamificationStats.totalSellers} sellers</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      ${gamificationStats.nextSellerGap.toFixed(2)} behind #1!
+                    </p>
+                  </div>
+                ) : gamificationStats.rank === 3 ? (
+                  <div>
+                    <p className="text-lg font-bold text-amber-700">🥉 #{gamificationStats.rank} of {gamificationStats.totalSellers} sellers</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      ${gamificationStats.nextSellerGap.toFixed(2)} behind #{gamificationStats.rank - 1}!
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-lg font-bold">🏆 #{gamificationStats.rank} of {gamificationStats.totalSellers} sellers</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      ${gamificationStats.nextSellerGap.toFixed(2)} behind #{gamificationStats.rank - 1}!
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Goal Progress */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-1">
+                    <Target className="h-3 w-3" />
+                    Goal Progress
+                  </span>
+                  <span className="font-medium">
+                    {gamificationStats.goalExceeded ? "🎉 Goal smashed!" : `${Math.round(gamificationStats.goalProgress)}%`}
+                  </span>
+                </div>
+                <Progress value={gamificationStats.goalProgress} className="h-2" />
+                <p className="text-xs text-muted-foreground text-center">
+                  ${gamificationStats.totalSales.toFixed(2)} of ${gamificationStats.goal} goal
+                </p>
+              </div>
+
+              {/* Milestone Badges */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1 text-sm">
+                  <Award className="h-3 w-3" />
+                  <span>Achievements</span>
+                </div>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {MILESTONE_BADGES.map((badge) => {
+                    const isEarned = gamificationStats.earnedBadges.some(b => b.name === badge.name);
+                    return (
+                      <div
+                        key={badge.name}
+                        className={`flex flex-col items-center p-2 rounded-lg min-w-[60px] transition-all ${
+                          isEarned 
+                            ? "bg-primary/10 border border-primary/30" 
+                            : "bg-muted/30 opacity-40"
+                        }`}
+                        title={badge.description}
+                      >
+                        <span className="text-xl">{isEarned ? badge.emoji : "?"}</span>
+                        <span className="text-[10px] font-medium mt-1">{isEarned ? badge.name : `$${badge.threshold}`}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {gamificationStats.nextBadge && (
+                  <p className="text-xs text-center text-muted-foreground">
+                    Next: {gamificationStats.nextBadge.emoji} {gamificationStats.nextBadge.name} — ${(gamificationStats.nextBadge.threshold - gamificationStats.totalSales).toFixed(2)} to go!
+                  </p>
+                )}
+                {!gamificationStats.nextBadge && gamificationStats.earnedBadges.length === MILESTONE_BADGES.length && (
+                  <p className="text-xs text-center font-medium text-primary">
+                    👑 You've unlocked everything! Amazing!
+                  </p>
+                )}
               </div>
             </div>
 
