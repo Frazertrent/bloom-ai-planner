@@ -13,7 +13,7 @@ interface TopSeller {
   orderCount: number;
 }
 
-type EmailType = 'order_confirmation' | 'seller_welcome' | 'pickup_ready' | 'campaign_summary' | 'all_orders_ready';
+type EmailType = 'order_confirmation' | 'seller_welcome' | 'pickup_ready' | 'campaign_summary' | 'all_orders_ready' | 'florist_new_campaign';
 
 interface BaseEmailData {
   type: EmailType;
@@ -75,6 +75,19 @@ export interface AllOrdersReadyData {
   floristName: string;
   pickupDate?: string;
   pickupLocation?: string;
+  dashboardLink: string;
+}
+
+export interface FloristNewCampaignData {
+  floristName: string;
+  organizationName: string;
+  campaignName: string;
+  startDate: string;
+  endDate: string;
+  pickupDate?: string;
+  pickupLocation?: string;
+  productCount: number;
+  expectedOrders?: number;
   dashboardLink: string;
 }
 
@@ -149,6 +162,17 @@ export async function sendAllOrdersReadyEmail(
 ): Promise<boolean> {
   return sendEmail({
     type: 'all_orders_ready',
+    to,
+    data,
+  });
+}
+
+export async function sendFloristNewCampaignEmail(
+  to: string,
+  data: FloristNewCampaignData
+): Promise<boolean> {
+  return sendEmail({
+    type: 'florist_new_campaign',
     to,
     data,
   });

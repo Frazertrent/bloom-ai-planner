@@ -6,6 +6,7 @@ import { SellerWelcomeEmail } from './_templates/seller-welcome.tsx'
 import { PickupReadyEmail } from './_templates/pickup-ready.tsx'
 import { CampaignSummaryEmail } from './_templates/campaign-summary.tsx'
 import { AllOrdersReadyEmail } from './_templates/all-orders-ready.tsx'
+import { FloristNewCampaignEmail } from './_templates/florist-new-campaign.tsx'
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
 
@@ -15,7 +16,7 @@ const corsHeaders = {
 }
 
 interface EmailRequest {
-  type: 'order_confirmation' | 'seller_welcome' | 'pickup_ready' | 'campaign_summary' | 'all_orders_ready';
+  type: 'order_confirmation' | 'seller_welcome' | 'pickup_ready' | 'campaign_summary' | 'all_orders_ready' | 'florist_new_campaign';
   to: string;
   data: Record<string, any>;
 }
@@ -112,6 +113,24 @@ Deno.serve(async (req) => {
             floristName: data.floristName,
             pickupDate: data.pickupDate,
             pickupLocation: data.pickupLocation,
+            dashboardLink: data.dashboardLink,
+          })
+        )
+        break
+
+      case 'florist_new_campaign':
+        subject = `New campaign - ${data.campaignName} by ${data.organizationName}`
+        html = await renderAsync(
+          React.createElement(FloristNewCampaignEmail, {
+            floristName: data.floristName,
+            organizationName: data.organizationName,
+            campaignName: data.campaignName,
+            startDate: data.startDate,
+            endDate: data.endDate,
+            pickupDate: data.pickupDate,
+            pickupLocation: data.pickupLocation,
+            productCount: data.productCount,
+            expectedOrders: data.expectedOrders,
             dashboardLink: data.dashboardLink,
           })
         )

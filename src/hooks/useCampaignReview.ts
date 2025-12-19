@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { BFCampaign, BFFlorist } from "@/types/bloomfundr";
 import { notifyFloristCampaignInvitation } from "@/lib/notifications";
+import { sendFloristNewCampaignEmail } from "@/lib/emailService";
 import { format, startOfDay, isBefore, parseISO } from "date-fns";
 
 export interface CampaignReviewData {
@@ -132,12 +133,25 @@ export function useLaunchCampaign() {
         .from("bf_campaigns")
         .update({ status: newStatus })
         .eq("id", campaignId)
-        .select("*, organization:bf_organizations(name)")
+        .select("*, organization:bf_organizations(name, notification_email)")
         .single();
 
       if (error) throw error;
 
-      // Notify florist about the new campaign
+      // Fetch florist details for email notification
+      const { data: florist } = await supabase
+        .from("bf_florists")
+        .select("id, business_name, notification_email, notification_new_orders")
+        .eq("id", data.florist_id)
+        .single();
+
+      // Count products in campaign
+      const { count: productCount } = await supabase
+        .from("bf_campaign_products")
+        .select("*", { count: "exact", head: true })
+        .eq("campaign_id", campaignId);
+
+      // Notify florist about the new campaign (in-app)
       if (data) {
         const orgName = (data as any).organization?.name || "An organization";
         await notifyFloristCampaignInvitation({
@@ -148,6 +162,21 @@ export function useLaunchCampaign() {
           startDate: format(new Date(data.start_date), "MMM d"),
           endDate: format(new Date(data.end_date), "MMM d"),
         });
+
+        // Send email to florist if they have email notifications enabled
+        if (florist?.notification_email && florist?.notification_new_orders !== false) {
+          await sendFloristNewCampaignEmail(florist.notification_email, {
+            floristName: florist.business_name,
+            organizationName: orgName,
+            campaignName: data.name,
+            startDate: format(new Date(data.start_date), "MMM d, yyyy"),
+            endDate: format(new Date(data.end_date), "MMM d, yyyy"),
+            pickupDate: data.pickup_date ? format(new Date(data.pickup_date), "MMM d, yyyy") : undefined,
+            pickupLocation: data.pickup_location || undefined,
+            productCount: productCount || 0,
+            dashboardLink: `${window.location.origin}/florist/campaigns/${data.id}`,
+          });
+        }
       }
 
       return { ...data, isFutureCampaign };
