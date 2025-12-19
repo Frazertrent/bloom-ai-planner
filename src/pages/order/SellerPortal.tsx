@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   Loader2, AlertCircle, Package, Truck, CheckCircle, Flower, ExternalLink, 
   Copy, Clock, MapPin, Mail, Phone, ChevronDown, ChevronUp, Calendar,
-  Info, ShoppingBag, Trophy, Target, Award
+  Info, ShoppingBag, Trophy, Target, Award, Pencil
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,8 @@ import { format, parseISO, isPast } from "date-fns";
 import type { FulfillmentStatus } from "@/types/bloomfundr";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 // Badge definitions
 const MILESTONE_BADGES = [
@@ -33,6 +35,8 @@ export default function SellerPortal() {
   const queryClient = useQueryClient();
   const [showCompleted, setShowCompleted] = useState(false);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
+  const [goalDialogOpen, setGoalDialogOpen] = useState(false);
+  const [goalInputValue, setGoalInputValue] = useState("");
 
   // Toggle order details expansion
   const toggleOrderDetails = (orderId: string) => {
@@ -61,6 +65,7 @@ export default function SellerPortal() {
           magic_link_code,
           total_sales,
           order_count,
+          personal_goal,
           bf_students (
             id,
             name,
@@ -129,11 +134,13 @@ export default function SellerPortal() {
         seller: campaignStudent.bf_students,
         campaign: campaignStudent.bf_campaigns,
         campaignId: campaignStudent.campaign_id,
+        campaignStudentId: campaignStudent.id,
         organization: (campaignStudent.bf_campaigns as any)?.bf_organizations,
         stats: {
           totalSales: campaignStudent.total_sales,
           orderCount: campaignStudent.order_count,
         },
+        personalGoal: campaignStudent.personal_goal,
         orders: orders || [],
         magicLinkCode,
       };
@@ -165,6 +172,53 @@ export default function SellerPortal() {
     },
     enabled: !!data?.campaignId,
   });
+
+  // Goal update mutation
+  const updateGoalMutation = useMutation({
+    mutationFn: async (newGoal: number | null) => {
+      if (!data?.campaignStudentId) throw new Error("No campaign student ID");
+      const { error } = await supabase
+        .from("bf_campaign_students")
+        .update({ personal_goal: newGoal })
+        .eq("id", data.campaignStudentId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["seller-portal", magicLinkCode] });
+      setGoalDialogOpen(false);
+      toast({ 
+        title: "Goal updated!", 
+        description: "Keep pushing toward your target! 🎯" 
+      });
+    },
+    onError: () => {
+      toast({ 
+        title: "Error", 
+        description: "Failed to update goal.", 
+        variant: "destructive" 
+      });
+    },
+  });
+
+  // Handle goal save
+  const handleSaveGoal = () => {
+    const value = parseFloat(goalInputValue);
+    if (isNaN(value) || value <= 0) {
+      toast({ title: "Invalid goal", description: "Please enter a valid amount.", variant: "destructive" });
+      return;
+    }
+    updateGoalMutation.mutate(value);
+  };
+
+  // Handle preset goal click
+  const handlePresetGoal = (amount: number) => {
+    setGoalInputValue(amount.toString());
+  };
+
+  // Handle reset to suggested goal
+  const handleUseSuggestedGoal = () => {
+    updateGoalMutation.mutate(null);
+  };
 
   // Gamification helpers
   const gamificationStats = useMemo(() => {
@@ -202,9 +256,12 @@ export default function SellerPortal() {
       }
     }
 
-    // Dynamic goal based on seller count (min $150, max $500, in $50 increments)
-    const baseGoal = Math.min(150 + (totalSellers * 25), 500);
-    const goal = Math.ceil(baseGoal / 50) * 50;
+    // Use personal goal if set, otherwise dynamic calculation
+    const dynamicGoal = Math.ceil(Math.min(150 + (totalSellers * 25), 500) / 50) * 50;
+    const personalGoal = data?.personalGoal ? Number(data.personalGoal) : null;
+    const goal = personalGoal && personalGoal > 0 ? personalGoal : dynamicGoal;
+    const isPersonalGoal = personalGoal !== null && personalGoal > 0;
+    
     const goalProgress = Math.min((totalSales / goal) * 100, 100);
     const goalExceeded = totalSales >= goal;
 
@@ -221,13 +278,15 @@ export default function SellerPortal() {
       isOnlyPlayer,
       totalSales,
       goal,
+      isPersonalGoal,
+      dynamicGoal,
       goalProgress,
       goalExceeded,
       earnedBadges,
       nextBadge,
       nextBadgeProgress,
     };
-  }, [data?.stats?.totalSales, leaderboardData, magicLinkCode]);
+  }, [data?.stats?.totalSales, data?.personalGoal, leaderboardData, magicLinkCode]);
 
   // Mark order as picked up mutation
   const markPickedUpMutation = useMutation({
@@ -521,8 +580,89 @@ export default function SellerPortal() {
                   <span className="flex items-center gap-1">
                     <Target className="h-3 w-3" />
                     Goal Progress
+                    {gamificationStats.isPersonalGoal && (
+                      <span className="text-[10px] text-muted-foreground">(personal)</span>
+                    )}
                   </span>
-                  <span className="font-medium">
+                  <Dialog open={goalDialogOpen} onOpenChange={(open) => {
+                    setGoalDialogOpen(open);
+                    if (open) {
+                      setGoalInputValue(gamificationStats.goal.toString());
+                    }
+                  }}>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
+                        <Pencil className="h-3 w-3 mr-1" />
+                        Edit
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                          🎯 Set Your Sales Goal
+                        </DialogTitle>
+                        <DialogDescription>
+                          Choose a goal that challenges you! You can change it anytime.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg font-medium">$</span>
+                          <Input
+                            type="number"
+                            placeholder="Enter amount"
+                            value={goalInputValue}
+                            onChange={(e) => setGoalInputValue(e.target.value)}
+                            className="text-lg"
+                            min={1}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground">Quick set:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {[150, 250, 500, 1000].map((amount) => (
+                              <Button
+                                key={amount}
+                                variant={goalInputValue === amount.toString() ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handlePresetGoal(amount)}
+                              >
+                                ${amount}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                        {gamificationStats.isPersonalGoal && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full text-muted-foreground"
+                            onClick={handleUseSuggestedGoal}
+                            disabled={updateGoalMutation.isPending}
+                          >
+                            Use suggested goal (${gamificationStats.dynamicGoal})
+                          </Button>
+                        )}
+                      </div>
+                      <DialogFooter className="gap-2 sm:gap-0">
+                        <Button variant="outline" onClick={() => setGoalDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={handleSaveGoal}
+                          disabled={updateGoalMutation.isPending}
+                        >
+                          {updateGoalMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : null}
+                          Save Goal
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-sm">
                     {gamificationStats.goalExceeded ? "🎉 Goal smashed!" : `${Math.round(gamificationStats.goalProgress)}%`}
                   </span>
                 </div>

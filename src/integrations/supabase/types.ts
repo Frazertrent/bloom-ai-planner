@@ -201,6 +201,7 @@ export type Database = {
           id: string
           magic_link_code: string
           order_count: number | null
+          personal_goal: number | null
           student_id: string
           total_sales: number | null
         }
@@ -210,6 +211,7 @@ export type Database = {
           id?: string
           magic_link_code: string
           order_count?: number | null
+          personal_goal?: number | null
           student_id: string
           total_sales?: number | null
         }
@@ -219,6 +221,7 @@ export type Database = {
           id?: string
           magic_link_code?: string
           order_count?: number | null
+          personal_goal?: number | null
           student_id?: string
           total_sales?: number | null
         }
