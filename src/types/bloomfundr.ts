@@ -284,6 +284,7 @@ export interface OrgDashboardStats {
   active_campaigns: number;
   total_orders: number;
   total_raised: number;
+  org_earnings: number;
 }
 
 // Campaign Summary for Dashboard

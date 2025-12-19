@@ -21,7 +21,8 @@ import {
   Package,
   Trophy,
   Share2,
-  Eye
+  Eye,
+  Wallet
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
@@ -61,8 +62,8 @@ export default function OrgDashboard() {
           </Button>
         </div>
 
-        {/* Stats Cards - 2x2 grid on mobile */}
-        <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
+        {/* Stats Cards - 5 stats with responsive grid */}
+        <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-5">
           <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 md:px-6 pt-3 md:pt-6">
               <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
@@ -76,6 +77,24 @@ export default function OrgDashboard() {
               ) : (
                 <div className="text-xl md:text-2xl font-bold text-foreground">
                   ${(stats?.total_raised || 0).toFixed(0)}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card border-border">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 md:px-6 pt-3 md:pt-6">
+              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
+                Your Earnings
+              </CardTitle>
+              <Wallet className="h-4 w-4 md:h-5 md:w-5 text-rose-500" />
+            </CardHeader>
+            <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
+              {statsLoading ? (
+                <Skeleton className="h-7 w-20" />
+              ) : (
+                <div className="text-xl md:text-2xl font-bold text-emerald-600">
+                  ${(stats?.org_earnings || 0).toFixed(2)}
                 </div>
               )}
             </CardContent>
@@ -117,12 +136,12 @@ export default function OrgDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border">
+          <Card className="bg-card border-border col-span-2 lg:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 md:px-6 pt-3 md:pt-6">
               <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
                 Orders
               </CardTitle>
-              <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-rose-500" />
+              <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-amber-500" />
             </CardHeader>
             <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
               {statsLoading ? (
