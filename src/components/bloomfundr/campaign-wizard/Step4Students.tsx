@@ -215,7 +215,7 @@ export function Step4Students({ campaignId, trackingMode, onBack, onContinue }: 
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Registration Link</CardTitle>
+            <CardTitle className="text-base">Seller Registration Link</CardTitle>
             <CardDescription>
               Share this link with your group so sellers can sign up
             </CardDescription>
@@ -268,9 +268,35 @@ export function Step4Students({ campaignId, trackingMode, onBack, onContinue }: 
         <Alert>
           <Users className="h-4 w-4" />
           <AlertDescription>
-            Once sellers register, you'll be able to see them and their sales on the campaign detail page after launch.
+            <strong>Tip:</strong> You'll have access to this registration link after launching the campaign too. 
+            Sellers will appear on the campaign detail page as they register.
           </AlertDescription>
         </Alert>
+
+        {/* Manual Add Option */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Need to Add Sellers Manually?</CardTitle>
+            <CardDescription>
+              You can also add sellers yourself if needed
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" className="w-full" onClick={() => setShowAddDialog(true)}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Add Seller Manually
+            </Button>
+            
+            {/* Show manually added sellers count if any */}
+            {students && students.length > 0 && (
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  <strong>{students.length}</strong> seller{students.length !== 1 ? 's' : ''} added manually
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="flex flex-col gap-2 pt-4">
           <Button onClick={handleSaveAndContinue}>
@@ -281,6 +307,8 @@ export function Step4Students({ campaignId, trackingMode, onBack, onContinue }: 
             Back to Pricing
           </Button>
         </div>
+
+        <AddStudentDialog open={showAddDialog} onOpenChange={setShowAddDialog} />
       </div>
     );
   }

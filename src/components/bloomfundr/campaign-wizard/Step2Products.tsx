@@ -198,10 +198,43 @@ export function Step2Products({
     );
   }
 
+  const handleSelectAll = () => {
+    if (!products) return;
+    const allSelected = products.every((p) => isProductSelected(p.id));
+    if (allSelected) {
+      // Deselect all
+      products.forEach((p) => {
+        if (isProductSelected(p.id)) toggleProduct(p.id);
+      });
+    } else {
+      // Select all
+      products.forEach((p) => {
+        if (!isProductSelected(p.id)) toggleProduct(p.id);
+      });
+    }
+  };
+
+  const allProductsSelected = products?.every((p) => isProductSelected(p.id)) ?? false;
+
   return (
     <div className="flex flex-col lg:flex-row gap-6">
       {/* Product Grid */}
       <div className="flex-1">
+        {/* Select All Button */}
+        <div className="mb-4 flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            {products.length} product{products.length !== 1 ? "s" : ""} available
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSelectAll}
+          >
+            <Check className="mr-2 h-4 w-4" />
+            {allProductsSelected ? "Deselect All" : "Select All"}
+          </Button>
+        </div>
+
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
           {products.map((product) => {
             const settings = getProductSettings(product.id);

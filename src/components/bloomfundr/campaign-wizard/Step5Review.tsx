@@ -10,6 +10,7 @@ import {
   Package,
   DollarSign,
   Users,
+  UserPlus,
   ChevronDown,
   ChevronUp,
   Edit,
@@ -329,14 +330,61 @@ export function Step5Review({ campaignId, onBack, onEditStep }: Step5ReviewProps
             )}
           </CardContent>
         </Card>
+      ) : trackingMode === 'self_register' ? (
+        /* Self-Register Mode: Show info card instead of seller list */
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Sellers
+            </CardTitle>
+            <Button variant="ghost" size="sm" className="absolute right-4 top-4" onClick={() => onEditStep(4)}>
+              <Edit className="h-4 w-4 mr-1" />
+              Edit
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="p-4 bg-primary/5 rounded-lg text-center">
+              <UserPlus className="h-8 w-8 mx-auto mb-3 text-primary" />
+              <p className="font-medium mb-2">Self-Registration Enabled</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                Sellers will register themselves using the seller registration link. 
+                They'll appear here as they sign up.
+              </p>
+              {selfRegisterLink && (
+                <div className="flex items-center justify-center gap-2">
+                  <code className="text-xs bg-background p-2 rounded border max-w-[200px] truncate">
+                    {selfRegisterLink}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(selfRegisterLink);
+                      toast({ title: "Link copied!", description: "Seller registration link copied to clipboard." });
+                    }}
+                  >
+                    Copy
+                  </Button>
+                </div>
+              )}
+              {students.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-3">
+                  {students.length} seller{students.length !== 1 ? 's' : ''} already added manually
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       ) : (
+        /* Individual Mode: Show seller list */
         <Card>
           <Collapsible open={studentsOpen} onOpenChange={setStudentsOpen}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CollapsibleTrigger className="flex items-center gap-2 hover:text-primary transition-colors">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Users className="h-5 w-5" />
-                  {trackingMode === 'self_register' ? 'Sellers' : 'Students'}
+                  Sellers
                   <Badge variant="secondary">{students.length}</Badge>
                 </CardTitle>
                 {studentsOpen ? (
