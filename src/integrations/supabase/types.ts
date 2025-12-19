@@ -766,6 +766,7 @@ export type Database = {
       }
       bf_students: {
         Row: {
+          avatar_url: string | null
           created_at: string | null
           email: string | null
           grade: string | null
@@ -779,6 +780,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string | null
           email?: string | null
           grade?: string | null
@@ -792,6 +794,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string | null
           email?: string | null
           grade?: string | null

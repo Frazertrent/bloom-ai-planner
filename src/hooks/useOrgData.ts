@@ -162,6 +162,7 @@ interface TopSeller {
   student_name: string;
   total_sales: number;
   order_count: number;
+  avatar_url: string | null;
 }
 
 export function useTopSellers(limit: number = 5) {
@@ -200,21 +201,23 @@ export function useTopSellers(limit: number = 5) {
         studentTotals.set(cs.student_id, existing);
       });
 
-      // Get student names
+      // Get student names and avatars
       const studentIds = Array.from(studentTotals.keys());
       const { data: students } = await supabase
         .from("bf_students")
-        .select("id, name")
+        .select("id, name, avatar_url")
         .in("id", studentIds);
 
-      const studentNameMap = new Map(students?.map((s) => [s.id, s.name]) || []);
+      const studentMap = new Map(students?.map((s) => [s.id, { name: s.name, avatar_url: s.avatar_url }]) || []);
 
       // Build and sort result
       const result: TopSeller[] = [];
       studentTotals.forEach((totals, studentId) => {
+        const studentInfo = studentMap.get(studentId);
         result.push({
           student_id: studentId,
-          student_name: studentNameMap.get(studentId) || "Unknown",
+          student_name: studentInfo?.name || "Unknown",
+          avatar_url: studentInfo?.avatar_url || null,
           total_sales: totals.total_sales,
           order_count: totals.order_count,
         });

@@ -38,6 +38,7 @@ export interface CampaignAnalytics {
     magicLinkCode: string;
     orderCount: number;
     totalSales: number;
+    avatarUrl: string | null;
   }>;
   orders: Array<{
     id: string;
@@ -123,7 +124,7 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
         .select(`
           id,
           magic_link_code,
-          student:bf_students(id, name, email, phone)
+          student:bf_students(id, name, email, phone, avatar_url)
         `)
         .eq("campaign_id", campaignId);
 
@@ -214,6 +215,7 @@ export function useOrgCampaignAnalytics(campaignId: string | undefined) {
           magicLinkCode: cs.magic_link_code,
           orderCount: stats.orderCount,
           totalSales: stats.totalSales,
+          avatarUrl: (cs.student as any)?.avatar_url || null,
         };
       }).sort((a, b) => b.totalSales - a.totalSales);
 
