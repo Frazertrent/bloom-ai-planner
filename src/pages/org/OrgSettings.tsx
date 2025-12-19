@@ -12,8 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Phone, MapPin, Bell, Mail, ShoppingCart, Calendar, AlertTriangle, Info, CreditCard, CheckCircle2, DollarSign } from "lucide-react";
+import { Building2, Phone, MapPin, Bell, Mail, ShoppingCart, Calendar, AlertTriangle, Info, CreditCard, CheckCircle2, DollarSign, Settings2 } from "lucide-react";
 import { TestModeBanner } from "@/components/bloomfundr/TestModeBanner";
+import { CustomOptionsManager } from "@/components/bloomfundr/CustomOptionsManager";
 
 const PRESET_ORG_TYPES = ["school", "sports", "dance", "cheer", "church", "other"];
 
@@ -25,6 +26,23 @@ const ORG_TYPE_OPTIONS = [
   { value: "church", label: "Church/Religious Organization" },
   { value: "other", label: "Other" },
 ];
+
+const PRESET_GRADES = [
+  { value: "kindergarten", label: "Kindergarten" },
+  { value: "1st", label: "1st Grade" },
+  { value: "2nd", label: "2nd Grade" },
+  { value: "3rd", label: "3rd Grade" },
+  { value: "4th", label: "4th Grade" },
+  { value: "5th", label: "5th Grade" },
+  { value: "6th", label: "6th Grade" },
+  { value: "7th", label: "7th Grade" },
+  { value: "8th", label: "8th Grade" },
+  { value: "9th", label: "9th Grade (Freshman)" },
+  { value: "10th", label: "10th Grade (Sophomore)" },
+  { value: "11th", label: "11th Grade (Junior)" },
+  { value: "12th", label: "12th Grade (Senior)" },
+];
+
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -499,6 +517,46 @@ export default function OrgSettings() {
                   {updatePrefs.isPending ? "Saving..." : "Save Notification Preferences"}
                 </Button>
               </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Custom Types Management Card */}
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings2 className="h-5 w-5" />
+              Manage Custom Types
+            </CardTitle>
+            <CardDescription>
+              Add and manage custom dropdown options for your organization
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {!org?.id ? (
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Save your organization details above first to manage custom types.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2">
+                <CustomOptionsManager
+                  title="Organization Types"
+                  category="org_type"
+                  ownerType="organization"
+                  ownerId={org.id}
+                  presetOptions={ORG_TYPE_OPTIONS.filter(o => o.value !== "other")}
+                />
+                <CustomOptionsManager
+                  title="Student Grades"
+                  category="grade"
+                  ownerType="organization"
+                  ownerId={org.id}
+                  presetOptions={PRESET_GRADES}
+                />
+              </div>
             )}
           </CardContent>
         </Card>

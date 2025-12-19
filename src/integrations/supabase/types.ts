@@ -323,6 +323,45 @@ export type Database = {
           },
         ]
       }
+      bf_custom_options: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          option_category: string
+          option_label: string
+          option_value: string
+          owner_id: string
+          owner_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          option_category: string
+          option_label: string
+          option_value: string
+          owner_id: string
+          owner_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          option_category?: string
+          option_label?: string
+          option_value?: string
+          owner_id?: string
+          owner_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       bf_customers: {
         Row: {
           created_at: string | null
