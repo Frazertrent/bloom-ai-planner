@@ -30,6 +30,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
   const { addToCart } = useOrder();
   const [quantity, setQuantity] = useState(1);
   const [recipientName, setRecipientName] = useState("");
+  const [recipientAddress, setRecipientAddress] = useState("");
   const [selectedColor, setSelectedColor] = useState<string>("");
   const [selectedRibbon, setSelectedRibbon] = useState<string>("");
   const [specialInstructions, setSpecialInstructions] = useState("");
@@ -50,6 +51,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
     if (selectedColor) customizations.color = selectedColor;
     if (selectedRibbon) customizations.ribbon_color = selectedRibbon;
     if (specialInstructions.trim()) customizations.special_instructions = specialInstructions.trim();
+    if (recipientAddress.trim()) customizations.recipient_address = recipientAddress.trim();
 
     addToCart(
       product,
@@ -61,6 +63,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
     // Reset form
     setQuantity(1);
     setRecipientName("");
+    setRecipientAddress("");
     setSelectedColor("");
     setSelectedRibbon("");
     setSpecialInstructions("");
@@ -158,30 +161,50 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
             </div>
           )}
 
-          {/* Recipient Name */}
-          <div className="space-y-2">
-            <Label htmlFor="recipient" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Recipient Name (Optional)
-            </Label>
-            <Input
-              id="recipient"
-              placeholder="Who is this for?"
-              value={recipientName}
-              onChange={(e) => setRecipientName(e.target.value)}
-            />
-          </div>
+          {/* Delivery Information */}
+          <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+            <h3 className="font-medium text-sm">Delivery Information (Optional)</h3>
+            <p className="text-xs text-muted-foreground">
+              Fill this out if the delivery is to someone other than yourself
+            </p>
+            
+            {/* Recipient Name */}
+            <div className="space-y-2">
+              <Label htmlFor="recipient" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Recipient Name
+              </Label>
+              <Input
+                id="recipient"
+                placeholder="Who is this for?"
+                value={recipientName}
+                onChange={(e) => setRecipientName(e.target.value)}
+              />
+            </div>
 
-          {/* Special Instructions */}
-          <div className="space-y-2">
-            <Label htmlFor="instructions">Special Instructions (Optional)</Label>
-            <Textarea
-              id="instructions"
-              placeholder="Any special requests?"
-              value={specialInstructions}
-              onChange={(e) => setSpecialInstructions(e.target.value)}
-              rows={2}
-            />
+            {/* Recipient Address */}
+            <div className="space-y-2">
+              <Label htmlFor="recipientAddress">Recipient Address</Label>
+              <Textarea
+                id="recipientAddress"
+                placeholder="Delivery address (if different from pickup)"
+                value={recipientAddress}
+                onChange={(e) => setRecipientAddress(e.target.value)}
+                rows={2}
+              />
+            </div>
+
+            {/* Special Instructions */}
+            <div className="space-y-2">
+              <Label htmlFor="instructions">Special Instructions</Label>
+              <Textarea
+                id="instructions"
+                placeholder="Any special requests? (e.g., gift message, delivery notes)"
+                value={specialInstructions}
+                onChange={(e) => setSpecialInstructions(e.target.value)}
+                rows={2}
+              />
+            </div>
           </div>
 
           {/* Quantity Selector */}

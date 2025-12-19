@@ -251,6 +251,7 @@ export interface OrderCustomizations {
   ribbon_color?: string;
   add_ons?: string[];
   special_instructions?: string;
+  recipient_address?: string;
 }
 
 export interface BFOrderItemWithProduct extends BFOrderItem {
