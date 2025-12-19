@@ -38,6 +38,7 @@ interface RegistrationResult {
   sellingLink: string;
   email: string;
   name: string;
+  alreadyRegistered?: boolean;
 }
 
 export default function SellerJoinPage() {
@@ -92,39 +93,81 @@ export default function SellerJoinPage() {
     mutationFn: async (values: JoinFormValues) => {
       if (!campaign) throw new Error("Campaign not found");
 
-      // Generate unique code for the student
-      const uniqueCode = Math.random().toString(36).substring(2, 10);
-      
+      let studentId: string;
+      let isExistingSeller = false;
+
+      // Check if a seller with this email already exists in this organization
+      if (values.email) {
+        const { data: existingStudent } = await supabase
+          .from("bf_students")
+          .select("id")
+          .eq("organization_id", campaign.organization_id)
+          .eq("email", values.email.toLowerCase())
+          .single();
+
+        if (existingStudent) {
+          studentId = existingStudent.id;
+          isExistingSeller = true;
+
+          // Check if already linked to this campaign
+          const { data: existingLink } = await supabase
+            .from("bf_campaign_students")
+            .select("magic_link_code")
+            .eq("campaign_id", campaign.id)
+            .eq("student_id", studentId)
+            .single();
+
+          if (existingLink) {
+            // Already registered for this campaign - return their existing link
+            const sellingLink = generateOrderLink(existingLink.magic_link_code);
+            return {
+              studentId,
+              magicLinkCode: existingLink.magic_link_code,
+              sellingLink,
+              email: values.email,
+              name: values.name,
+              alreadyRegistered: true,
+            };
+          }
+        }
+      }
+
+      // If no existing student found, create a new one
+      if (!isExistingSeller) {
+        const uniqueCode = Math.random().toString(36).substring(2, 10);
+        
+        const { data: student, error: studentError } = await supabase
+          .from("bf_students")
+          .insert({
+            organization_id: campaign.organization_id,
+            name: values.name,
+            email: values.email || null,
+            phone: values.phone || null,
+            grade: values.grade || null,
+            team_group: values.teamGroup || null,
+            unique_code: uniqueCode,
+            is_active: true,
+          })
+          .select()
+          .single();
+
+        if (studentError) {
+          console.error("Error creating student:", studentError);
+          throw new Error("Failed to create seller record");
+        }
+        
+        studentId = student.id;
+      }
+
       // Generate magic link code for campaign assignment
       const magicLinkCode = Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
-
-      // Create the student record
-      const { data: student, error: studentError } = await supabase
-        .from("bf_students")
-        .insert({
-          organization_id: campaign.organization_id,
-          name: values.name,
-          email: values.email || null,
-          phone: values.phone || null,
-          grade: values.grade || null,
-          team_group: values.teamGroup || null,
-          unique_code: uniqueCode,
-          is_active: true,
-        })
-        .select()
-        .single();
-
-      if (studentError) {
-        console.error("Error creating student:", studentError);
-        throw new Error("Failed to create seller record");
-      }
 
       // Link student to campaign
       const { error: linkError } = await supabase
         .from("bf_campaign_students")
         .insert({
           campaign_id: campaign.id,
-          student_id: student.id,
+          student_id: studentId,
           magic_link_code: magicLinkCode,
           total_sales: 0,
           order_count: 0,
@@ -132,30 +175,35 @@ export default function SellerJoinPage() {
 
       if (linkError) {
         console.error("Error linking student to campaign:", linkError);
-        // Clean up: delete the student we just created
-        await supabase.from("bf_students").delete().eq("id", student.id);
+        // Only clean up if we created a new student
+        if (!isExistingSeller) {
+          await supabase.from("bf_students").delete().eq("id", studentId);
+        }
         throw new Error("Failed to join campaign");
       }
 
       const sellingLink = generateOrderLink(magicLinkCode);
       
       return {
-        studentId: student.id,
+        studentId,
         magicLinkCode,
         sellingLink,
         email: values.email,
         name: values.name,
+        alreadyRegistered: false,
       };
     },
     onSuccess: async (result) => {
       setRegistrationResult(result);
       toast({
-        title: "You're registered!",
-        description: "Share your unique link to start selling.",
+        title: result.alreadyRegistered ? "Welcome back!" : "You're registered!",
+        description: result.alreadyRegistered 
+          ? "You were already registered for this campaign. Here's your link!"
+          : "Share your unique link to start selling.",
       });
 
-      // Send welcome email (non-blocking)
-      if (result.email && campaign) {
+      // Send welcome email (non-blocking) - only for new registrations
+      if (result.email && campaign && !result.alreadyRegistered) {
         try {
           const portalLink = generateSellerPortalLink(result.magicLinkCode);
           await sendSellerWelcomeEmail(result.email, {
