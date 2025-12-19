@@ -35,6 +35,7 @@ import { PayoutBreakdownCard } from "@/components/bloomfundr/PayoutBreakdownCard
 import { PayoutStatusCard } from "@/components/bloomfundr/PayoutStatusCard";
 import { PayoutDetailSheet } from "@/components/bloomfundr/PayoutDetailSheet";
 import { OrderFulfillmentBadge } from "@/components/bloomfundr/OrderFulfillmentBadge";
+import { PrintCampaignSummary } from "@/components/bloomfundr/PrintCampaignSummary";
 import { SellerAvatar } from "@/components/bloomfundr/SellerAvatarUpload";
 import { Badge } from "@/components/ui/badge";
 import { FulfillmentProgressCard } from "@/components/bloomfundr/FulfillmentProgressCard";
@@ -59,7 +60,7 @@ import {
   ChevronDown,
   Copy,
   Download,
-  // Printer hidden for future iteration
+  Printer,
   StopCircle,
   CheckCircle,
   Trophy,
@@ -270,8 +271,6 @@ export default function OrgCampaignDetail() {
     a.click();
     URL.revokeObjectURL(url);
   };
-
-  // Print summary hidden for future iteration
 
   if (isLoading) {
     return (
@@ -1537,7 +1536,10 @@ export default function OrgCampaignDetail() {
                 <Download className="h-4 w-4 mr-2" />
                 Export Orders CSV
               </Button>
-              {/* Print Summary button hidden for future iteration */}
+              <PrintCampaignSummary 
+                analytics={analytics} 
+                orderStatusFilter={orderStatusFilter} 
+              />
               {campaign.status === "active" && (
                 <Button
                   variant="outline"

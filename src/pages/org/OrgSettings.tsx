@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Phone, MapPin, Bell, Mail, ShoppingCart, Calendar, AlertTriangle, Info, CreditCard, CheckCircle2, DollarSign, Settings2 } from "lucide-react";
+import { Building2, Phone, MapPin, Bell, Mail, ShoppingCart, Calendar, AlertTriangle, Info, CreditCard, CheckCircle2, DollarSign, Settings2, Users, UserPlus } from "lucide-react";
 import { TestModeBanner } from "@/components/bloomfundr/TestModeBanner";
 import { CustomOptionsManager } from "@/components/bloomfundr/CustomOptionsManager";
 
@@ -557,6 +557,78 @@ export default function OrgSettings() {
                   presetOptions={PRESET_GRADES}
                 />
               </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Team & Collaborators Card */}
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Team & Collaborators
+            </CardTitle>
+            <CardDescription>
+              Invite team members to help manage campaigns
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!org?.id ? (
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Save your organization details above first to manage team members.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <>
+                <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <UserPlus className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Invite Team Members</p>
+                      <p className="text-sm text-muted-foreground">
+                        Add managers or coordinators to help run campaigns
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <Input 
+                      type="email" 
+                      placeholder="colleague@organization.com"
+                      className="flex-1"
+                      disabled
+                    />
+                    <Button disabled>
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Invite
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Team invitations coming soon. You'll be able to add collaborators with different permission levels.
+                  </p>
+                </div>
+
+                {/* Current Team Members Placeholder */}
+                <div className="border border-border rounded-lg divide-y divide-border">
+                  <div className="p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-medium">
+                        {user?.email?.[0]?.toUpperCase() || "U"}
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">{user?.email}</p>
+                        <p className="text-xs text-muted-foreground">Owner</p>
+                      </div>
+                    </div>
+                    <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">
+                      You
+                    </span>
+                  </div>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
