@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, Wrench, Package, CheckCircle, Truck } from "lucide-react";
+import { Clock, Wrench, Package, CheckCircle, Truck, LucideIcon } from "lucide-react";
 
 export interface FulfillmentBreakdown {
   pending: number;
@@ -14,11 +14,54 @@ interface FulfillmentProgressCardProps {
   totalOrders: number;
 }
 
+interface PhaseMessage {
+  icon: LucideIcon;
+  text: string;
+  color: string;
+}
+
+function getPhaseMessage(breakdown: FulfillmentBreakdown, totalOrders: number): PhaseMessage {
+  const { pending, in_production, ready, picked_up, delivered } = breakdown;
+  
+  // All delivered = complete
+  if (delivered === totalOrders) {
+    return { icon: Truck, text: `All ${totalOrders} orders delivered to customers!`, color: "text-green-700" };
+  }
+  
+  // All picked up or delivered = in delivery phase
+  if (picked_up + delivered === totalOrders && picked_up > 0) {
+    return { icon: Package, text: `${picked_up} orders with sellers for delivery`, color: "text-purple-600" };
+  }
+  
+  // Some ready = pickup phase
+  if (ready > 0) {
+    return { icon: Package, text: `${ready} of ${totalOrders} orders ready for seller pickup`, color: "text-blue-600" };
+  }
+  
+  // In production = preparation phase
+  if (in_production > 0) {
+    return { icon: Wrench, text: `${in_production} of ${totalOrders} orders being prepared`, color: "text-amber-600" };
+  }
+  
+  // All pending = waiting phase
+  if (pending === totalOrders) {
+    return { icon: Clock, text: `${pending} orders pending - awaiting preparation`, color: "text-muted-foreground" };
+  }
+  
+  // Mixed state - show progress summary
+  const completedCount = picked_up + delivered;
+  if (completedCount > 0) {
+    return { icon: CheckCircle, text: `${completedCount} of ${totalOrders} orders completed`, color: "text-green-600" };
+  }
+  
+  return { icon: Clock, text: `${totalOrders} orders in progress`, color: "text-foreground" };
+}
+
 export function FulfillmentProgressCard({ breakdown, totalOrders }: FulfillmentProgressCardProps) {
   if (totalOrders === 0) return null;
 
-  const readyForPickup = breakdown.ready;
-  const completedCount = breakdown.picked_up + breakdown.delivered;
+  const phaseMessage = getPhaseMessage(breakdown, totalOrders);
+  const PhaseIcon = phaseMessage.icon;
   
   const segments = [
     { key: "pending", count: breakdown.pending, color: "bg-muted-foreground/40", label: "Pending" },
@@ -67,14 +110,13 @@ export function FulfillmentProgressCard({ breakdown, totalOrders }: FulfillmentP
         <CardTitle className="text-lg">Fulfillment Progress</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Summary Text */}
-        <p className="text-sm text-muted-foreground">
-          <span className="font-semibold text-foreground">{readyForPickup}</span> of{" "}
-          <span className="font-semibold text-foreground">{totalOrders}</span> orders ready for seller pickup
-          {completedCount > 0 && (
-            <span className="text-emerald-600"> • {completedCount} completed</span>
-          )}
-        </p>
+        {/* Dynamic Phase Summary */}
+        <div className="flex items-center gap-2">
+          <PhaseIcon className={`h-5 w-5 ${phaseMessage.color}`} />
+          <p className={`text-sm font-medium ${phaseMessage.color}`}>
+            {phaseMessage.text}
+          </p>
+        </div>
 
         {/* Progress Bar */}
         <div className="h-3 rounded-full overflow-hidden flex bg-muted">

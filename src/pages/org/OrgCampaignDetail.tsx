@@ -65,6 +65,8 @@ import {
   MessageSquare,
   Truck,
   UserPlus,
+  Wrench,
+  Clock,
 } from "lucide-react";
 import { generateOrderLink, generateCampaignLink, generateSellerJoinLink } from "@/lib/linkGenerator";
 import { format, parseISO } from "date-fns";
@@ -1008,18 +1010,68 @@ export default function OrgCampaignDetail() {
 
           {/* Fulfillment Tab */}
           <TabsContent value="fulfillment" className="mt-4 space-y-4">
-            {/* Ready for Seller Pickup Summary */}
-            <Card className={`border-2 ${readyOrders.length > 0 ? "border-blue-500/30 bg-blue-500/5" : "border-border"}`}>
+            {/* Dynamic Fulfillment Phase Summary */}
+            <Card className={`border-2 ${
+              stats.fulfillmentBreakdown.delivered === stats.totalOrders && stats.totalOrders > 0
+                ? "border-green-500/30 bg-green-500/5"
+                : stats.fulfillmentBreakdown.picked_up + stats.fulfillmentBreakdown.delivered === stats.totalOrders && stats.fulfillmentBreakdown.picked_up > 0
+                  ? "border-purple-500/30 bg-purple-500/5"
+                  : readyOrders.length > 0
+                    ? "border-blue-500/30 bg-blue-500/5"
+                    : stats.fulfillmentBreakdown.in_production > 0
+                      ? "border-amber-500/30 bg-amber-500/5"
+                      : "border-border"
+            }`}>
               <CardContent className="py-6">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <div className={`p-3 rounded-full ${readyOrders.length > 0 ? "bg-blue-500/10" : "bg-muted"}`}>
-                      <Package className={`h-6 w-6 ${readyOrders.length > 0 ? "text-blue-600" : "text-muted-foreground"}`} />
+                    <div className={`p-3 rounded-full ${
+                      stats.fulfillmentBreakdown.delivered === stats.totalOrders && stats.totalOrders > 0
+                        ? "bg-green-500/10"
+                        : stats.fulfillmentBreakdown.picked_up + stats.fulfillmentBreakdown.delivered === stats.totalOrders && stats.fulfillmentBreakdown.picked_up > 0
+                          ? "bg-purple-500/10"
+                          : readyOrders.length > 0
+                            ? "bg-blue-500/10"
+                            : stats.fulfillmentBreakdown.in_production > 0
+                              ? "bg-amber-500/10"
+                              : "bg-muted"
+                    }`}>
+                      {stats.fulfillmentBreakdown.delivered === stats.totalOrders && stats.totalOrders > 0 ? (
+                        <Truck className="h-6 w-6 text-green-600" />
+                      ) : stats.fulfillmentBreakdown.picked_up + stats.fulfillmentBreakdown.delivered === stats.totalOrders && stats.fulfillmentBreakdown.picked_up > 0 ? (
+                        <Package className="h-6 w-6 text-purple-600" />
+                      ) : readyOrders.length > 0 ? (
+                        <Package className="h-6 w-6 text-blue-600" />
+                      ) : stats.fulfillmentBreakdown.in_production > 0 ? (
+                        <Wrench className="h-6 w-6 text-amber-600" />
+                      ) : (
+                        <Clock className="h-6 w-6 text-muted-foreground" />
+                      )}
                     </div>
                     <div>
-                      <p className="text-2xl font-bold">{readyOrders.length} Ready for Seller Pickup</p>
+                      <p className="text-2xl font-bold">
+                        {stats.fulfillmentBreakdown.delivered === stats.totalOrders && stats.totalOrders > 0
+                          ? `All ${stats.totalOrders} Orders Delivered! 🎉`
+                          : stats.fulfillmentBreakdown.picked_up + stats.fulfillmentBreakdown.delivered === stats.totalOrders && stats.fulfillmentBreakdown.picked_up > 0
+                            ? `${stats.fulfillmentBreakdown.picked_up} Orders With Sellers`
+                            : readyOrders.length > 0
+                              ? `${readyOrders.length} Ready for Seller Pickup`
+                              : stats.fulfillmentBreakdown.in_production > 0
+                                ? `${stats.fulfillmentBreakdown.in_production} Orders In Production`
+                                : `${stats.fulfillmentBreakdown.pending} Orders Pending`
+                        }
+                      </p>
                       <p className="text-sm text-muted-foreground">
-                        {florist?.business_name ? `from ${florist.business_name}` : "Orders ready for sellers to collect"}
+                        {stats.fulfillmentBreakdown.delivered === stats.totalOrders && stats.totalOrders > 0
+                          ? "Campaign fulfillment complete"
+                          : stats.fulfillmentBreakdown.picked_up + stats.fulfillmentBreakdown.delivered === stats.totalOrders && stats.fulfillmentBreakdown.picked_up > 0
+                            ? "Awaiting delivery to customers"
+                            : readyOrders.length > 0
+                              ? florist?.business_name ? `from ${florist.business_name}` : "Orders ready for sellers to collect"
+                              : stats.fulfillmentBreakdown.in_production > 0
+                                ? "Florist is preparing orders"
+                                : "Awaiting florist preparation"
+                        }
                       </p>
                     </div>
                   </div>
