@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useFloristProfile } from "@/hooks/useFloristData";
 import { toast } from "sonner";
 import { notifyOrgOrdersReady, notifyOrgAllOrdersReady } from "@/lib/notifications";
+import { sendPickupReadyEmail, sendAllOrdersReadyEmail } from "@/lib/emailService";
+import { generateSellerPortalLink } from "@/lib/linkGenerator";
+import { format } from "date-fns";
 import type {
   BFOrderWithRelations, 
   BFCampaign, 
@@ -186,14 +189,21 @@ export function useUpdateOrderStatus() {
 
       // If marking as ready, check if all orders for this campaign are now ready and send notification
       if (status === "ready" && campaignId) {
-        // Get campaign details for notification
+        // Get campaign details for notification and email
         const { data: campaign } = await supabase
           .from("bf_campaigns")
-          .select("id, name, organization_id")
+          .select("id, name, organization_id, pickup_date, pickup_location")
           .eq("id", campaignId)
           .single();
 
         if (campaign) {
+          // Get organization details
+          const { data: organization } = await supabase
+            .from("bf_organizations")
+            .select("name, notification_email")
+            .eq("id", campaign.organization_id)
+            .single();
+
           // Count how many orders are now ready for this campaign
           const { count: readyCount } = await supabase
             .from("bf_orders")
@@ -223,6 +233,20 @@ export function useUpdateOrderStatus() {
               floristName: florist?.business_name || "Florist",
               orderCount: totalOrders,
             });
+
+            // Send email to organization (non-blocking)
+            if (organization?.notification_email) {
+              sendAllOrdersReadyEmail(organization.notification_email, {
+                organizationName: organization.name,
+                campaignName: campaign.name,
+                totalOrders,
+                floristName: florist?.business_name || "Florist",
+                pickupDate: campaign.pickup_date ? format(new Date(campaign.pickup_date), 'MMMM d, yyyy') : undefined,
+                pickupLocation: campaign.pickup_location || undefined,
+                dashboardLink: `${window.location.origin}/org/campaigns/${campaign.id}`,
+              }).catch(err => console.error('Failed to send all orders ready email:', err));
+            }
+
             return { orderId, status, campaignId, allOrdersReady: true, campaignName: campaign.name, totalOrders };
           } else {
             // Regular notification for orders marked ready
@@ -233,6 +257,51 @@ export function useUpdateOrderStatus() {
               floristName: florist?.business_name || "Florist",
               orderCount: readyCount || 1,
             });
+          }
+
+          // Send pickup ready emails to sellers who have orders ready (non-blocking)
+          // Get the order that was just marked ready to find the seller
+          const { data: thisOrder } = await supabase
+            .from("bf_orders")
+            .select("attributed_student_id")
+            .eq("id", orderId)
+            .single();
+
+          if (thisOrder?.attributed_student_id) {
+            // Get seller details
+            const { data: student } = await supabase
+              .from("bf_students")
+              .select("id, name, email")
+              .eq("id", thisOrder.attributed_student_id)
+              .single();
+
+            // Get magic link code for this seller
+            const { data: campaignStudent } = await supabase
+              .from("bf_campaign_students")
+              .select("magic_link_code")
+              .eq("campaign_id", campaignId)
+              .eq("student_id", thisOrder.attributed_student_id)
+              .single();
+
+            // Count ready orders for this seller
+            const { count: sellerReadyCount } = await supabase
+              .from("bf_orders")
+              .select("*", { count: "exact", head: true })
+              .eq("campaign_id", campaignId)
+              .eq("attributed_student_id", thisOrder.attributed_student_id)
+              .eq("fulfillment_status", "ready");
+
+            if (student?.email && campaignStudent?.magic_link_code && campaign.pickup_date && campaign.pickup_location) {
+              sendPickupReadyEmail(student.email, {
+                sellerName: student.name,
+                campaignName: campaign.name,
+                organizationName: organization?.name || 'Organization',
+                orderCount: sellerReadyCount || 1,
+                pickupDate: format(new Date(campaign.pickup_date), 'MMMM d, yyyy'),
+                pickupLocation: campaign.pickup_location,
+                portalLink: generateSellerPortalLink(campaignStudent.magic_link_code),
+              }).catch(err => console.error('Failed to send pickup ready email:', err));
+            }
           }
         }
       }

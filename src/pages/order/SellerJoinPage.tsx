@@ -4,9 +4,11 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { format } from "date-fns";
 import { Loader2, CheckCircle, AlertCircle, Copy, Share2, ExternalLink, Flower, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { generateOrderLink, generateSellerPortalLink } from "@/lib/linkGenerator";
+import { sendSellerWelcomeEmail } from "@/lib/emailService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -34,6 +36,8 @@ interface RegistrationResult {
   studentId: string;
   magicLinkCode: string;
   sellingLink: string;
+  email: string;
+  name: string;
 }
 
 export default function SellerJoinPage() {
@@ -139,14 +143,37 @@ export default function SellerJoinPage() {
         studentId: student.id,
         magicLinkCode,
         sellingLink,
+        email: values.email,
+        name: values.name,
       };
     },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       setRegistrationResult(result);
       toast({
         title: "You're registered!",
         description: "Share your unique link to start selling.",
       });
+
+      // Send welcome email (non-blocking)
+      if (result.email && campaign) {
+        try {
+          const portalLink = generateSellerPortalLink(result.magicLinkCode);
+          await sendSellerWelcomeEmail(result.email, {
+            sellerName: result.name,
+            campaignName: campaign.name,
+            organizationName: (campaign.bf_organizations as any)?.name || 'Organization',
+            sellingLink: result.sellingLink,
+            portalLink,
+            startDate: format(new Date(campaign.start_date), 'MMMM d, yyyy'),
+            endDate: format(new Date(campaign.end_date), 'MMMM d, yyyy'),
+            pickupDate: campaign.pickup_date ? format(new Date(campaign.pickup_date), 'MMMM d, yyyy') : undefined,
+            pickupLocation: campaign.pickup_location || undefined,
+          });
+        } catch (emailError) {
+          console.error('Failed to send welcome email:', emailError);
+          // Don't show error to user - registration was successful
+        }
+      }
     },
     onError: (error) => {
       console.error("Registration error:", error);
