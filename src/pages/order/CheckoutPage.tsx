@@ -52,7 +52,6 @@ export default function CheckoutPage() {
       fullName: "",
       email: "",
       phone: "",
-      specialInstructions: "",
     },
   });
 
@@ -231,23 +230,7 @@ export default function CheckoutPage() {
                     </p>
                   </div>
 
-                  {/* Special Instructions */}
-                  <div className="space-y-2">
-                    <Label htmlFor="specialInstructions" className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      Special Instructions (Optional)
-                    </Label>
-                    <Textarea
-                      id="specialInstructions"
-                      placeholder="Any special requests or notes for your order..."
-                      rows={3}
-                      {...register("specialInstructions")}
-                      className={errors.specialInstructions ? "border-destructive" : ""}
-                    />
-                    {errors.specialInstructions && (
-                      <p className="text-sm text-destructive">{errors.specialInstructions.message}</p>
-                    )}
-                  </div>
+                  {/* Special Instructions removed - handled at product level */}
 
                   {/* Submit Button */}
                   <Button 

@@ -80,7 +80,7 @@ export function useCreateOrder() {
           payment_status: "pending",
           fulfillment_status: "pending",
           entry_method: "online",
-          notes: customerData.specialInstructions || null,
+          notes: null,
         })
         .select("id, order_number")
         .single();

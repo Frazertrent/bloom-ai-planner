@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, Check, Download, Link as LinkIcon, ExternalLink, Users } from "lucide-react";
+import { Copy, Check, Download, Link as LinkIcon, ExternalLink, Users, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 
 interface StudentLink {
@@ -148,6 +149,21 @@ export function CampaignLinksModal({
     });
   };
 
+  // Generate SMS link with friendly pre-filled message
+  const getSmsLink = (link: string, sellerName?: string) => {
+    const message = sellerName 
+      ? `Support ${sellerName}'s fundraiser! Order beautiful flowers here: ${link}`
+      : `Support our fundraiser! Order beautiful flowers here: ${link}`;
+    // Use sms: protocol with body parameter
+    return `sms:?body=${encodeURIComponent(message)}`;
+  };
+
+  // Generate SMS link for seller registration
+  const getSellerRegistrationSmsLink = (link: string) => {
+    const message = `Join our fundraiser as a seller! Sign up here to get your unique selling link: ${link}`;
+    return `sms:?body=${encodeURIComponent(message)}`;
+  };
+
   // For 'none' tracking mode, show campaign link only
   if (trackingMode === 'none') {
     return (
@@ -169,7 +185,13 @@ export function CampaignLinksModal({
               <CardContent className="pt-6">
                 <div className="space-y-4">
                   <div>
-                    <p className="text-sm font-medium mb-2">Your Campaign Link</p>
+                    <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                      <LinkIcon className="h-4 w-4" />
+                      Customer Order Link
+                    </p>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Share this link with anyone to let them order from your fundraiser
+                    </p>
                     <div className="flex items-center gap-2">
                       <Input
                         readOnly
@@ -203,12 +225,22 @@ export function CampaignLinksModal({
                       className="flex-1"
                       asChild
                     >
-                      <a href={campaignLink} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        Open Link
+                      <a href={getSmsLink(campaignLink)}>
+                        <MessageCircle className="mr-2 h-4 w-4" />
+                        Text Link
                       </a>
                     </Button>
                   </div>
+                  <Button
+                    variant="ghost"
+                    className="w-full"
+                    asChild
+                  >
+                    <a href={campaignLink} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Preview Order Page
+                    </a>
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -223,20 +255,79 @@ export function CampaignLinksModal({
     );
   }
 
-  // For 'self_register' mode, show both campaign link and registered sellers
+  // For 'self_register' mode, show seller registration link, campaign link, and registered sellers
   if (trackingMode === 'self_register') {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[80vh]">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <LinkIcon className="h-5 w-5" />
               Campaign Links
             </DialogTitle>
             <DialogDescription>
-              View all links for your campaign.
+              Share these links to grow your fundraiser.
             </DialogDescription>
           </DialogHeader>
+
+          {/* Seller Registration Link - Most Important for self_register */}
+          {selfRegisterLink && (
+            <Card className="bg-primary/5 border-primary/20">
+              <CardContent className="pt-6">
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold mb-1 flex items-center gap-2">
+                      <Users className="h-4 w-4 text-primary" />
+                      Seller Registration Link
+                    </p>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Send this to your team members so they can sign up as sellers
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        readOnly
+                        value={selfRegisterLink}
+                        className="bg-background text-sm"
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={copySelfRegisterLink}
+                      >
+                        {selfRegisterCopied ? (
+                          <Check className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={copySelfRegisterLink}
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copy
+                    </Button>
+                    <Button
+                      variant="default"
+                      className="flex-1"
+                      asChild
+                    >
+                      <a href={getSellerRegistrationSmsLink(selfRegisterLink)}>
+                        <MessageCircle className="mr-2 h-4 w-4" />
+                        Text to Sellers
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Separator />
 
           {/* General Campaign Link */}
           {campaignLink && (
@@ -246,7 +337,7 @@ export function CampaignLinksModal({
                   <div>
                     <p className="text-sm font-semibold mb-1 flex items-center gap-2">
                       <LinkIcon className="h-4 w-4" />
-                      General Campaign Link
+                      Customer Order Link
                     </p>
                     <p className="text-xs text-muted-foreground mb-2">
                       For direct customer orders (not tied to any seller)
@@ -269,6 +360,26 @@ export function CampaignLinksModal({
                         )}
                       </Button>
                     </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={copyCampaignLink}
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copy
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      asChild
+                    >
+                      <a href={getSmsLink(campaignLink)}>
+                        <MessageCircle className="mr-2 h-4 w-4" />
+                        Text Link
+                      </a>
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -309,17 +420,28 @@ export function CampaignLinksModal({
                             />
                           </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => copyToClipboard(link.fullUrl, link.studentId)}
-                        >
-                          {copiedId === link.studentId ? (
-                            <Check className="h-4 w-4 text-green-600" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyToClipboard(link.fullUrl, link.studentId)}
+                          >
+                            {copiedId === link.studentId ? (
+                              <Check className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            asChild
+                          >
+                            <a href={getSmsLink(link.fullUrl, link.studentName)}>
+                              <MessageCircle className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -329,7 +451,7 @@ export function CampaignLinksModal({
               <div className="text-center py-6 text-muted-foreground bg-muted/30 rounded-lg">
                 <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">No sellers have registered yet.</p>
-                <p className="text-xs mt-1">They'll appear here after joining via the registration link above.</p>
+                <p className="text-xs mt-1">Share the Seller Registration Link above to invite sellers.</p>
               </div>
             )}
           </div>
@@ -382,17 +504,28 @@ export function CampaignLinksModal({
                       />
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => copyToClipboard(link.fullUrl, link.studentId)}
-                  >
-                    {copiedId === link.studentId ? (
-                      <Check className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => copyToClipboard(link.fullUrl, link.studentId)}
+                    >
+                      {copiedId === link.studentId ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      asChild
+                    >
+                      <a href={getSmsLink(link.fullUrl, link.studentName)}>
+                        <MessageCircle className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  </div>
                 </div>
               ))
             ) : (
