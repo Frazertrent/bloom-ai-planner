@@ -34,6 +34,7 @@ import {
 import { AddStudentDialog } from "@/components/bloomfundr/AddStudentDialog";
 import { EditStudentDialog } from "@/components/bloomfundr/EditStudentDialog";
 import { StudentDetailSheet } from "@/components/bloomfundr/StudentDetailSheet";
+import { ImportSellersDialog } from "@/components/bloomfundr/ImportSellersDialog";
 import { 
   useOrgStudentsList, 
   useTeamGroups, 
@@ -74,6 +75,7 @@ export default function OrgStudents() {
   const statusFilter = getArrayFilter("status");
 
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editStudent, setEditStudent] = useState<BFStudent | null>(null);
   const [viewStudent, setViewStudent] = useState<StudentWithSales | null>(null);
   const [deleteStudentState, setDeleteStudentState] = useState<BFStudent | null>(null);
@@ -119,7 +121,7 @@ export default function OrgStudents() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" disabled>
+            <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
               <Upload className="h-4 w-4 mr-2" />
               Import CSV
             </Button>
@@ -296,6 +298,12 @@ export default function OrgStudents() {
       <AddStudentDialog 
         open={addDialogOpen} 
         onOpenChange={setAddDialogOpen} 
+      />
+
+      {/* Import Dialog */}
+      <ImportSellersDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
       />
 
       {/* Edit Dialog */}
