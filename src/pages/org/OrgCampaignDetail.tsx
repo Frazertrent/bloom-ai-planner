@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { OrgLayout } from "@/components/bloomfundr/OrgLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -15,6 +15,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import {
   Collapsible,
   CollapsibleContent,
@@ -95,6 +103,8 @@ export default function OrgCampaignDetail() {
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>("all");
   const [joinLinkCopied, setJoinLinkCopied] = useState(false);
   const [campaignLinkCopied, setCampaignLinkCopied] = useState(false);
+  const [ordersPage, setOrdersPage] = useState(1);
+  const ORDERS_PER_PAGE = 20;
 
   // Helper for copying seller join link
   const handleCopyJoinLink = () => {
@@ -130,7 +140,11 @@ export default function OrgCampaignDetail() {
 
   useOrgCampaignRealtime(id, handleRealtimeUpdate);
 
-  // Helper functions for order selection
+  // Reset page when filter changes
+  useEffect(() => {
+    setOrdersPage(1);
+  }, [orderStatusFilter]);
+
   const readyOrders = analytics?.orders.filter(o => o.fulfillmentStatus === "ready") || [];
   const allReadySelected = readyOrders.length > 0 && readyOrders.every(o => selectedOrders.includes(o.id));
   const someReadySelected = readyOrders.some(o => selectedOrders.includes(o.id));
@@ -865,8 +879,14 @@ export default function OrgCampaignDetail() {
                     ? orders 
                     : orders.filter(o => o.fulfillmentStatus === orderStatusFilter);
                   const filteredReadyOrders = filteredOrders.filter(o => o.fulfillmentStatus === "ready");
+                  const totalPages = Math.ceil(filteredOrders.length / ORDERS_PER_PAGE);
+                  const paginatedOrders = filteredOrders.slice(
+                    (ordersPage - 1) * ORDERS_PER_PAGE,
+                    ordersPage * ORDERS_PER_PAGE
+                  );
                   
                   return filteredOrders.length > 0 ? (
+                    <div className="space-y-4">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -890,7 +910,7 @@ export default function OrgCampaignDetail() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredOrders.slice(0, 20).map((order) => (
+                      {paginatedOrders.map((order) => (
                         <TableRow key={order.id}>
                           <TableCell>
                             {order.fulfillmentStatus === "ready" && (
@@ -998,6 +1018,55 @@ export default function OrgCampaignDetail() {
                       ))}
                     </TableBody>
                   </Table>
+                  
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">
+                        Showing {(ordersPage - 1) * ORDERS_PER_PAGE + 1} - {Math.min(ordersPage * ORDERS_PER_PAGE, filteredOrders.length)} of {filteredOrders.length} orders
+                      </p>
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious 
+                              onClick={() => setOrdersPage(p => Math.max(1, p - 1))}
+                              className={ordersPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                            />
+                          </PaginationItem>
+                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum: number;
+                            if (totalPages <= 5) {
+                              pageNum = i + 1;
+                            } else if (ordersPage <= 3) {
+                              pageNum = i + 1;
+                            } else if (ordersPage >= totalPages - 2) {
+                              pageNum = totalPages - 4 + i;
+                            } else {
+                              pageNum = ordersPage - 2 + i;
+                            }
+                            return (
+                              <PaginationItem key={pageNum}>
+                                <PaginationLink
+                                  onClick={() => setOrdersPage(pageNum)}
+                                  isActive={ordersPage === pageNum}
+                                  className="cursor-pointer"
+                                >
+                                  {pageNum}
+                                </PaginationLink>
+                              </PaginationItem>
+                            );
+                          })}
+                          <PaginationItem>
+                            <PaginationNext 
+                              onClick={() => setOrdersPage(p => Math.min(totalPages, p + 1))}
+                              className={ordersPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  )}
+                    </div>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     {orderStatusFilter === "all" ? "No orders yet" : `No ${orderStatusFilter.replace("_", " ")} orders`}

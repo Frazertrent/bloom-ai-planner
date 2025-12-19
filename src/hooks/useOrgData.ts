@@ -46,6 +46,7 @@ export function useOrgStats() {
           active_campaigns: 0,
           total_orders: 0,
           total_raised: 0,
+          org_earnings: 0,
         };
       }
 
@@ -63,24 +64,35 @@ export function useOrgStats() {
         .eq("organization_id", org.id)
         .eq("status", "active");
 
-      // Get total paid orders count
+      // Get campaigns with margin info for earnings calculation
       const { data: campaigns } = await supabase
         .from("bf_campaigns")
-        .select("id")
+        .select("id, organization_margin_percent")
         .eq("organization_id", org.id);
 
       let totalOrders = 0;
+      let orgEarnings = 0;
 
       if (campaigns && campaigns.length > 0) {
         const campaignIds = campaigns.map((c) => c.id);
+        const marginMap = new Map(campaigns.map(c => [c.id, c.organization_margin_percent]));
 
-        const { count: orderCount } = await supabase
+        // Get all paid orders with subtotal
+        const { data: orders, count: orderCount } = await supabase
           .from("bf_orders")
-          .select("*", { count: "exact", head: true })
+          .select("campaign_id, subtotal", { count: "exact" })
           .in("campaign_id", campaignIds)
           .eq("payment_status", "paid");
 
         totalOrders = orderCount || 0;
+
+        // Calculate org earnings based on margin
+        if (orders) {
+          orders.forEach(order => {
+            const margin = marginMap.get(order.campaign_id) || 0;
+            orgEarnings += Number(order.subtotal) * (margin / 100);
+          });
+        }
       }
 
       // Use persistent lifetime earnings from org profile
@@ -91,6 +103,7 @@ export function useOrgStats() {
         active_campaigns: campaignCount || 0,
         total_orders: totalOrders,
         total_raised: totalRaised,
+        org_earnings: orgEarnings,
       };
     },
     enabled: !!org?.id,
