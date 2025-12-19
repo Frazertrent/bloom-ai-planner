@@ -289,18 +289,53 @@ export default function SellerPortal() {
           </Card>
         )}
 
-        {/* All Orders (pending production/ready) */}
-        {orders.filter((o: any) => !["picked_up", "delivered"].includes(o.fulfillment_status)).length > 0 && (
+        {/* Orders Ready for Pickup - urgent messaging */}
+        {orders.filter((o: any) => o.fulfillment_status === "ready").length > 0 && (
+          <Card className="border-2 border-emerald-500/50 bg-emerald-500/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                <Flower className="h-5 w-5" />
+                🌸 Orders Ready for Pickup!!
+              </CardTitle>
+              <CardDescription className="text-emerald-600 dark:text-emerald-300 font-medium">
+                Your flowers are ready! Pick them up ASAP — fresh flowers don't last long!
+              </CardDescription>
+              {campaign?.pickup_date && (
+                <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 mt-2">
+                  📍 Pickup: {format(parseISO(campaign.pickup_date), "MMMM d, yyyy")}
+                  {campaign.pickup_location && ` at ${campaign.pickup_location}`}
+                </p>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {orders
+                .filter((o: any) => o.fulfillment_status === "ready")
+                .map((order: any) => (
+                  <div key={order.id} className="flex items-center justify-between p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                    <div>
+                      <p className="font-medium">{order.customer_name || order.bf_customers?.full_name}</p>
+                      <p className="text-sm text-muted-foreground">{order.order_number}</p>
+                      <p className="text-sm font-medium text-primary">${Number(order.total).toFixed(2)}</p>
+                    </div>
+                    <OrderFulfillmentBadge status={order.fulfillment_status as FulfillmentStatus} />
+                  </div>
+                ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Orders Being Prepared */}
+        {orders.filter((o: any) => ["pending", "in_production"].includes(o.fulfillment_status)).length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Orders In Progress</CardTitle>
+              <CardTitle>Orders Being Prepared</CardTitle>
               <CardDescription>
-                These orders are still being prepared by the florist
+                The florist is currently working on these orders
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {orders
-                .filter((o: any) => !["picked_up", "delivered"].includes(o.fulfillment_status))
+                .filter((o: any) => ["pending", "in_production"].includes(o.fulfillment_status))
                 .map((order: any) => (
                   <div key={order.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                     <div>
