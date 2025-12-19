@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CampaignStatusBadge } from "@/components/bloomfundr/CampaignStatusBadge";
+import { SellerAvatar } from "@/components/bloomfundr/SellerAvatarUpload";
 import { 
   useOrgProfile, 
   useOrgStats, 
@@ -274,15 +275,12 @@ export default function OrgDashboard() {
                       className="flex items-center justify-between p-3 rounded-lg border border-border"
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`
-                          w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
-                          ${idx === 0 ? "bg-amber-500 text-white" : 
-                            idx === 1 ? "bg-gray-400 text-white" : 
-                            idx === 2 ? "bg-amber-700 text-white" : 
-                            "bg-muted text-muted-foreground"}
-                        `}>
-                          {idx + 1}
-                        </div>
+                        <SellerAvatar 
+                          src={seller.avatar_url}
+                          name={seller.student_name}
+                          rank={idx + 1}
+                          size="sm"
+                        />
                         <div>
                           <p className="font-medium text-foreground">{seller.student_name}</p>
                           <p className="text-xs text-muted-foreground">

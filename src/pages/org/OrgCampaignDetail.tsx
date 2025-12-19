@@ -27,6 +27,7 @@ import { PayoutBreakdownCard } from "@/components/bloomfundr/PayoutBreakdownCard
 import { PayoutStatusCard } from "@/components/bloomfundr/PayoutStatusCard";
 import { PayoutDetailSheet } from "@/components/bloomfundr/PayoutDetailSheet";
 import { OrderFulfillmentBadge } from "@/components/bloomfundr/OrderFulfillmentBadge";
+import { SellerAvatar } from "@/components/bloomfundr/SellerAvatarUpload";
 import { Badge } from "@/components/ui/badge";
 import { FulfillmentProgressCard } from "@/components/bloomfundr/FulfillmentProgressCard";
 import { useOrgCampaignAnalytics, useOrgCampaignRealtime } from "@/hooks/useOrgCampaignAnalytics";
@@ -723,17 +724,12 @@ export default function OrgCampaignDetail() {
                           }`}
                         >
                           <div className="flex items-center gap-3">
-                            <span
-                              className={`text-2xl font-bold ${
-                                idx === 0
-                                  ? "text-amber-500"
-                                  : idx === 1
-                                  ? "text-slate-400"
-                                  : "text-amber-700"
-                              }`}
-                            >
-                              #{idx + 1}
-                            </span>
+                            <SellerAvatar
+                              src={student.avatarUrl}
+                              name={student.name}
+                              rank={idx + 1}
+                              size="md"
+                            />
                             <div className="flex-1">
                               <p className="font-medium">{student.name}</p>
                               <p className="text-sm text-muted-foreground">
@@ -752,7 +748,7 @@ export default function OrgCampaignDetail() {
                       <TableHeader>
                         <TableRow>
                           <TableHead className="w-12">Rank</TableHead>
-                          <TableHead>Name</TableHead>
+                          <TableHead>Seller</TableHead>
                           <TableHead className="text-right">Orders</TableHead>
                           <TableHead className="text-right">Sales</TableHead>
                         </TableRow>
@@ -761,7 +757,17 @@ export default function OrgCampaignDetail() {
                         {displayStudents.map((student, idx) => (
                           <TableRow key={student.id}>
                             <TableCell className="font-medium">{idx + 1}</TableCell>
-                            <TableCell>{student.name}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <SellerAvatar
+                                  src={student.avatarUrl}
+                                  name={student.name}
+                                  rank={idx + 1}
+                                  size="xs"
+                                />
+                                <span>{student.name}</span>
+                              </div>
+                            </TableCell>
                             <TableCell className="text-right">{student.orderCount}</TableCell>
                             <TableCell className="text-right">${student.totalSales.toFixed(2)}</TableCell>
                           </TableRow>

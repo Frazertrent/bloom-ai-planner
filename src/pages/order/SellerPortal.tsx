@@ -5,8 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   Loader2, AlertCircle, Package, Truck, CheckCircle, Flower, ExternalLink, 
   Copy, Clock, MapPin, Mail, Phone, ChevronDown, ChevronUp, Calendar,
-  Info, ShoppingBag, Trophy, Target, Award, Pencil
+  Info, ShoppingBag, Trophy, Target, Award, Pencil, Camera
 } from "lucide-react";
+import { SellerAvatarUpload, SellerAvatar } from "@/components/bloomfundr/SellerAvatarUpload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -70,7 +71,8 @@ export default function SellerPortal() {
             id,
             name,
             email,
-            phone
+            phone,
+            avatar_url
           ),
           bf_campaigns (
             id,
@@ -161,7 +163,7 @@ export default function SellerPortal() {
           total_sales,
           order_count,
           magic_link_code,
-          bf_students (name)
+          bf_students (name, avatar_url)
         `)
         .eq("campaign_id", data.campaignId)
         .order("total_sales", { ascending: false })
@@ -220,7 +222,28 @@ export default function SellerPortal() {
     updateGoalMutation.mutate(null);
   };
 
-  // Gamification helpers
+  // Avatar update mutation
+  const updateAvatarMutation = useMutation({
+    mutationFn: async (newAvatarUrl: string | null) => {
+      if (!data?.seller?.id) throw new Error("No seller ID");
+      const { error } = await supabase
+        .from("bf_students")
+        .update({ avatar_url: newAvatarUrl })
+        .eq("id", data.seller.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["seller-portal", magicLinkCode] });
+      queryClient.invalidateQueries({ queryKey: ["seller-leaderboard", data?.campaignId] });
+    },
+    onError: () => {
+      toast({ 
+        title: "Error", 
+        description: "Failed to update photo.", 
+        variant: "destructive" 
+      });
+    },
+  });
   const gamificationStats = useMemo(() => {
     const totalSales = Number(data?.stats?.totalSales || 0);
     
@@ -488,8 +511,14 @@ export default function SellerPortal() {
         {/* Header */}
         <Card>
           <CardHeader className="text-center pb-4">
-            <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-              <Flower className="h-7 w-7 text-primary" />
+            <div className="mx-auto mb-3">
+              <SellerAvatarUpload
+                value={seller?.avatar_url || null}
+                onChange={(url) => updateAvatarMutation.mutate(url)}
+                name={seller?.name || "Seller"}
+                size="lg"
+                disabled={updateAvatarMutation.isPending}
+              />
             </div>
             <CardTitle className="text-2xl">Seller Dashboard</CardTitle>
             <CardDescription className="text-base">
