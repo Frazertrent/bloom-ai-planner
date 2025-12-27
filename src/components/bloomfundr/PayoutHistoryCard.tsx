@@ -3,7 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DollarSign, Clock, CheckCircle2, XCircle, ExternalLink, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DollarSign, Clock, CheckCircle2, XCircle, ExternalLink, Loader2, AlertTriangle, RefreshCw, Receipt } from "lucide-react";
 import { format } from "date-fns";
 import { PayoutRecord } from "@/hooks/usePayoutHistory";
 
@@ -28,7 +29,7 @@ export function PayoutHistoryCard({
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, failureReason?: string) => {
     switch (status) {
       case "completed":
         return (
@@ -46,10 +47,21 @@ export function PayoutHistoryCard({
         );
       case "failed":
         return (
-          <Badge className="bg-red-500/20 text-red-600 border-red-500/30">
-            <XCircle className="h-3 w-3 mr-1" />
-            Failed
-          </Badge>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge className="bg-red-500/20 text-red-600 border-red-500/30 cursor-help">
+                  <XCircle className="h-3 w-3 mr-1" />
+                  Failed
+                </Badge>
+              </TooltipTrigger>
+              {failureReason && (
+                <TooltipContent>
+                  <p className="max-w-xs">{failureReason}</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
         );
       default:
         return <Badge variant="outline">{status}</Badge>;
@@ -117,16 +129,24 @@ export function PayoutHistoryCard({
                     className="p-4 bg-muted/50 rounded-lg border border-border hover:border-primary/20 transition-colors"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-foreground">
-                        {payout.campaign_name || "Unknown Campaign"}
-                      </span>
+                      <div>
+                        <span className="font-medium text-foreground">
+                          {payout.campaign_name || "Unknown Campaign"}
+                        </span>
+                        {payout.order_number && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                            <Receipt className="h-3 w-3" />
+                            Order #{payout.order_number}
+                          </div>
+                        )}
+                      </div>
                       <span className="text-lg font-bold text-emerald-600">
                         {formatCurrency(payout.amount)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-3">
-                        {getStatusBadge(payout.status)}
+                        {getStatusBadge(payout.status, payout.failure_reason)}
                         <span className="text-muted-foreground">
                           {format(new Date(payout.created_at), "MMM d, yyyy")}
                         </span>
@@ -143,6 +163,11 @@ export function PayoutHistoryCard({
                         </a>
                       )}
                     </div>
+                    {payout.failure_reason && (
+                      <p className="text-xs text-red-500 mt-2 p-2 bg-red-500/10 rounded">
+                        {payout.failure_reason}
+                      </p>
+                    )}
                     {payout.processed_at && (
                       <p className="text-xs text-muted-foreground mt-1">
                         Processed: {format(new Date(payout.processed_at), "MMM d, yyyy 'at' h:mm a")}

@@ -181,13 +181,14 @@ serve(async (req) => {
       );
     }
 
-    // Create payout records (status: 'completed' for test mode - no actual money moves)
+    // Create payout records with order_id linked (status: 'completed' for test mode - no actual money moves)
     const payoutPromises = [];
 
     if (floristAmount > 0) {
       payoutPromises.push(
         supabase.from("bf_payouts").insert({
           campaign_id: campaign.id,
+          order_id: orderId,
           recipient_type: "florist",
           recipient_id: campaign.florist_id,
           amount: floristAmount,
@@ -201,6 +202,7 @@ serve(async (req) => {
       payoutPromises.push(
         supabase.from("bf_payouts").insert({
           campaign_id: campaign.id,
+          order_id: orderId,
           recipient_type: "organization",
           recipient_id: campaign.organization_id,
           amount: orgAmount,

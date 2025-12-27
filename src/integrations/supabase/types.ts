@@ -714,7 +714,9 @@ export type Database = {
           amount: number
           campaign_id: string
           created_at: string | null
+          failure_reason: string | null
           id: string
+          order_id: string | null
           processed_at: string | null
           recipient_id: string
           recipient_type: string
@@ -725,7 +727,9 @@ export type Database = {
           amount: number
           campaign_id: string
           created_at?: string | null
+          failure_reason?: string | null
           id?: string
+          order_id?: string | null
           processed_at?: string | null
           recipient_id: string
           recipient_type: string
@@ -736,7 +740,9 @@ export type Database = {
           amount?: number
           campaign_id?: string
           created_at?: string | null
+          failure_reason?: string | null
           id?: string
+          order_id?: string | null
           processed_at?: string | null
           recipient_id?: string
           recipient_type?: string
@@ -749,6 +755,13 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "bf_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bf_payouts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "bf_orders"
             referencedColumns: ["id"]
           },
         ]
