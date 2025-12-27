@@ -7,6 +7,8 @@ import { PickupReadyEmail } from './_templates/pickup-ready.tsx'
 import { CampaignSummaryEmail } from './_templates/campaign-summary.tsx'
 import { AllOrdersReadyEmail } from './_templates/all-orders-ready.tsx'
 import { FloristNewCampaignEmail } from './_templates/florist-new-campaign.tsx'
+import { PayoutConfirmationEmail } from './_templates/payout-confirmation.tsx'
+import { RefundNotificationEmail } from './_templates/refund-notification.tsx'
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
 
@@ -16,7 +18,7 @@ const corsHeaders = {
 }
 
 interface EmailRequest {
-  type: 'order_confirmation' | 'seller_welcome' | 'pickup_ready' | 'campaign_summary' | 'all_orders_ready' | 'florist_new_campaign';
+  type: 'order_confirmation' | 'seller_welcome' | 'pickup_ready' | 'campaign_summary' | 'all_orders_ready' | 'florist_new_campaign' | 'payout_confirmation' | 'refund_notification';
   to: string;
   data: Record<string, any>;
 }
@@ -132,6 +134,34 @@ Deno.serve(async (req) => {
             productCount: data.productCount,
             expectedOrders: data.expectedOrders,
             dashboardLink: data.dashboardLink,
+          })
+        )
+        break
+
+      case 'payout_confirmation':
+        subject = `Payout Processed - ${data.amount}`
+        html = await renderAsync(
+          React.createElement(PayoutConfirmationEmail, {
+            recipientName: data.recipientName,
+            recipientType: data.recipientType,
+            amount: data.amount,
+            payoutCount: data.payoutCount,
+            campaignNames: data.campaignNames,
+            dashboardLink: data.dashboardLink,
+          })
+        )
+        break
+
+      case 'refund_notification':
+        subject = `Refund Processed - Order ${data.orderNumber}`
+        html = await renderAsync(
+          React.createElement(RefundNotificationEmail, {
+            customerName: data.customerName,
+            orderNumber: data.orderNumber,
+            refundAmount: data.refundAmount,
+            organizationName: data.organizationName,
+            campaignName: data.campaignName,
+            isPartial: data.isPartial,
           })
         )
         break
