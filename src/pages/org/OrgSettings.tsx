@@ -5,6 +5,8 @@ import {
   useNotificationPreferences, 
   useUpdateNotificationPreferences 
 } from "@/hooks/useOrgNotifications";
+import { useOrgPayoutHistory, usePendingPayoutCount } from "@/hooks/usePayoutHistory";
+import { PayoutHistoryCard } from "@/components/bloomfundr/PayoutHistoryCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -57,7 +59,10 @@ export default function OrgSettings() {
   const { data: org, isLoading, refetch } = useOrgProfile();
   const { data: notifPrefs, isLoading: prefsLoading } = useNotificationPreferences();
   const updatePrefs = useUpdateNotificationPreferences();
+  const { data: payoutHistory = [], isLoading: payoutsLoading, refetch: refetchPayouts } = useOrgPayoutHistory();
+  const { data: pendingPayoutCount = 0, refetch: refetchPendingCount } = usePendingPayoutCount("organization", org?.id);
   const [isConnectingStripe, setIsConnectingStripe] = useState(false);
+  const [isProcessingPending, setIsProcessingPending] = useState(false);
   const [stripeStatus, setStripeStatus] = useState<{
     connected: boolean;
     onboarded: boolean;
@@ -262,6 +267,32 @@ export default function OrgSettings() {
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+  };
+
+  const handleProcessPendingPayouts = async () => {
+    if (!org?.id) return;
+    
+    setIsProcessingPending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("process-pending-payouts", {
+        body: { recipientType: "organization", recipientId: org.id },
+      });
+
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success(data.message || "Pending payouts processed!");
+        refetchPayouts();
+        refetchPendingCount();
+      } else {
+        toast.error(data?.error || "Failed to process payouts");
+      }
+    } catch (error) {
+      console.error("Error processing pending payouts:", error);
+      toast.error("Failed to process pending payouts");
+    } finally {
+      setIsProcessingPending(false);
+    }
   };
 
   return (
@@ -471,6 +502,16 @@ export default function OrgSettings() {
             )}
           </CardContent>
         </Card>
+
+        {/* Payout History Card */}
+        <PayoutHistoryCard
+          payouts={payoutHistory}
+          isLoading={payoutsLoading}
+          pendingCount={pendingPayoutCount}
+          hasStripeAccount={!!org?.stripe_account_id && !!stripeStatus?.onboarded}
+          isProcessingPending={isProcessingPending}
+          onProcessPending={handleProcessPendingPayouts}
+        />
 
         {/* Notification Preferences Card */}
         <Card className="bg-card border-border">
