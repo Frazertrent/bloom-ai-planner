@@ -42,6 +42,7 @@ const EventDetail = lazy(() => import("./pages/EventDetail"));
 const BloomFundrLanding = lazy(() => import("./pages/bloomfundr/Landing"));
 const BloomFundrLogin = lazy(() => import("./pages/bloomfundr/Login"));
 const BloomFundrRegister = lazy(() => import("./pages/bloomfundr/Register"));
+const PlatformAdmin = lazy(() => import("./pages/bloomfundr/PlatformAdmin"));
 
 // Lazy loaded Organization pages
 const OrgDashboard = lazy(() => import("./pages/org/OrgDashboard"));
@@ -400,6 +401,15 @@ const AppContent = () => (
       </BFProtectedRoute>
     } />
     
+    {/* Platform Admin Route */}
+    <Route path="/fundraiser/admin" element={
+      <BFProtectedRoute allowedRoles={["platform_admin"]}>
+        <Suspense fallback={<PageFallback />}>
+          <PlatformAdmin />
+        </Suspense>
+      </BFProtectedRoute>
+    } />
+    
     {/* Legacy redirects */}
     <Route path="/fundraiser/org" element={<Navigate to="/org" replace />} />
     <Route path="/fundraiser/dashboard" element={
@@ -416,6 +426,7 @@ const AppContent = () => (
         </Suspense>
       </BFProtectedRoute>
     } />
+    
     
     {/* Public Order Routes */}
     <Route path="/order/:magicLinkCode" element={
