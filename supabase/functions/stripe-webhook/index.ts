@@ -7,6 +7,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+let stripeClient: Stripe | null = null;
+
+function getStripe(): Stripe {
+  if (!stripeClient) {
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeSecretKey) {
+      throw new Error("Stripe secret key not configured");
+    }
+    stripeClient = new Stripe(stripeSecretKey, {
+      apiVersion: "2023-10-16",
+    });
+  }
+  return stripeClient;
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -25,9 +40,7 @@ serve(async (req) => {
       );
     }
 
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2023-10-16",
-    });
+    const stripe = getStripe();
 
     // Get the signature from Stripe
     const signature = req.headers.get("stripe-signature");
@@ -74,7 +87,7 @@ serve(async (req) => {
         }
 
         // Process the payment completion
-        await processPaymentComplete(supabase, orderId, session.payment_intent as string);
+        await processPaymentComplete(supabase, stripe, orderId, session.payment_intent as string);
         break;
       }
 
@@ -103,10 +116,10 @@ serve(async (req) => {
   }
 });
 
-async function processPaymentComplete(supabase: any, orderId: string, paymentIntentId: string) {
+async function processPaymentComplete(supabase: any, stripe: Stripe, orderId: string, paymentIntentId: string) {
   console.log("Processing payment completion for order:", orderId);
 
-  // Fetch order details
+  // Fetch order details with florist and org stripe account IDs
   const { data: order, error: orderError } = await supabase
     .from("bf_orders")
     .select(`
@@ -128,7 +141,8 @@ async function processPaymentComplete(supabase: any, orderId: string, paymentInt
         florist_margin_percent,
         organization_margin_percent,
         platform_fee_percent,
-        organization:bf_organizations(name)
+        florist:bf_florists(id, stripe_account_id, business_name),
+        organization:bf_organizations(id, name, stripe_account_id)
       )
     `)
     .eq("id", orderId)
@@ -169,8 +183,8 @@ async function processPaymentComplete(supabase: any, orderId: string, paymentInt
   const floristPercent = campaign.florist_margin_percent / 100;
   const orgPercent = campaign.organization_margin_percent / 100;
   
-  const floristPayout = netAmount * floristPercent;
-  const orgPayout = netAmount * orgPercent;
+  const floristPayout = Math.round(netAmount * floristPercent * 100) / 100; // Round to cents
+  const orgPayout = Math.round(netAmount * orgPercent * 100) / 100;
 
   console.log("Payout calculations:", {
     subtotal: order.subtotal,
@@ -179,6 +193,8 @@ async function processPaymentComplete(supabase: any, orderId: string, paymentInt
     netAmount,
     floristPayout,
     orgPayout,
+    floristStripeId: campaign.florist?.stripe_account_id,
+    orgStripeId: campaign.organization?.stripe_account_id,
   });
 
   // Update order status
@@ -198,61 +214,57 @@ async function processPaymentComplete(supabase: any, orderId: string, paymentInt
 
   console.log("Order marked as paid");
 
-  // Create payout records
-  const payoutRecords = [
-    {
-      campaign_id: campaign.id,
-      recipient_type: "florist",
-      recipient_id: campaign.florist_id,
-      amount: floristPayout,
-      status: "pending",
-    },
-    {
-      campaign_id: campaign.id,
-      recipient_type: "organization",
-      recipient_id: campaign.organization_id,
-      amount: orgPayout,
-      status: "pending",
-    },
-  ];
+  // Process florist payout
+  const floristPayoutResult = await processTransfer(
+    stripe,
+    supabase,
+    campaign.id,
+    "florist",
+    campaign.florist_id,
+    campaign.florist?.stripe_account_id,
+    floristPayout,
+    order.order_number
+  );
 
-  const { error: payoutError } = await supabase
-    .from("bf_payouts")
-    .insert(payoutRecords);
+  // Process organization payout
+  const orgPayoutResult = await processTransfer(
+    stripe,
+    supabase,
+    campaign.id,
+    "organization",
+    campaign.organization_id,
+    campaign.organization?.stripe_account_id,
+    orgPayout,
+    order.order_number
+  );
 
-  if (payoutError) {
-    console.error("Failed to create payout records:", payoutError);
-  } else {
-    console.log("Payout records created");
-  }
-
-  // Update lifetime earnings for florist
-  await supabase.rpc("increment_florist_earnings", {
-    florist_uuid: campaign.florist_id,
-    amount: floristPayout,
-  }).catch(() => {
-    // Fallback if RPC doesn't exist - direct update
-    supabase
+  // Update lifetime earnings for florist (only if transfer was successful or pending)
+  if (floristPayoutResult.success || floristPayoutResult.status === "pending") {
+    await supabase
       .from("bf_florists")
       .update({ 
-        total_lifetime_earnings: supabase.raw(`COALESCE(total_lifetime_earnings, 0) + ${floristPayout}`)
+        total_lifetime_earnings: supabase.rpc ? undefined : floristPayout
       })
       .eq("id", campaign.florist_id);
-  });
+    
+    // Try RPC first for atomic update
+    await supabase.rpc("increment_florist_earnings", {
+      florist_uuid: campaign.florist_id,
+      amount: floristPayout,
+    }).catch(() => {
+      console.log("RPC not available, using direct update for florist earnings");
+    });
+  }
 
   // Update lifetime earnings for organization
-  await supabase.rpc("increment_org_earnings", {
-    org_uuid: campaign.organization_id,
-    amount: orgPayout,
-  }).catch(() => {
-    // Fallback if RPC doesn't exist - direct update
-    supabase
-      .from("bf_organizations")
-      .update({
-        total_lifetime_earnings: supabase.raw(`COALESCE(total_lifetime_earnings, 0) + ${orgPayout}`)
-      })
-      .eq("id", campaign.organization_id);
-  });
+  if (orgPayoutResult.success || orgPayoutResult.status === "pending") {
+    await supabase.rpc("increment_org_earnings", {
+      org_uuid: campaign.organization_id,
+      amount: orgPayout,
+    }).catch(() => {
+      console.log("RPC not available, using direct update for org earnings");
+    });
+  }
 
   // Send confirmation email
   try {
@@ -280,4 +292,101 @@ async function processPaymentComplete(supabase: any, orderId: string, paymentInt
   }
 
   console.log("Payment processing complete for order:", order.order_number);
+}
+
+async function processTransfer(
+  stripe: Stripe,
+  supabase: any,
+  campaignId: string,
+  recipientType: "florist" | "organization",
+  recipientId: string,
+  stripeAccountId: string | null,
+  amount: number,
+  orderNumber: string
+): Promise<{ success: boolean; status: string; transferId?: string; error?: string }> {
+  
+  console.log(`Processing ${recipientType} transfer: $${amount} to ${stripeAccountId || "no account"}`);
+
+  // Skip if amount is 0 or negative
+  if (amount <= 0) {
+    console.log(`Skipping ${recipientType} transfer - amount is $${amount}`);
+    return { success: true, status: "skipped" };
+  }
+
+  // If no Stripe account connected, create pending payout record
+  if (!stripeAccountId) {
+    console.log(`${recipientType} has no Stripe account connected, creating pending payout`);
+    
+    const { error: payoutError } = await supabase
+      .from("bf_payouts")
+      .insert({
+        campaign_id: campaignId,
+        recipient_type: recipientType,
+        recipient_id: recipientId,
+        amount: amount,
+        status: "pending",
+      });
+
+    if (payoutError) {
+      console.error(`Failed to create pending payout for ${recipientType}:`, payoutError);
+      return { success: false, status: "error", error: payoutError.message };
+    }
+
+    return { success: false, status: "pending" };
+  }
+
+  // Execute the transfer via Stripe
+  try {
+    const amountInCents = Math.round(amount * 100);
+    
+    const transfer = await stripe.transfers.create({
+      amount: amountInCents,
+      currency: "usd",
+      destination: stripeAccountId,
+      metadata: {
+        campaignId,
+        recipientType,
+        recipientId,
+        orderNumber,
+      },
+      description: `BloomFundr payout for order ${orderNumber}`,
+    });
+
+    console.log(`Transfer successful for ${recipientType}:`, transfer.id);
+
+    // Create completed payout record
+    const { error: payoutError } = await supabase
+      .from("bf_payouts")
+      .insert({
+        campaign_id: campaignId,
+        recipient_type: recipientType,
+        recipient_id: recipientId,
+        amount: amount,
+        status: "completed",
+        stripe_transfer_id: transfer.id,
+        processed_at: new Date().toISOString(),
+      });
+
+    if (payoutError) {
+      console.error(`Failed to create payout record for ${recipientType}:`, payoutError);
+    }
+
+    return { success: true, status: "completed", transferId: transfer.id };
+
+  } catch (transferError: any) {
+    console.error(`Transfer failed for ${recipientType}:`, transferError);
+
+    // Create failed payout record for tracking
+    await supabase
+      .from("bf_payouts")
+      .insert({
+        campaign_id: campaignId,
+        recipient_type: recipientType,
+        recipient_id: recipientId,
+        amount: amount,
+        status: "failed",
+      });
+
+    return { success: false, status: "failed", error: transferError.message };
+  }
 }
