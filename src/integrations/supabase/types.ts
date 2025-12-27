@@ -586,7 +586,11 @@ export type Database = {
           payment_status: string
           platform_fee: number
           processing_fee: number
+          refund_amount: number | null
+          refund_status: string | null
+          refunded_at: string | null
           stripe_payment_intent_id: string | null
+          stripe_refund_id: string | null
           stripe_session_id: string | null
           subtotal: number
           total: number
@@ -607,7 +611,11 @@ export type Database = {
           payment_status?: string
           platform_fee?: number
           processing_fee?: number
+          refund_amount?: number | null
+          refund_status?: string | null
+          refunded_at?: string | null
           stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string | null
           stripe_session_id?: string | null
           subtotal: number
           total: number
@@ -628,7 +636,11 @@ export type Database = {
           payment_status?: string
           platform_fee?: number
           processing_fee?: number
+          refund_amount?: number | null
+          refund_status?: string | null
+          refunded_at?: string | null
           stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string | null
           stripe_session_id?: string | null
           subtotal?: number
           total?: number
@@ -716,7 +728,9 @@ export type Database = {
           created_at: string | null
           failure_reason: string | null
           id: string
+          is_reversal: boolean | null
           order_id: string | null
+          original_payout_id: string | null
           processed_at: string | null
           recipient_id: string
           recipient_type: string
@@ -729,7 +743,9 @@ export type Database = {
           created_at?: string | null
           failure_reason?: string | null
           id?: string
+          is_reversal?: boolean | null
           order_id?: string | null
+          original_payout_id?: string | null
           processed_at?: string | null
           recipient_id: string
           recipient_type: string
@@ -742,7 +758,9 @@ export type Database = {
           created_at?: string | null
           failure_reason?: string | null
           id?: string
+          is_reversal?: boolean | null
           order_id?: string | null
+          original_payout_id?: string | null
           processed_at?: string | null
           recipient_id?: string
           recipient_type?: string
@@ -764,7 +782,56 @@ export type Database = {
             referencedRelation: "bf_orders"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "bf_payouts_original_payout_id_fkey"
+            columns: ["original_payout_id"]
+            isOneToOne: false
+            referencedRelation: "bf_payouts"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      bf_platform_stats: {
+        Row: {
+          created_at: string | null
+          id: string
+          stat_date: string
+          total_florist_payouts: number | null
+          total_orders: number | null
+          total_org_payouts: number | null
+          total_platform_fees: number | null
+          total_processing_fees: number | null
+          total_refunds: number | null
+          total_revenue: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          stat_date: string
+          total_florist_payouts?: number | null
+          total_orders?: number | null
+          total_org_payouts?: number | null
+          total_platform_fees?: number | null
+          total_processing_fees?: number | null
+          total_refunds?: number | null
+          total_revenue?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          stat_date?: string
+          total_florist_payouts?: number | null
+          total_orders?: number | null
+          total_org_payouts?: number | null
+          total_platform_fees?: number | null
+          total_processing_fees?: number | null
+          total_refunds?: number | null
+          total_revenue?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       bf_products: {
         Row: {
