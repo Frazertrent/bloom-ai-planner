@@ -9,6 +9,8 @@ import {
   useFloristNotificationPreferences, 
   useUpdateFloristNotificationPreferences 
 } from "@/hooks/useFloristNotifications";
+import { useFloristPayoutHistory, usePendingPayoutCount } from "@/hooks/usePayoutHistory";
+import { PayoutHistoryCard } from "@/components/bloomfundr/PayoutHistoryCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Bell, Mail, ShoppingCart, Package, CheckCircle2, Clock, ShieldCheck, CreditCard, DollarSign, AlertTriangle, Loader2, ExternalLink } from "lucide-react";
@@ -24,7 +26,10 @@ export default function FloristSettingsPage() {
   const { data: florist, isLoading, refetch } = useFloristProfile();
   const { data: notifPrefs, isLoading: prefsLoading } = useFloristNotificationPreferences();
   const updatePrefs = useUpdateFloristNotificationPreferences();
+  const { data: payoutHistory = [], isLoading: payoutsLoading, refetch: refetchPayouts } = useFloristPayoutHistory();
+  const { data: pendingPayoutCount = 0, refetch: refetchPendingCount } = usePendingPayoutCount("florist", florist?.id);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isProcessingPending, setIsProcessingPending] = useState(false);
   const [isConnectingStripe, setIsConnectingStripe] = useState(false);
   const [stripeStatus, setStripeStatus] = useState<{
     connected: boolean;
@@ -230,6 +235,32 @@ export default function FloristSettingsPage() {
     } catch (error) {
       console.error("Error disconnecting Stripe:", error);
       toast.error("Failed to disconnect");
+    }
+  };
+
+  const handleProcessPendingPayouts = async () => {
+    if (!florist?.id) return;
+    
+    setIsProcessingPending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("process-pending-payouts", {
+        body: { recipientType: "florist", recipientId: florist.id },
+      });
+
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success(data.message || "Pending payouts processed!");
+        refetchPayouts();
+        refetchPendingCount();
+      } else {
+        toast.error(data?.error || "Failed to process payouts");
+      }
+    } catch (error) {
+      console.error("Error processing pending payouts:", error);
+      toast.error("Failed to process pending payouts");
+    } finally {
+      setIsProcessingPending(false);
     }
   };
 
@@ -509,6 +540,16 @@ export default function FloristSettingsPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Payout History Card */}
+        <PayoutHistoryCard
+          payouts={payoutHistory}
+          isLoading={payoutsLoading}
+          pendingCount={pendingPayoutCount}
+          hasStripeAccount={!!florist?.stripe_account_id && !!stripeStatus?.onboarded}
+          isProcessingPending={isProcessingPending}
+          onProcessPending={handleProcessPendingPayouts}
+        />
 
         {/* Notification Preferences Card */}
         <Card className="bg-bloomfundr-card border-bloomfundr-muted">
