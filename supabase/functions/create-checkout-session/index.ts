@@ -1,13 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Stripe from "https://esm.sh/stripe@14.21.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-// TEST MODE: Set to false when Stripe is integrated
-const TEST_MODE = true;
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -63,24 +61,21 @@ serve(async (req) => {
       );
     }
 
-    if (TEST_MODE) {
-      // Return URL to test payment page
-      console.log("TEST MODE: Returning test payment URL");
-      const checkoutUrl = `${origin}/order/${magicLinkCode}/test-payment?orderId=${orderId}`;
-      
+    // Initialize Stripe
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeSecretKey) {
+      console.error("STRIPE_SECRET_KEY not configured");
       return new Response(
-        JSON.stringify({ checkoutUrl, testMode: true }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Stripe not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // PRODUCTION MODE: Create Stripe Checkout Session
-    // This code will be uncommented when Stripe is integrated
-    /*
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
+    const stripe = new Stripe(stripeSecretKey, {
       apiVersion: "2023-10-16",
     });
 
+    // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
@@ -101,11 +96,14 @@ serve(async (req) => {
       metadata: {
         orderId: order.id,
         orderNumber: order.order_number,
-        campaignName: order.campaign?.name,
+        campaignName: order.campaign?.name || "",
+        magicLinkCode: magicLinkCode,
       },
       success_url: `${origin}/order/${magicLinkCode}/success?orderId=${orderId}`,
       cancel_url: `${origin}/order/${magicLinkCode}/cancel?orderId=${orderId}`,
     });
+
+    console.log("Stripe checkout session created:", session.id);
 
     // Store session ID in order
     await supabase
@@ -116,13 +114,6 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ checkoutUrl: session.url, testMode: false }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-    */
-
-    // Fallback for when Stripe code is uncommented but env vars aren't set
-    return new Response(
-      JSON.stringify({ error: "Stripe not configured" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (error) {
