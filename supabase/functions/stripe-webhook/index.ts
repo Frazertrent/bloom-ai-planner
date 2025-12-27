@@ -219,11 +219,13 @@ async function processPaymentComplete(supabase: any, stripe: Stripe, orderId: st
     stripe,
     supabase,
     campaign.id,
+    orderId,
     "florist",
     campaign.florist_id,
     campaign.florist?.stripe_account_id,
     floristPayout,
-    order.order_number
+    order.order_number,
+    campaign.florist?.business_name || "Florist"
   );
 
   // Process organization payout
@@ -231,11 +233,13 @@ async function processPaymentComplete(supabase: any, stripe: Stripe, orderId: st
     stripe,
     supabase,
     campaign.id,
+    orderId,
     "organization",
     campaign.organization_id,
     campaign.organization?.stripe_account_id,
     orgPayout,
-    order.order_number
+    order.order_number,
+    campaign.organization?.name || "Organization"
   );
 
   // Update lifetime earnings for florist (only if transfer was successful or pending)
@@ -298,11 +302,13 @@ async function processTransfer(
   stripe: Stripe,
   supabase: any,
   campaignId: string,
+  orderId: string,
   recipientType: "florist" | "organization",
   recipientId: string,
   stripeAccountId: string | null,
   amount: number,
-  orderNumber: string
+  orderNumber: string,
+  recipientName: string
 ): Promise<{ success: boolean; status: string; transferId?: string; error?: string }> {
   
   console.log(`Processing ${recipientType} transfer: $${amount} to ${stripeAccountId || "no account"}`);
@@ -321,6 +327,7 @@ async function processTransfer(
       .from("bf_payouts")
       .insert({
         campaign_id: campaignId,
+        order_id: orderId,
         recipient_type: recipientType,
         recipient_id: recipientId,
         amount: amount,
@@ -345,6 +352,7 @@ async function processTransfer(
       destination: stripeAccountId,
       metadata: {
         campaignId,
+        orderId,
         recipientType,
         recipientId,
         orderNumber,
@@ -359,6 +367,7 @@ async function processTransfer(
       .from("bf_payouts")
       .insert({
         campaign_id: campaignId,
+        order_id: orderId,
         recipient_type: recipientType,
         recipient_id: recipientId,
         amount: amount,
@@ -376,16 +385,34 @@ async function processTransfer(
   } catch (transferError: any) {
     console.error(`Transfer failed for ${recipientType}:`, transferError);
 
-    // Create failed payout record for tracking
+    // Create failed payout record with failure reason
     await supabase
       .from("bf_payouts")
       .insert({
         campaign_id: campaignId,
+        order_id: orderId,
         recipient_type: recipientType,
         recipient_id: recipientId,
         amount: amount,
         status: "failed",
+        failure_reason: transferError.message,
       });
+
+    // Create notification for the recipient about the failed payout
+    const notificationTable = recipientType === "florist" ? "bf_florist_notifications" : "bf_notifications";
+    const notificationIdField = recipientType === "florist" ? "florist_id" : "organization_id";
+    
+    await supabase
+      .from(notificationTable)
+      .insert({
+        [notificationIdField]: recipientId,
+        title: "Payout Failed",
+        message: `A payout of $${amount.toFixed(2)} for order ${orderNumber} failed. Please check your Stripe Connect account settings. Error: ${transferError.message}`,
+        notification_type: "error",
+        link_url: recipientType === "florist" ? "/florist/settings" : "/org/settings",
+      });
+
+    console.log(`Created failure notification for ${recipientType}`);
 
     return { success: false, status: "failed", error: transferError.message };
   }

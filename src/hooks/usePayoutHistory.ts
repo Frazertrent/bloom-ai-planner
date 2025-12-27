@@ -5,8 +5,11 @@ export interface PayoutRecord {
   id: string;
   campaign_id: string;
   campaign_name?: string;
+  order_id?: string;
+  order_number?: string;
   amount: number;
   status: string;
+  failure_reason?: string;
   stripe_transfer_id: string | null;
   created_at: string;
   processed_at: string | null;
@@ -28,18 +31,21 @@ export function useFloristPayoutHistory() {
 
       if (!florist) return [];
 
-      // Get all payouts for this florist with campaign details
+      // Get all payouts for this florist with campaign and order details
       const { data: payouts, error } = await supabase
         .from("bf_payouts")
         .select(`
           id,
           campaign_id,
+          order_id,
           amount,
           status,
+          failure_reason,
           stripe_transfer_id,
           created_at,
           processed_at,
-          bf_campaigns!inner(name)
+          bf_campaigns!inner(name),
+          bf_orders(order_number)
         `)
         .eq("recipient_type", "florist")
         .eq("recipient_id", florist.id)
@@ -54,8 +60,11 @@ export function useFloristPayoutHistory() {
         id: p.id,
         campaign_id: p.campaign_id,
         campaign_name: p.bf_campaigns?.name,
+        order_id: p.order_id,
+        order_number: p.bf_orders?.order_number,
         amount: p.amount,
         status: p.status,
+        failure_reason: p.failure_reason,
         stripe_transfer_id: p.stripe_transfer_id,
         created_at: p.created_at,
         processed_at: p.processed_at,
@@ -80,18 +89,21 @@ export function useOrgPayoutHistory() {
 
       if (!org) return [];
 
-      // Get all payouts for this organization with campaign details
+      // Get all payouts for this organization with campaign and order details
       const { data: payouts, error } = await supabase
         .from("bf_payouts")
         .select(`
           id,
           campaign_id,
+          order_id,
           amount,
           status,
+          failure_reason,
           stripe_transfer_id,
           created_at,
           processed_at,
-          bf_campaigns!inner(name)
+          bf_campaigns!inner(name),
+          bf_orders(order_number)
         `)
         .eq("recipient_type", "organization")
         .eq("recipient_id", org.id)
@@ -106,8 +118,11 @@ export function useOrgPayoutHistory() {
         id: p.id,
         campaign_id: p.campaign_id,
         campaign_name: p.bf_campaigns?.name,
+        order_id: p.order_id,
+        order_number: p.bf_orders?.order_number,
         amount: p.amount,
         status: p.status,
+        failure_reason: p.failure_reason,
         stripe_transfer_id: p.stripe_transfer_id,
         created_at: p.created_at,
         processed_at: p.processed_at,
