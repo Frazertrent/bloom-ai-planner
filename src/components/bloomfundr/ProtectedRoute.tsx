@@ -2,7 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useBloomFundrAuth } from "@/contexts/BloomFundrAuthContext";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
-type AllowedRole = "florist" | "org_admin" | "org_member" | "customer";
+type AllowedRole = "florist" | "org_admin" | "org_member" | "customer" | "platform_admin";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
