@@ -11,19 +11,27 @@ import {
 } from "@/hooks/useFloristNotifications";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Mail, ShoppingCart, Package, CheckCircle2, Clock, ShieldCheck, CreditCard, DollarSign, AlertTriangle } from "lucide-react";
+import { Bell, Mail, ShoppingCart, Package, CheckCircle2, Clock, ShieldCheck, CreditCard, DollarSign, AlertTriangle, Loader2, ExternalLink } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { TestModeBanner } from "@/components/bloomfundr/TestModeBanner";
+import { useSearchParams } from "react-router-dom";
 
 export default function FloristSettingsPage() {
   const queryClient = useQueryClient();
-  const { data: florist, isLoading } = useFloristProfile();
+  const [searchParams] = useSearchParams();
+  const { data: florist, isLoading, refetch } = useFloristProfile();
   const { data: notifPrefs, isLoading: prefsLoading } = useFloristNotificationPreferences();
   const updatePrefs = useUpdateFloristNotificationPreferences();
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isConnectingStripe, setIsConnectingStripe] = useState(false);
+  const [stripeStatus, setStripeStatus] = useState<{
+    connected: boolean;
+    onboarded: boolean;
+    chargesEnabled?: boolean;
+    payoutsEnabled?: boolean;
+  } | null>(null);
   // Business form state
   const [businessForm, setBusinessForm] = useState({
     business_name: "",
@@ -63,6 +71,43 @@ export default function FloristSettingsPage() {
       });
     }
   }, [notifPrefs]);
+
+  // Handle Stripe Connect return
+  useEffect(() => {
+    const stripeSuccess = searchParams.get("stripe_success");
+    const stripeRefresh = searchParams.get("stripe_refresh");
+    
+    if (stripeSuccess === "true") {
+      toast.success("Stripe account connected successfully!");
+      refetch();
+      checkStripeStatus();
+    } else if (stripeRefresh === "true") {
+      toast.info("Please complete your Stripe onboarding");
+    }
+  }, [searchParams, refetch]);
+
+  // Check Stripe status on load
+  useEffect(() => {
+    if (florist?.id) {
+      checkStripeStatus();
+    }
+  }, [florist?.id]);
+
+  const checkStripeStatus = async () => {
+    if (!florist?.id) return;
+    
+    try {
+      const { data, error } = await supabase.functions.invoke("check-connect-status", {
+        body: { accountType: "florist", entityId: florist.id },
+      });
+      
+      if (!error && data) {
+        setStripeStatus(data);
+      }
+    } catch (err) {
+      console.error("Error checking Stripe status:", err);
+    }
+  };
 
   const handleSaveBusinessDetails = async () => {
     if (!florist?.id) return;
@@ -134,23 +179,38 @@ export default function FloristSettingsPage() {
     }
   };
 
-  const handleSimulateStripeConnect = async () => {
+  const handleConnectStripe = async () => {
     if (!florist?.id) return;
     
+    setIsConnectingStripe(true);
     try {
-      const testAccountId = `test_acct_${Date.now()}`;
-      const { error } = await supabase
-        .from("bf_florists")
-        .update({ stripe_account_id: testAccountId })
-        .eq("id", florist.id);
+      const { data, error } = await supabase.functions.invoke("create-connect-account", {
+        body: { 
+          accountType: "florist", 
+          entityId: florist.id,
+          returnUrl: `${window.location.origin}/florist/settings?stripe_success=true`,
+          refreshUrl: `${window.location.origin}/florist/settings?stripe_refresh=true`,
+        },
+      });
 
       if (error) throw error;
       
-      queryClient.invalidateQueries({ queryKey: ["florist-profile"] });
-      toast.success("Stripe account connected (test mode)");
+      if (data?.alreadyConnected) {
+        toast.success("Stripe account already connected!");
+        await checkStripeStatus();
+        return;
+      }
+
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No onboarding URL returned");
+      }
     } catch (error) {
-      console.error("Error simulating Stripe connect:", error);
-      toast.error("Failed to simulate connection");
+      console.error("Error connecting Stripe:", error);
+      toast.error("Failed to start Stripe onboarding");
+    } finally {
+      setIsConnectingStripe(false);
     }
   };
 
@@ -344,11 +404,9 @@ export default function FloristSettingsPage() {
               <CreditCard className="h-5 w-5" />
               Payment Settings
             </CardTitle>
-            <CardDescription>Connect your payment account to receive payouts</CardDescription>
+            <CardDescription>Connect your Stripe account to receive payouts</CardDescription>
           </CardHeader>
           <CardContent>
-            <TestModeBanner />
-            
             {isLoading ? (
               <div className="space-y-4">
                 <Skeleton className="h-20 w-full" />
@@ -369,21 +427,47 @@ export default function FloristSettingsPage() {
                 </div>
 
                 {/* Connection Status */}
-                {florist?.stripe_account_id ? (
+                {florist?.stripe_account_id && stripeStatus?.onboarded ? (
                   <div className="p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
                     <div className="flex items-center gap-2 mb-2">
                       <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                      <span className="font-medium text-emerald-600">Payment Account Connected (Test Mode)</span>
+                      <span className="font-medium text-emerald-600">Payment Account Connected</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Your Stripe account is connected and ready to receive payouts.
+                    </p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>Account: <code className="bg-muted px-1 py-0.5 rounded">{florist.stripe_account_id.slice(0, 15)}...</code></span>
+                      {stripeStatus?.payoutsEnabled && (
+                        <Badge variant="outline" className="text-emerald-600 border-emerald-500">Payouts Enabled</Badge>
+                      )}
+                    </div>
+                  </div>
+                ) : florist?.stripe_account_id && !stripeStatus?.onboarded ? (
+                  <div className="p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Clock className="h-5 w-5 text-amber-600" />
+                      <span className="font-medium text-amber-600">Onboarding Incomplete</span>
                     </div>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Account ID: <code className="text-xs bg-muted px-1 py-0.5 rounded">{florist.stripe_account_id}</code>
+                      Your Stripe account was created but onboarding is not complete. Please finish setting up your account.
                     </p>
                     <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={handleDisconnectStripe}
+                      onClick={handleConnectStripe}
+                      disabled={isConnectingStripe}
+                      className="bg-bloomfundr-primary hover:bg-bloomfundr-primary-light"
                     >
-                      Disconnect (Test Only)
+                      {isConnectingStripe ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Complete Stripe Setup
+                        </>
+                      )}
                     </Button>
                   </div>
                 ) : (
@@ -393,21 +477,32 @@ export default function FloristSettingsPage() {
                       <span className="font-medium text-amber-600">Payment Account Not Connected</span>
                     </div>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Connect your payment account to receive payouts for fulfilled orders.
+                      Connect your Stripe account to receive payouts for fulfilled orders. You'll be redirected to Stripe's secure onboarding.
                     </p>
                     <Button 
-                      onClick={handleSimulateStripeConnect}
+                      onClick={handleConnectStripe}
+                      disabled={isConnectingStripe}
                       className="bg-bloomfundr-primary hover:bg-bloomfundr-primary-light"
                     >
-                      Simulate Stripe Connect
+                      {isConnectingStripe ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Connecting...
+                        </>
+                      ) : (
+                        <>
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Connect Stripe Account
+                        </>
+                      )}
                     </Button>
                   </div>
                 )}
 
-                {/* Production Note */}
+                {/* Info Note */}
                 <div className="p-3 bg-muted/30 rounded-lg">
                   <p className="text-xs text-muted-foreground">
-                    <span className="font-medium">In production:</span> Clicking "Connect Stripe Account" would redirect you to Stripe's secure onboarding where you enter your bank details directly with Stripe.
+                    <span className="font-medium">How it works:</span> When you connect your Stripe account, you'll be redirected to Stripe's secure onboarding where you can enter your banking details. Payouts are automatically transferred after orders are paid.
                   </p>
                 </div>
               </div>
